@@ -2,6 +2,11 @@
 
 모바일 브라우저에서 바로 테스트할 수 있는 HTML5 탑다운 로그라이트 MVP입니다.
 
+## 바로 플레이
+
+- 개발용 즉시 실행: https://raw.githack.com/donly987647-max/Topdown-roguelite/main/index.html
+- GitHub Pages: https://donly987647-max.github.io/Topdown-roguelite/
+
 ## 플레이
 
 - 모바일: 왼쪽 가상 조이스틱으로 이동, 오른쪽 `DASH` 버튼으로 회피
