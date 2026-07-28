@@ -1,0 +1,11 @@
+{
+  "name": "LAST MAGAZINE",
+  "short_name": "LAST MAGAZINE",
+  "description": "총기를 조립하고 탄막을 돌파하는 탑뷰 액션 로그라이트",
+  "start_url": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#070b10",
+  "theme_color": "#070b10",
+  "icons": []
+}
