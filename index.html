@@ -1,52 +1,126 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-  <meta name="theme-color" content="#0b1020" />
-  <title>Topdown Roguelite MVP</title>
-  <style>
-    :root { color-scheme: dark; }
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #080b14; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; touch-action: none; }
-    canvas { display: block; width: 100%; height: 100%; }
-    #hud { position: fixed; inset: env(safe-area-inset-top) 0 auto 0; padding: 12px; pointer-events: none; text-shadow: 0 2px 4px #000; font-weight: 700; }
-    #topline { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
-    #healthWrap { margin-top: 8px; width: min(360px, 72vw); height: 14px; border: 2px solid rgba(255,255,255,.7); border-radius: 999px; overflow: hidden; background: rgba(0,0,0,.45); }
-    #health { height: 100%; width: 100%; background: linear-gradient(90deg, #f23c55, #ff824f); transition: width .12s linear; }
-    #hint { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 58px); transform: translateX(-50%); font-size: 12px; color: rgba(255,255,255,.75); pointer-events: none; white-space: nowrap; }
-    #dash { position: fixed; right: max(20px, env(safe-area-inset-right)); bottom: max(28px, calc(env(safe-area-inset-bottom) + 18px)); width: 86px; height: 86px; border-radius: 50%; border: 3px solid rgba(255,255,255,.8); background: rgba(63,106,255,.38); color: white; font-weight: 900; font-size: 15px; touch-action: none; user-select: none; }
-    #dash:active { transform: scale(.94); }
-    #dash[disabled] { opacity: .42; }
-    #joystickBase { position: fixed; left: max(20px, env(safe-area-inset-left)); bottom: max(28px, calc(env(safe-area-inset-bottom) + 18px)); width: 130px; height: 130px; border-radius: 50%; border: 3px solid rgba(255,255,255,.25); background: rgba(255,255,255,.07); pointer-events: none; }
-    #joystickKnob { position: absolute; left: 40px; top: 40px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,.75); box-shadow: 0 4px 20px rgba(0,0,0,.45); }
-    #overlay { position: fixed; inset: 0; display: none; place-items: center; background: rgba(3,5,10,.8); padding: 24px; }
-    #panel { width: min(420px, 92vw); padding: 26px; text-align: center; border: 1px solid rgba(255,255,255,.18); border-radius: 20px; background: rgba(16,22,40,.96); box-shadow: 0 20px 70px rgba(0,0,0,.5); }
-    #panel h1 { margin: 0 0 10px; font-size: 30px; }
-    #panel p { margin: 8px 0 20px; color: rgba(255,255,255,.76); line-height: 1.55; }
-    #restart { width: 100%; padding: 15px; border: 0; border-radius: 12px; font-size: 17px; font-weight: 900; background: white; color: #111827; }
-    @media (min-width: 900px) {
-      #joystickBase, #dash { opacity: .7; }
-      #hint::after { content: " · PC: WASD / 방향키, Space 대시"; }
-    }
-  </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#070b10">
+  <link rel="manifest" href="manifest.json">
+  <title>LAST MAGAZINE — Complete Web Build</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <canvas id="game" aria-label="Topdown Roguelite 게임 화면"></canvas>
-  <div id="hud">
-    <div id="topline"><span id="stats">LV 1 · 0 KILLS</span><span id="timer">00:00</span></div>
-    <div id="healthWrap"><div id="health"></div></div>
-  </div>
-  <div id="hint">왼쪽 조이스틱 이동 · 적 자동 조준/사격 · 오른쪽 대시</div>
-  <div id="joystickBase"><div id="joystickKnob"></div></div>
-  <button id="dash" type="button">DASH</button>
-  <div id="overlay">
-    <div id="panel">
-      <h1>GAME OVER</h1>
-      <p id="result"></p>
-      <button id="restart" type="button">다시 시작</button>
+  <canvas id="game" aria-label="LAST MAGAZINE game canvas"></canvas>
+
+  <div id="hud" class="hidden">
+    <div class="hud-left panel-lite">
+      <div class="portrait" id="portrait">M</div>
+      <div class="bars">
+        <div class="bar hp"><i id="hpFill"></i><span id="hpText">100/100</span></div>
+        <div class="bar shield"><i id="shieldFill"></i><span id="shieldText">방어판 1</span></div>
+        <div class="status-row" id="statusRow"></div>
+      </div>
+    </div>
+    <div class="hud-center panel-lite">
+      <b id="zoneText">폐기 조립라인</b>
+      <span id="roomText">ROOM 1/9</span>
+      <span id="threatText">위협 0</span>
+    </div>
+    <div class="hud-right panel-lite">
+      <div><b id="weaponText">서비스 피스톨</b> <span id="ammoText">10/120</span></div>
+      <div class="bar reload"><i id="reloadFill"></i><span id="reloadText">READY</span></div>
+      <div><span id="scrapText">고철 0</span> · <span id="curseText">저주 0</span></div>
     </div>
   </div>
+
+  <div id="mobileControls" class="hidden">
+    <div class="stick" id="moveStick"><div class="knob"></div><small>MOVE</small></div>
+    <div class="stick aim" id="aimStick"><div class="knob"></div><small>AIM / FIRE</small></div>
+    <button id="dashBtn" class="action dash">DASH</button>
+    <button id="reloadBtn" class="action reload-btn">R</button>
+    <button id="activeBtn" class="action active">Q</button>
+  </div>
+
+  <button id="pauseBtn" class="icon-btn hidden" aria-label="일시정지">Ⅱ</button>
+  <button id="mapBtn" class="icon-btn hidden" aria-label="지도">MAP</button>
+  <button id="bagBtn" class="icon-btn hidden" aria-label="가방">BAG</button>
+
+  <div id="toast"></div>
+
+  <section id="titleScreen" class="screen active">
+    <div class="title-card">
+      <p class="eyebrow">MORROW INDUSTRIAL // RECOVERY LICENSE</p>
+      <h1>LAST<br><span>MAGAZINE</span></h1>
+      <p class="subtitle">총기를 조립하고, 탄막을 돌파하라.</p>
+      <button class="primary" id="startSetupBtn">런 준비</button>
+      <div class="title-actions">
+        <button data-open="codex">도감</button>
+        <button data-open="achievements">업적</button>
+        <button data-open="settings">설정</button>
+        <button data-open="credits">정보</button>
+      </div>
+      <small id="saveSummary">저장 데이터 없음</small>
+    </div>
+  </section>
+
+  <section id="setupScreen" class="screen">
+    <div class="modal wide">
+      <header><div><p class="eyebrow">SORTIE CONFIGURATION</p><h2>런 준비</h2></div><button class="close" data-back>×</button></header>
+      <div class="setup-grid">
+        <div>
+          <h3>회수자</h3>
+          <div id="characterList" class="card-grid characters"></div>
+        </div>
+        <div>
+          <h3>게임 모드</h3>
+          <div id="modeList" class="card-grid modes"></div>
+          <label class="range-row">위협 단계 <b id="threatValue">0</b><input id="threatRange" type="range" min="0" max="10" value="0"></label>
+          <h3>사용자 지정 계약</h3>
+          <div id="contractList" class="contract-list"></div>
+        </div>
+      </div>
+      <footer><div id="setupSummary"></div><button class="primary" id="launchBtn">공장 진입</button></footer>
+    </div>
+  </section>
+
+  <section id="overlayScreen" class="screen">
+    <div class="modal" id="overlayModal"></div>
+  </section>
+
+  <section id="rewardScreen" class="screen">
+    <div class="modal wide">
+      <header><div><p class="eyebrow">ROOM CLEAR</p><h2 id="rewardTitle">보상 선택</h2></div></header>
+      <div id="rewardCards" class="reward-grid"></div>
+      <footer><span id="rewardHint">하나를 선택하십시오.</span></footer>
+    </div>
+  </section>
+
+  <section id="routeScreen" class="screen">
+    <div class="modal">
+      <header><div><p class="eyebrow">ROUTE DECISION</p><h2>다음 구역 선택</h2></div></header>
+      <div id="routeCards" class="route-grid"></div>
+    </div>
+  </section>
+
+  <section id="inventoryScreen" class="screen">
+    <div class="modal inventory-modal">
+      <header><div><p class="eyebrow">LOADOUT GRID</p><h2>장비 가방 6×5</h2></div><button class="close" id="closeBag">×</button></header>
+      <div class="inventory-layout">
+        <div>
+          <div id="bagGrid" class="bag-grid"></div>
+          <div class="connector-legend"><span class="power">전력</span><span class="ammo">탄약</span><span class="cool">냉각</span><span class="signal">신호</span></div>
+        </div>
+        <div>
+          <h3>보유 모듈</h3>
+          <div id="moduleTray" class="module-tray"></div>
+          <div id="buildStats" class="stat-box"></div>
+        </div>
+      </div>
+      <footer><button id="autoArrange">자동 추천 배치</button><button id="rotateSelected">회전</button><button class="primary" id="applyBag">적용</button></footer>
+    </div>
+  </section>
+
+  <script src="data.js"></script>
   <script src="game.js"></script>
+  <script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}</script>
 </body>
 </html>
