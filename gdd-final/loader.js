@@ -1,6 +1,6 @@
 'use strict';
 (async()=>{
- const files=['pack-01.dat','pack-02.dat','pack-03.dat','pack-04.dat','pack-05.dat','pack-06.dat','pack-07.dat','pack-08.dat'];
+ const files=['pack-01.dat','pack-02.dat','pack-03.dat','pack-04.dat','pack-05a.dat','pack-05b.dat','pack-06.dat','pack-07.dat','pack-08.dat'];
  try{
   const chunks=await Promise.all(files.map(f=>fetch(f,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`${f} ${r.status}`);return r.text()})));
   const bin=atob(chunks.join('').replace(/\s+/g,''));
