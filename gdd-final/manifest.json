@@ -1,0 +1,10 @@
+{
+  "name": "LAST MAGAZINE",
+  "short_name": "LAST MAGAZINE",
+  "start_url": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#050607",
+  "theme_color": "#090b0d",
+  "description": "총기를 조립하고 폐쇄된 병기 공장을 돌파하는 2D 탑뷰 액션 로그라이트"
+}
