@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#090b0d">
+  <meta name="description" content="LAST MAGAZINE — 총기를 조립하고 폐쇄된 병기 공장을 돌파하는 2D 탑뷰 액션 로그라이트">
+  <link rel="manifest" href="manifest.json">
+  <title>LAST MAGAZINE — GDD Final Rebuild</title>
+  
+</head>
+<body>
+  <div id="app">
+    <canvas id="game" width="640" height="360" aria-label="LAST MAGAZINE 게임 화면"></canvas>
+
+    <div id="hud" class="hidden">
+      <div class="hud-block hud-left">
+        <div class="avatar" id="avatar">M</div>
+        <div class="vitals">
+          <div class="bar hp"><i id="hpBar"></i><span id="hpText">100 / 100</span></div>
+          <div class="bar shield"><i id="shieldBar"></i><span id="shieldText">방어판 1</span></div>
+          <div id="statusLine" class="status-line"></div>
+        </div>
+      </div>
+      <div class="hud-block hud-center">
+        <b id="zoneLabel">폐기 조립라인</b>
+        <span id="roomLabel">ROOM 1 / 9</span>
+        <small id="objectiveLabel">출입구 봉쇄 — 적을 제거하십시오</small>
+      </div>
+      <div class="hud-block hud-right">
+        <div class="weapon-row"><b id="weaponLabel">서비스 피스톨</b><span id="ammoLabel">10 / ∞</span></div>
+        <div class="bar reload"><i id="reloadBar"></i><span id="reloadText">READY</span></div>
+        <div class="resource-row"><span id="scrapLabel">고철 0</span><span id="curseLabel">저주 0</span><span id="heatLabel">열 0</span></div>
+      </div>
+    </div>
+
+    <div id="bossHud" class="hidden">
+      <span id="bossName">GR-01</span>
+      <div class="boss-bar"><i id="bossBar"></i></div>
+      <small id="bossPhase">PHASE 1</small>
+    </div>
+
+    <div id="mobileControls" class="hidden">
+      <div class="stick" id="moveStick"><div class="knob"></div><small>MOVE</small></div>
+      <div class="stick aim" id="aimStick"><div class="knob"></div><small>AIM / FIRE</small></div>
+      <button id="dashBtn" class="round-action dash">DASH</button>
+      <button id="reloadBtn" class="round-action reload">R</button>
+      <button id="activeBtn" class="round-action active">Q</button>
+      <button id="interactBtn" class="round-action interact">E</button>
+    </div>
+
+    <div id="quickButtons" class="hidden">
+      <button id="mapBtn">MAP</button>
+      <button id="bagBtn">BAG</button>
+      <button id="pauseBtn">Ⅱ</button>
+    </div>
+
+    <div id="toast" role="status"></div>
+    <div id="subtitle" class="hidden"></div>
+
+    <section id="titleScreen" class="screen active">
+      <div class="title-layout">
+        <div class="title-mark">
+          <p class="eyebrow">MORROW INDUSTRIAL // RECOVERY DIVISION</p>
+          <h1>LAST<br><span>MAGAZINE</span></h1>
+          <p>총기를 조립하고, 탄막을 돌파하라.</p>
+        </div>
+        <div class="menu-stack">
+          <button class="primary" id="continueBtn">회수 작전 시작</button>
+          <button id="trainingBtn">훈련장</button>
+          <button id="codexBtn">도감 / 기록</button>
+          <button id="settingsBtn">설정 / 접근성</button>
+          <small id="saveSummary">신규 회수자 등록 대기</small>
+        </div>
+      </div>
+    </section>
+
+    <section id="hubScreen" class="screen">
+      <div class="modal wide hub-modal">
+        <header>
+          <div><p class="eyebrow">RECOVERY HUB // BAY 07</p><h2>회수자 격납고</h2></div>
+          <button class="close" data-to-title>×</button>
+        </header>
+        <div class="hub-grid">
+          <div>
+            <h3>회수자</h3>
+            <div id="characterCards" class="card-grid characters"></div>
+          </div>
+          <div>
+            <h3>작전 모드</h3>
+            <div id="modeCards" class="card-grid modes"></div>
+            <label class="range-row">위협 단계 <b id="threatValue">0</b><input id="threatRange" type="range" min="0" max="10" value="0"></label>
+            <h3>계약</h3>
+            <div id="contractCards" class="contract-list"></div>
+          </div>
+        </div>
+        <footer>
+          <div id="hubSummary"></div>
+          <button id="launchBtn" class="primary">공장 진입</button>
+        </footer>
+      </div>
+    </section>
+
+    <section id="mapScreen" class="screen">
+      <div class="modal map-modal">
+        <header><div><p class="eyebrow">TACTICAL ROUTE</p><h2 id="mapTitle">폐기 조립라인</h2></div></header>
+        <div id="mapNodes" class="map-nodes"></div>
+        <footer><span>위험 경로는 더 강한 보상을 제공합니다.</span></footer>
+      </div>
+    </section>
+
+    <section id="rewardScreen" class="screen">
+      <div class="modal wide">
+        <header><div><p class="eyebrow">RECOVERY CACHE</p><h2 id="rewardTitle">회수품 선택</h2></div></header>
+        <div id="rewardCards" class="reward-grid"></div>
+        <footer><span id="rewardHint">하나를 선택하십시오.</span></footer>
+      </div>
+    </section>
+
+    <section id="inventoryScreen" class="screen">
+      <div class="modal inventory-modal">
+        <header><div><p class="eyebrow">FIELD ASSEMBLY</p><h2>총기 조립 / 장비 가방</h2></div><button id="closeInventory" class="close">×</button></header>
+        <div class="assembly-grid">
+          <div class="weapon-bench">
+            <h3>무기 구성</h3>
+            <div id="weaponSlots" class="weapon-slots"></div>
+            <div id="weaponStats" class="stat-panel"></div>
+          </div>
+          <div class="bag-pane">
+            <div class="bag-head"><h3>장비 가방 6×5</h3><span id="bagPower">전력 0 / 6</span></div>
+            <div id="bagGrid" class="bag-grid"></div>
+            <div class="connector-legend"><span class="power">전력</span><span class="ammo">탄약</span><span class="cooling">냉각</span><span class="signal">신호</span></div>
+          </div>
+          <div class="tray-pane">
+            <h3>보유 부품 / 모듈</h3>
+            <div id="inventoryTabs" class="tabs"></div>
+            <div id="itemTray" class="item-tray"></div>
+            <div id="synergyPanel" class="stat-panel"></div>
+          </div>
+        </div>
+        <footer>
+          <button id="autoArrangeBtn">자동 배치</button>
+          <button id="rotateItemBtn">선택 회전</button>
+          <button id="applyInventoryBtn" class="primary">조립 적용</button>
+        </footer>
+      </div>
+    </section>
+
+    <section id="shopScreen" class="screen">
+      <div class="modal wide">
+        <header><div><p class="eyebrow">BLACK MARKET TERMINAL</p><h2 id="shopTitle">현장 보급 단말</h2></div><button class="close" data-close-shop>×</button></header>
+        <div id="shopCards" class="reward-grid"></div>
+        <footer><span id="shopFunds">고철 0</span><button id="rerollShop">목록 갱신</button><button class="primary" data-close-shop>떠나기</button></footer>
+      </div>
+    </section>
+
+    <section id="eventScreen" class="screen">
+      <div class="modal event-modal">
+        <header><div><p class="eyebrow">FACTORY ANOMALY</p><h2 id="eventTitle">공장 사건</h2></div></header>
+        <div id="eventBody"></div>
+        <div id="eventChoices" class="choice-stack"></div>
+      </div>
+    </section>
+
+    <section id="overlayScreen" class="screen">
+      <div id="overlayModal" class="modal"></div>
+    </section>
+  </div>
+
+  <script src="loader.js"></script>
+  
+</body>
+</html>
