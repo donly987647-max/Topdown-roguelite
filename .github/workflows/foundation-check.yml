@@ -5,6 +5,7 @@ on:
     branches: [godot-main]
   pull_request:
     branches: [godot-main]
+  workflow_dispatch:
 
 jobs:
   validate:
@@ -25,3 +26,19 @@ jobs:
         run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --editor --quit
       - name: Run P1 automated tests
         run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p1_test_runner.gd
+      - name: Install Godot export templates
+        run: |
+          curl -L --fail --retry 3 -o templates.tpz https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_export_templates.tpz
+          unzip -q templates.tpz
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.6.3.stable"
+          cp -R templates/. "$HOME/.local/share/godot/export_templates/4.6.3.stable/"
+      - name: Export Windows P1 build
+        run: |
+          mkdir -p builds/windows
+          ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --export-release "Windows Desktop" builds/windows/LastMagazine_P1.exe
+      - name: Upload Windows P1 build
+        uses: actions/upload-artifact@v4
+        with:
+          name: LastMagazine-P1-Windows
+          path: builds/windows/
+          if-no-files-found: error
