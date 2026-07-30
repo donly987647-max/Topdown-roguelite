@@ -74,7 +74,11 @@ func _test_room_contract() -> void:
 
 func _test_mobile_contract() -> void:
 	_expect(ResourceLoader.exists("res://scripts/ui/mobile_touch_controls.gd"), "Mobile touch controls missing")
-	_expect(InputRouter.has_method("set_mobile_move"), "Mobile move bridge missing")
-	_expect(InputRouter.has_method("set_mobile_aim"), "Mobile aim bridge missing")
-	_expect(InputRouter.has_method("pulse_mobile_dash"), "Mobile dash bridge missing")
-	_expect(InputRouter.has_method("pulse_mobile_reload"), "Mobile reload bridge missing")
+	var input_router := root.get_node_or_null("InputRouter")
+	_expect(input_router != null, "InputRouter autoload missing")
+	if input_router == null:
+		return
+	_expect(input_router.has_method("set_mobile_move"), "Mobile move bridge missing")
+	_expect(input_router.has_method("set_mobile_aim"), "Mobile aim bridge missing")
+	_expect(input_router.has_method("pulse_mobile_dash"), "Mobile dash bridge missing")
+	_expect(input_router.has_method("pulse_mobile_reload"), "Mobile reload bridge missing")
