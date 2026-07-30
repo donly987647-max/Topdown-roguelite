@@ -7,12 +7,28 @@ on:
     branches: [godot-main]
 
 jobs:
-  structure:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Validate project structure
+
+      - name: Validate repository structure
         run: python tools/validate_project.py
+
+      - name: Download Godot 4.6.3
+        run: |
+          curl -L --fail --retry 3 \
+            -o godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          chmod +x Godot_v4.6.3-stable_linux.x86_64
+
+      - name: Import project headlessly
+        run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --editor --quit
+
+      - name: Run foundation smoke test
+        run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/smoke_test.gd
