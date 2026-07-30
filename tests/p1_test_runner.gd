@@ -12,6 +12,7 @@ func _run() -> void:
 	_test_health_order()
 	_test_projectile_contract()
 	_test_room_contract()
+	_test_mobile_contract()
 	if failures.is_empty():
 		print("[P1 TEST] PASS")
 		quit(0)
@@ -70,3 +71,10 @@ func _has_property(object: Object, property_name: StringName) -> bool:
 func _test_room_contract() -> void:
 	_expect(TestCombatRoom.ROOM_RECT.size == Vector2(640.0, 384.0), "Test room must be 20x12 tiles at 32 px")
 	_expect(TestCombatRoom.ENEMY_SPAWNS.size() >= 1, "Test room needs enemy spawn")
+
+func _test_mobile_contract() -> void:
+	_expect(ResourceLoader.exists("res://scripts/ui/mobile_touch_controls.gd"), "Mobile touch controls missing")
+	_expect(InputRouter.has_method("set_mobile_move"), "Mobile move bridge missing")
+	_expect(InputRouter.has_method("set_mobile_aim"), "Mobile aim bridge missing")
+	_expect(InputRouter.has_method("pulse_mobile_dash"), "Mobile dash bridge missing")
+	_expect(InputRouter.has_method("pulse_mobile_reload"), "Mobile reload bridge missing")
