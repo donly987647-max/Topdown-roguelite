@@ -1,0 +1,59 @@
+name: Build Integrated Static
+
+on:
+  push:
+    branches: [gdd-integrated-v2]
+    paths:
+      - 'gdd-integrated-v2/pkg-*.dat'
+      - 'gdd-integrated-v2/loader.js'
+      - '.github/workflows/build-integrated-static.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gdd-integrated-v2
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unpack game into a browser-safe single file
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const zlib = require('zlib');
+          const dir = 'gdd-integrated-v2';
+          const parts = [
+            'pkg-01.dat','pkg-02.dat','pkg-03.dat',
+            'pkg-04a.dat','pkg-04b.dat',
+            'pkg-05.dat','pkg-06.dat','pkg-07.dat','pkg-08.dat'
+          ];
+          const encoded = parts.map(name => fs.readFileSync(`${dir}/${name}`, 'utf8').replace(/\s+/g, '')).join('');
+          const compressed = Buffer.from(encoded, 'base64');
+          const pkg = JSON.parse(zlib.gunzipSync(compressed).toString('utf8'));
+          if (!pkg.html || !pkg.css || !pkg.js) throw new Error('Invalid game package');
+          const html = pkg.html
+            .replace('<link rel="manifest" href="manifest.json">', '')
+            .replace('<link rel="stylesheet" href="style.css">', `<style>${pkg.css}</style>`)
+            .replace('<script src="game.js"></script>', `<script>${pkg.js}<\/script>`);
+          fs.mkdirSync(`${dir}/play`, { recursive: true });
+          fs.writeFileSync(`${dir}/play/index.html`, html, 'utf8');
+          console.log(`Generated ${Buffer.byteLength(html)} bytes`);
+          NODE
+      - name: Commit generated static build
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add gdd-integrated-v2/play/index.html
+          if git diff --cached --quiet; then
+            echo 'No generated changes.'
+          else
+            git commit -m 'Generate browser-safe integrated static build'
+            git push origin HEAD:gdd-integrated-v2
+          fi
