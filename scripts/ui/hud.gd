@@ -23,7 +23,11 @@ func _ready() -> void:
 	ammo_label = _make_label(root, Vector2(28, 68), 20)
 	enemy_label = _make_label(root, Vector2(760, 20), 18)
 	status_label = _make_label(root, Vector2(18, 490), 14)
-	status_label.text = "WASD 이동  ·  마우스 조준/발사  ·  Space 회피  ·  R 재장전  ·  F5 재시작"
+	if OS.has_feature("mobile") or DisplayServer.is_touchscreen_available():
+		status_label.text = "모바일 P1 검수 빌드  ·  왼쪽 이동  ·  오른쪽 조준/자동 발사  ·  DASH / RELOAD"
+		status_label.position = Vector2(18, 458)
+	else:
+		status_label.text = "WASD 이동  ·  마우스 조준/발사  ·  Space 회피  ·  R 재장전  ·  F5 재시작"
 	precision_label = _make_label(root, Vector2(370, 80), 24)
 	precision_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	precision_label.size = Vector2(220, 40)
