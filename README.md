@@ -1,80 +1,39 @@
 # LAST MAGAZINE
 
-GDD 1.0을 기준으로 제작 중인 2D 탑뷰 건전라이크 프로젝트입니다.
+Official Godot production line for the 2D top-down action roguelite **LAST MAGAZINE**.
 
-현재 저장소에는 두 빌드가 함께 있습니다.
+## Current stage
 
-- 루트 폴더: 휴대폰에서 즉시 확인하는 HTML5 피드백 빌드
-- `godot/`: Windows·Linux·Steam·향후 Android 정식 출시 기준 Godot 프로젝트
+**Pre-production / Foundation**
 
-## 바로 플레이
+This repository contains only the clean Godot foundation. The archived HTML prototype is reference material and is not a production-code dependency.
 
-- GitHub Pages: https://donly987647-max.github.io/Topdown-roguelite/
-- 즉시 테스트 미러: https://raw.githack.com/donly987647-max/Topdown-roguelite/main/index.html
+## Engine
 
-모바일에서는 가로 화면을 권장합니다. 2026-07-29 빌드부터 브라우저 실제 표시 영역, 노치 안전영역, 폴더블 화면과 짧은 가로 해상도를 대응하며 캔버스를 16:9 비율로 맞춥니다.
+- Godot 4.6.x
+- GDScript
+- GL Compatibility renderer during pre-production
+- Primary target: Windows / Steam
 
-## GDD 콘텐츠 데이터
+## Open the project
 
-- 캐릭터 4명 + 비밀 캐릭터 1명
-- 기본 구역 4개 + 비밀 구역 1개
-- 무기 프레임 12종
-- 총열 12종, 탄창 12종, 코어 12종
-- 패시브 모듈 60종, 액티브 장비 20종
-- 일반 적 32종, 엘리트 변형 12종
-- 중간 보스 4종, 주요 보스 5종
-- 데이터 기반 방 템플릿 120종
-- 이벤트 35종, 시너지 50종, 업적 45종
-- 표준/빠른/무한 공장/보스 연속전/훈련장
-- 6×5 공간형 장비 가방, 회전, 단자 연결, 자동 배치
-- 상점, 제작실, 의료실, 비밀방, 저주, 계약, 엔딩 4종
+1. Install Godot 4.6.x.
+2. Import `project.godot`.
+3. Run the project.
+4. The foundation boot screen must appear without errors.
 
-## 웹 피드백 빌드 조작
+## Development order
 
-### 모바일
-- 왼쪽 스틱: 이동
-- 오른쪽 스틱: 조준 및 발사
-- DASH: 회피 구르기
-- R: 재장전 / 완벽 재장전
-- Q: 액티브 장비
+1. Foundation and repository structure
+2. GDD-to-backlog decomposition
+3. Movement, aiming, firing, dash, damage and camera
+4. Core prototype
+5. Zone 1 vertical slice
+6. Content expansion
+7. Alpha, beta and release candidate
 
-### PC
-- 이동: WASD / 방향키
-- 조준: 마우스
-- 발사: 마우스 왼쪽
-- 회피: Space
-- 재장전: R
-- 액티브: Q
-- 지도: Tab
-- 가방: I
-- 일시정지: Esc
+## Rules
 
-## Godot 정식 프로젝트
-
-`godot/project.godot`을 Godot 4.7.1에서 열면 됩니다.
-
-현재 Godot 프로젝트에 반영된 항목:
-
-- 절차형 그래픽으로 실행되는 전투 수직 슬라이스
-- 키보드·마우스와 Xbox/PlayStation/Steam Deck 계열 게임패드 InputMap
-- 이동, 조준, 사격, 재장전, 대시와 무적 시간
-- 적 추적·원거리·궤도·돌진 AI
-- 일반 탄막과 다단계 보스 탄막
-- 점수, 레벨, 체력, 방어판, 탄약과 게임 오버
-- 세 개 저장 슬롯, 체크섬, 백업과 마지막 런 기록
-- Steam 업적·클라우드·리더보드용 오프라인 안전 어댑터
-- Music/SFX/Voice 오디오 버스
-- Windows, Linux, Web 내보내기 프리셋
-- Godot 4.7.1 headless 자동 검증 워크플로
-
-상세 실행·개발 순서는 `godot/README.md`를 확인합니다.
-
-## 검증
-
-- 웹 JavaScript 구문 검사와 초기 런 진입 검사
-- GitHub Pages 자동 배포 워크플로
-- Godot 프로젝트 headless 임포트·부팅 자동 검증 워크플로
-
-## 제작 상태
-
-웹 빌드는 빠른 모바일 피드백과 GDD 시스템 검증을 위한 빌드입니다. 정식 출시 소스는 `godot/`에서 별도로 이식 중이며, 이후 픽셀 아트·애니메이션, 정식 음악·효과음, 방 그래프·조립 UI·상점·사건, Steamworks 실제 App ID 연결, Android 빌드와 장기 밸런스·플랫폼 QA를 순차 반영합니다.
+- No feature is called complete without an executable build and checklist evidence.
+- No generated quantity is accepted as unique content without unique behavior and testing.
+- `final`, `release` and `1.0` labels are reserved for builds that pass the release checklist.
