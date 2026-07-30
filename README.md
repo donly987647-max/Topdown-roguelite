@@ -37,3 +37,8 @@ This repository contains only the clean Godot foundation. The archived HTML prot
 - No feature is called complete without an executable build and checklist evidence.
 - No generated quantity is accepted as unique content without unique behavior and testing.
 - `final`, `release` and `1.0` labels are reserved for builds that pass the release checklist.
+
+
+## Development backlog
+
+The GDD 1.0 implementation plan is maintained under [`docs/backlog/`](docs/backlog/README.md). Work must follow the milestone gates in `EXECUTION_ORDER.md`.
