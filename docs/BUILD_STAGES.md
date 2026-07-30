@@ -1,21 +1,12 @@
-# Build stages
+# Build Stages
 
-## Foundation — current
+1. Foundation
+2. P1 Pre-production
+3. P2 Core Prototype
+4. P3 Vertical Slice
+5. P4 Alpha
+6. P5 Beta
+7. P6 Release Candidate
+8. 1.0 Release
 
-Repository isolation, project boot, services, directories, validation and completion rules.
-
-## Pre-production
-
-Movement, aiming, firing, dash, damage, camera and input feel.
-
-## Core prototype
-
-Three weapon frames, twelve parts, five enemies, eight rooms, grid inventory, reward choice, shop and a simple boss.
-
-## Vertical slice
-
-Zone 1 at representative sale quality with finished UI, save/settings, controller support, audio and art direction.
-
-## Alpha / Beta / RC
-
-Full content paths, tuning, external tests, performance, localization, platform integration and release verification.
+Current status: **P1 combat prototype candidate**. The P1 gate remains open until the five-minute manual test is approved.
