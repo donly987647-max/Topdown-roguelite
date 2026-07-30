@@ -21,6 +21,9 @@ window/size/viewport_height=540
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=0
+window/size/mode.mobile=3
 
 [rendering]
 renderer/rendering_method="gl_compatibility"
@@ -39,3 +42,7 @@ common/max_physics_steps_per_frame=8
 2d_physics/layer_4="PlayerProjectile"
 2d_physics/layer_5="EnemyProjectile"
 2d_physics/layer_6="Hazard"
+
+[input_devices]
+pointing/emulate_mouse_from_touch=false
+pointing/emulate_touch_from_mouse=false
