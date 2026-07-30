@@ -87,7 +87,7 @@ jobs:
             "export/android/debug_keystore = \"$GITHUB_WORKSPACE/android_debug.keystore\"" \
             'export/android/debug_keystore_user = "androiddebugkey"' \
             'export/android/debug_keystore_pass = "android"' \
-            > "$HOME/.config/godot/editor_settings-4.6.tres"
+            > "$HOME/.config/godot/editor_settings-4.tres"
 
       - name: Export Android P1 mobile validation APK
         run: |
