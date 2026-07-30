@@ -4,9 +4,9 @@ Official Godot production line for the 2D top-down action roguelite **LAST MAGAZ
 
 ## Current stage
 
-**Pre-production / Foundation**
+**P1 Pre-production — combat prototype candidate**
 
-This repository contains only the clean Godot foundation. The archived HTML prototype is reference material and is not a production-code dependency.
+The archived HTML prototype is reference material only and is not a production-code dependency.
 
 ## Engine
 
@@ -14,31 +14,29 @@ This repository contains only the clean Godot foundation. The archived HTML prot
 - GDScript
 - GL Compatibility renderer during pre-production
 - Primary target: Windows / Steam
+- Provisional internal viewport: 960×540
 
-## Open the project
+## Run
 
 1. Install Godot 4.6.x.
 2. Import `project.godot`.
-3. Run the project.
-4. The foundation boot screen must appear without errors.
+3. Run `scenes/main/Main.tscn`.
+4. Use WASD, mouse, left click, Space, R and F5.
 
-## Development order
+## Current playable scope
 
-1. Foundation and repository structure
-2. GDD-to-backlog decomposition
-3. Movement, aiming, firing, dash, damage and camera
-4. Core prototype
-5. Zone 1 vertical slice
-6. Content expansion
-7. Alpha, beta and release candidate
+- movement, independent aiming and dash;
+- temporary shield, armor and health damage order;
+- service pistol, reload and swept projectiles;
+- telegraphed training gunner AI;
+- handmade 20×12 combat room;
+- camera lead, shake, hit feedback and prototype audio;
+- headless P1 tests.
+
+See [`docs/P1_IMPLEMENTATION.md`](docs/P1_IMPLEMENTATION.md) for implemented and blocked backlog items. P1 is not passed until the manual five-minute gate is approved.
 
 ## Rules
 
-- No feature is called complete without an executable build and checklist evidence.
-- No generated quantity is accepted as unique content without unique behavior and testing.
-- `final`, `release` and `1.0` labels are reserved for builds that pass the release checklist.
-
-
-## Development backlog
-
-The GDD 1.0 implementation plan is maintained under [`docs/backlog/`](docs/backlog/README.md). Work must follow the milestone gates in `EXECUTION_ORDER.md`.
+- No feature is called complete without executable evidence.
+- No generated quantity counts as unique content without unique behavior and testing.
+- `final`, `release` and `1.0` remain prohibited before their matching gates.

@@ -1,9 +1,9 @@
 ; Engine configuration file.
-; LAST MAGAZINE official Godot development project.
+; LAST MAGAZINE P1 pre-production combat prototype.
 config_version=5
 
 [application]
-config/name="LAST MAGAZINE"
+config/name="LAST MAGAZINE — P1 Combat Prototype"
 run/main_scene="res://scenes/main/Main.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
@@ -11,17 +11,31 @@ config/icon="res://icon.svg"
 [autoload]
 EventBus="*res://autoload/event_bus.gd"
 GameState="*res://autoload/game_state.gd"
+InputRouter="*res://scripts/input/input_router.gd"
+AudioManager="*res://autoload/audio_manager.gd"
+FeedbackManager="*res://autoload/feedback_manager.gd"
 
 [display]
-window/size/viewport_width=1920
-window/size/viewport_height=1080
+window/size/viewport_width=960
+window/size/viewport_height=540
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
-window/handheld/orientation=1
 
 [rendering]
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/default_filters/use_nearest_mipmap_filter=false
 textures/canvas_textures/default_texture_filter=0
+
+[physics]
+common/physics_ticks_per_second=60
+common/max_physics_steps_per_frame=8
+
+[layer_names]
+2d_physics/layer_1="World"
+2d_physics/layer_2="Player"
+2d_physics/layer_3="Enemy"
+2d_physics/layer_4="PlayerProjectile"
+2d_physics/layer_5="EnemyProjectile"
+2d_physics/layer_6="Hazard"
