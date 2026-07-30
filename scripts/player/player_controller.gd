@@ -64,7 +64,7 @@ func _physics_process(delta: float) -> void:
 		_process_normal_movement(command.move, delta)
 		if command.dash_pressed:
 			_start_dash(command.move)
-		if command.fire_pressed:
+		if command.fire_pressed or (command.device == &"touch" and command.fire_held):
 			weapon.try_fire()
 		if command.reload_pressed:
 			weapon.start_reload()
