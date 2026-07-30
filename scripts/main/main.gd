@@ -3,6 +3,8 @@ extends Node2D
 var room: TestCombatRoom
 var camera: CombatCamera
 var hud: CombatHUD
+var touch_layer: CanvasLayer
+var touch_controls: MobileTouchControls
 
 func _ready() -> void:
 	GameState.reset_run()
@@ -22,6 +24,14 @@ func _build_prototype() -> void:
 	hud = CombatHUD.new()
 	hud.name = "CombatHUD"
 	add_child(hud)
+	if OS.has_feature("mobile") or DisplayServer.is_touchscreen_available():
+		touch_layer = CanvasLayer.new()
+		touch_layer.name = "MobileTouchLayer"
+		touch_layer.layer = 30
+		add_child(touch_layer)
+		touch_controls = MobileTouchControls.new()
+		touch_controls.name = "MobileTouchControls"
+		touch_layer.add_child(touch_controls)
 
 func _reset_prototype() -> void:
 	if is_instance_valid(room):
@@ -30,6 +40,8 @@ func _reset_prototype() -> void:
 		camera.queue_free()
 	if is_instance_valid(hud):
 		hud.queue_free()
+	if is_instance_valid(touch_layer):
+		touch_layer.queue_free()
 	await get_tree().process_frame
 	GameState.reset_run()
 	_build_prototype()
