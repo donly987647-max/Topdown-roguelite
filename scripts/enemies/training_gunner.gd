@@ -95,7 +95,7 @@ func _separation_force() -> Vector2:
 	for other in get_tree().get_nodes_in_group("enemy"):
 		if other == self or not is_instance_valid(other):
 			continue
-		var delta := global_position - other.global_position
+		var delta: Vector2 = global_position - other.global_position
 		if delta.length_squared() > 0.01 and delta.length() < 42.0:
 			result += delta.normalized() * (1.0 - delta.length() / 42.0)
 	return result
