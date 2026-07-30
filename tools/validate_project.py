@@ -8,7 +8,7 @@ required = [
     'scripts/combat/health_component.gd', 'scripts/weapons/service_pistol.gd',
     'scripts/projectiles/projectile.gd', 'scripts/projectiles/projectile_data.gd',
     'scripts/enemies/training_gunner.gd', 'scripts/world/test_room.gd',
-    'scripts/camera/combat_camera.gd', 'tests/p1_test_runner.gd'
+    'scripts/camera/combat_camera.gd', 'scripts/ui/mobile_touch_controls.gd', 'tests/p1_test_runner.gd'
 ]
 missing = [p for p in required if not (root / p).exists()]
 if missing:
@@ -31,3 +31,11 @@ for literal in ['BASE_DAMAGE := 18.0', 'FIRE_INTERVAL := 0.24', 'MAGAZINE_CAPACI
     if literal not in weapon:
         raise SystemExit('Service pistol mismatch: ' + literal)
 print('P1 project structure and GDD constants validated.')
+
+mobile = (root / 'scripts/ui/mobile_touch_controls.gd').read_text(encoding='utf-8')
+for literal in ['InputEventScreenTouch', 'InputEventScreenDrag', 'pulse_mobile_dash', 'pulse_mobile_reload']:
+    if literal not in mobile:
+        raise SystemExit('Mobile control contract missing: ' + literal)
+exports = (root / 'export_presets.cfg').read_text(encoding='utf-8')
+if 'name="Android"' not in exports or 'LastMagazine_P1_Mobile.apk' not in exports:
+    raise SystemExit('Android export preset missing')
