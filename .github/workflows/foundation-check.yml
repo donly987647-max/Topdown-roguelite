@@ -90,9 +90,13 @@ jobs:
             > "$HOME/.config/godot/editor_settings-4.tres"
 
       - name: Export Android P1 mobile validation APK
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ github.workspace }}/android_debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
         run: |
           mkdir -p builds/android
-          ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --export-debug "Android" builds/android/LastMagazine_P1_Mobile.apk
+          ./Godot_v4.6.3-stable_linux.x86_64 --verbose --headless --path . --export-debug "Android" builds/android/LastMagazine_P1_Mobile.apk
           test -s builds/android/LastMagazine_P1_Mobile.apk
 
       - name: Upload Android P1 mobile validation APK
