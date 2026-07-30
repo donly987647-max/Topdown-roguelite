@@ -11,6 +11,11 @@ const ACTIONS := [
 
 var last_device: StringName = &"keyboard_mouse"
 var _last_mouse_position := Vector2.ZERO
+var _mobile_move := Vector2.ZERO
+var _mobile_aim := Vector2.RIGHT
+var _mobile_fire_held := false
+var _mobile_dash_queued := false
+var _mobile_reload_queued := false
 
 func _ready() -> void:
 	_install_default_actions()
@@ -30,9 +35,13 @@ func _input(event: InputEvent) -> void:
 		_last_mouse_position = event.position
 
 func get_move_vector() -> Vector2:
+	if _mobile_move.length_squared() > 0.0001:
+		return _mobile_move
 	return Input.get_vector("move_left", "move_right", "move_up", "move_down")
 
 func get_aim_vector(origin_global: Vector2) -> Vector2:
+	if last_device == &"touch":
+		return _mobile_aim
 	if last_device == &"gamepad":
 		var stick := Input.get_vector("aim_left", "aim_right", "aim_up", "aim_down")
 		if stick.length_squared() >= 0.09:
@@ -45,15 +54,50 @@ func get_aim_vector(origin_global: Vector2) -> Vector2:
 	return direction.normalized() if direction.length_squared() > 0.001 else Vector2.RIGHT
 
 func get_command_snapshot(origin_global: Vector2) -> Dictionary:
-	return {
+	var snapshot := {
 		"move": get_move_vector(),
 		"aim": get_aim_vector(origin_global),
 		"fire_pressed": Input.is_action_just_pressed("fire"),
-		"fire_held": Input.is_action_pressed("fire"),
-		"dash_pressed": Input.is_action_just_pressed("dash"),
-		"reload_pressed": Input.is_action_just_pressed("reload"),
+		"fire_held": Input.is_action_pressed("fire") or _mobile_fire_held,
+		"dash_pressed": Input.is_action_just_pressed("dash") or _mobile_dash_queued,
+		"reload_pressed": Input.is_action_just_pressed("reload") or _mobile_reload_queued,
 		"device": last_device
 	}
+	_mobile_dash_queued = false
+	_mobile_reload_queued = false
+	return snapshot
+
+func set_mobile_move(value: Vector2) -> void:
+	_mobile_move = value.limit_length(1.0)
+	_mark_touch_device()
+
+func set_mobile_aim(value: Vector2) -> void:
+	if value.length_squared() > 0.001:
+		_mobile_aim = value.normalized()
+	_mark_touch_device()
+
+func set_mobile_fire(held: bool) -> void:
+	_mobile_fire_held = held
+	_mark_touch_device()
+
+func pulse_mobile_dash() -> void:
+	_mobile_dash_queued = true
+	_mark_touch_device()
+
+func pulse_mobile_reload() -> void:
+	_mobile_reload_queued = true
+	_mark_touch_device()
+
+func clear_mobile_state() -> void:
+	_mobile_move = Vector2.ZERO
+	_mobile_fire_held = false
+	_mobile_dash_queued = false
+	_mobile_reload_queued = false
+
+func _mark_touch_device() -> void:
+	if last_device != &"touch":
+		last_device = &"touch"
+		device_changed.emit(last_device)
 
 func rebind_action(action: StringName, event: InputEvent, clear_existing := true) -> bool:
 	if not InputMap.has_action(action):
