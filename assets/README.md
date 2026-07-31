@@ -1,8 +1,3 @@
 # Assets
 
-Production art, audio, fonts and effects are organized under this directory.
-
-- `art/`: characters, enemies, tiles, UI, VFX and icons
-- `audio/`: music, weapons, impacts, ambience and UI sounds
-
-Source files and export files must be separated when external artists are added.
+P1 uses procedurally generated placeholder audio and vector programmer art so the prototype has no production-asset dependency. Production art and audio begin only after their milestone gates.

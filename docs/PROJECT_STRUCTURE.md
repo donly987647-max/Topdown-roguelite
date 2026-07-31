@@ -1,27 +1,16 @@
-# Project structure
+# Project Structure
 
-## Root services
+- `autoload/`: cross-system services only.
+- `core/`: shared constants and non-node types.
+- `scripts/input/`: device-neutral command model and rebinding.
+- `scripts/player/`: player motion and state ownership.
+- `scripts/combat/`: damage and health contracts.
+- `scripts/weapons/`: weapon behavior.
+- `scripts/projectiles/`: projectile data and continuous collision.
+- `scripts/enemies/`: role-specific enemy behavior.
+- `scripts/world/`: handmade room ownership and hazards.
+- `scripts/camera/`, `scripts/ui/`, `scripts/vfx/`: presentation domains.
+- `tests/`: headless automated checks.
+- `tools/`: repository validation and production utilities.
 
-- `autoload/EventBus`: cross-system signals only
-- `autoload/GameState`: current build stage and run-level lifecycle state
-- `core/`: constants and non-node shared types
-
-## Runtime domains
-
-- `scenes/`: composed Godot scenes
-- `scripts/`: behavior grouped by gameplay domain
-- `data/`: typed Godot resources and balance definitions
-- `assets/`: production art and audio
-- `tests/`: automated smoke, unit and integration checks
-- `tools/`: validation and content-pipeline scripts
-
-## Planned scene tree boundaries
-
-1. Application flow
-2. Run controller
-3. Room graph controller
-4. Combat world
-5. UI layer
-6. Save and settings services
-
-No gameplay system may directly depend on the archived HTML prototype.
+No gameplay system may depend on the archived HTML prototype.

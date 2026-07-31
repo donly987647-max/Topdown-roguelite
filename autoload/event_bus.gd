@@ -1,11 +1,11 @@
 extends Node
-## Central signal hub. Keep systems decoupled by routing cross-system events here.
 
-signal build_stage_changed(stage: int)
-signal run_started(seed: int)
-signal run_ended(result: Dictionary)
-signal room_entered(room_id: StringName)
-signal room_cleared(room_id: StringName)
-signal player_damaged(amount: float, source_id: StringName)
-signal player_died
-signal pause_requested(paused: bool)
+signal player_spawned(player: Node)
+signal player_stats_changed(snapshot: Dictionary)
+signal ammo_changed(current: int, capacity: int, reloading: bool)
+signal enemy_count_changed(count: int)
+signal hit_landed(position: Vector2, strength: float, critical: bool)
+signal player_damaged(amount: float, source_position: Vector2)
+signal precision_dodge(position: Vector2)
+signal screen_shake(strength: float, source_position: Vector2)
+signal run_reset_requested

@@ -1,21 +1,8 @@
-# Godot generated files
 .godot/
 .import/
-export.cfg
-export_credentials.cfg
-
-# Builds
+*.tmp
+*.log
 builds/
 exports/
-*.pck
-*.zip
-
-# IDE / OS
-.vscode/
-.idea/
 .DS_Store
 Thumbs.db
-
-# Local test output
-reports/
-*.log

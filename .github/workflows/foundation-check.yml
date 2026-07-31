@@ -1,10 +1,11 @@
-name: Foundation Check
+name: Godot P1 Check
 
 on:
   push:
     branches: [godot-main]
   pull_request:
     branches: [godot-main]
+  workflow_dispatch:
 
 jobs:
   validate:
@@ -16,19 +17,105 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Validate repository structure
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Validate repository and GDD constants
         run: python tools/validate_project.py
 
       - name: Download Godot 4.6.3
         run: |
-          curl -L --fail --retry 3 \
-            -o godot.zip \
-            https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_linux.x86_64.zip
+          curl -L --fail --retry 3 -o godot.zip https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_linux.x86_64.zip
           unzip -q godot.zip
           chmod +x Godot_v4.6.3-stable_linux.x86_64
 
       - name: Import project headlessly
         run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --editor --quit
 
-      - name: Run foundation smoke test
-        run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/smoke_test.gd
+      - name: Run P1 automated tests
+        run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p1_test_runner.gd
+
+      - name: Install Godot export templates
+        run: |
+          curl -L --fail --retry 3 -o templates.tpz https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_export_templates.tpz
+          unzip -q templates.tpz
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.6.3.stable"
+          cp -R templates/. "$HOME/.local/share/godot/export_templates/4.6.3.stable/"
+
+      - name: Capture P1 resolution comparison
+        run: |
+          mkdir -p builds/captures
+          xvfb-run -a ./Godot_v4.6.3-stable_linux.x86_64 --path . --script res://tools/capture_p1_scale.gd
+          test -s builds/captures/p1_640x360.png
+          test -s builds/captures/p1_960x540.png
+
+      - name: Upload P1 resolution captures
+        uses: actions/upload-artifact@v4
+        with:
+          name: LastMagazine-P1-Resolution-Captures
+          path: builds/captures/
+          if-no-files-found: error
+
+      - name: Export Windows P1 build
+        run: |
+          mkdir -p builds/windows
+          ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --export-release "Windows Desktop" builds/windows/LastMagazine_P1.exe
+
+      - name: Upload Windows P1 build
+        uses: actions/upload-artifact@v4
+        with:
+          name: LastMagazine-P1-Windows
+          path: builds/windows/
+          if-no-files-found: error
+
+      - name: Install Android SDK components
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" \
+            "platform-tools" \
+            "build-tools;35.0.1" \
+            "platforms;android-35" \
+            "cmdline-tools;latest" \
+            "cmake;3.10.2.4988404" \
+            "ndk;28.1.13356709"
+
+      - name: Configure Godot Android export
+        run: |
+          mkdir -p "$HOME/.config/godot"
+          keytool -keyalg RSA -genkeypair \
+            -alias androiddebugkey \
+            -keypass android \
+            -keystore android_debug.keystore \
+            -storepass android \
+            -dname "CN=Android Debug,O=LAST MAGAZINE,C=KR" \
+            -validity 10000 \
+            -deststoretype pkcs12
+          printf '%s\n' \
+            '[gd_resource type="EditorSettings" format=3]' \
+            '' \
+            '[resource]' \
+            "export/android/java_sdk_path = \"$JAVA_HOME\"" \
+            "export/android/android_sdk_path = \"$ANDROID_HOME\"" \
+            "export/android/debug_keystore = \"$GITHUB_WORKSPACE/android_debug.keystore\"" \
+            'export/android/debug_keystore_user = "androiddebugkey"' \
+            'export/android/debug_keystore_pass = "android"' \
+            > "$HOME/.config/godot/editor_settings-4.6.tres"
+
+      - name: Export Android P1 mobile validation APK
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ github.workspace }}/android_debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+        run: |
+          mkdir -p builds/android
+          ./Godot_v4.6.3-stable_linux.x86_64 --verbose --headless --path . --export-debug "Android" builds/android/LastMagazine_P1_Mobile.apk
+          test -s builds/android/LastMagazine_P1_Mobile.apk
+
+      - name: Upload Android P1 mobile validation APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: LastMagazine-P1-Android
+          path: builds/android/LastMagazine_P1_Mobile.apk
+          if-no-files-found: error
