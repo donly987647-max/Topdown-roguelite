@@ -24,6 +24,9 @@ enum FireMode {
 @export var burst_count := 1
 @export var burst_interval := 0.08
 @export var burst_recovery := 0.32
+@export var max_power := 8
+@export var max_weight := 6.0
+@export_range(0.0, 1.0, 0.01) var stability := 0.80
 
 func duplicate_frame() -> WeaponFrameData:
 	return duplicate(true) as WeaponFrameData
@@ -46,6 +49,12 @@ func validate_contract() -> PackedStringArray:
 		errors.append("projectile_speed must be positive")
 	if pellet_count <= 0:
 		errors.append("pellet_count must be positive")
+	if max_power <= 0:
+		errors.append("max_power must be positive")
+	if max_weight <= 0.0:
+		errors.append("max_weight must be positive")
+	if stability < 0.0 or stability > 1.0:
+		errors.append("stability must be between zero and one")
 	if fire_mode == FireMode.BURST and burst_count < 2:
 		errors.append("burst mode requires at least two shots")
 	if fire_mode == FireMode.SHOTGUN and pellet_count < 2:
