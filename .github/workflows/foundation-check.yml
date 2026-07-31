@@ -59,6 +59,12 @@ jobs:
       - name: Run P2 loadout persistence tests
         run: timeout --signal=TERM 30s ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_loadout_persistence_test_runner.gd
 
+      - name: Run P2 eight-room route data tests
+        run: timeout --signal=TERM 30s ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_route_test_runner.gd
+
+      - name: Run P2 live room transition tests
+        run: timeout --signal=TERM 30s ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_route_runtime_test_runner.gd
+
       - name: Install Godot export templates
         run: |
           curl -L --fail --retry 3 -o templates.tpz https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_export_templates.tpz
