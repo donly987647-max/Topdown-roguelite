@@ -1,4 +1,4 @@
-name: Godot P1 Check
+name: Godot Core Validation
 
 on:
   push:
@@ -34,8 +34,11 @@ jobs:
       - name: Import project headlessly
         run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --editor --quit
 
-      - name: Run P1 automated tests
+      - name: Run P1 regression tests
         run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p1_test_runner.gd
+
+      - name: Run P2 weapon-frame tests
+        run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_weapon_test_runner.gd
 
       - name: Install Godot export templates
         run: |
@@ -44,29 +47,28 @@ jobs:
           mkdir -p "$HOME/.local/share/godot/export_templates/4.6.3.stable"
           cp -R templates/. "$HOME/.local/share/godot/export_templates/4.6.3.stable/"
 
-      - name: Capture P1 resolution comparison
+      - name: Capture current 960x540 prototype view
         run: |
           mkdir -p builds/captures
           xvfb-run -a ./Godot_v4.6.3-stable_linux.x86_64 --path . --script res://tools/capture_p1_scale.gd
-          test -s builds/captures/p1_640x360.png
           test -s builds/captures/p1_960x540.png
 
-      - name: Upload P1 resolution captures
+      - name: Upload prototype captures
         uses: actions/upload-artifact@v4
         with:
-          name: LastMagazine-P1-Resolution-Captures
+          name: LastMagazine-P2-Weapon-Captures
           path: builds/captures/
           if-no-files-found: error
 
-      - name: Export Windows P1 build
+      - name: Export Windows P2 weapon build
         run: |
           mkdir -p builds/windows
-          ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --export-release "Windows Desktop" builds/windows/LastMagazine_P1.exe
+          ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --export-release "Windows Desktop" builds/windows/LastMagazine_P2_Weapons.exe
 
-      - name: Upload Windows P1 build
+      - name: Upload Windows P2 weapon build
         uses: actions/upload-artifact@v4
         with:
-          name: LastMagazine-P1-Windows
+          name: LastMagazine-P2-Weapon-Windows
           path: builds/windows/
           if-no-files-found: error
 
@@ -103,19 +105,19 @@ jobs:
             'export/android/debug_keystore_pass = "android"' \
             > "$HOME/.config/godot/editor_settings-4.6.tres"
 
-      - name: Export Android P1 mobile validation APK
+      - name: Export Android P2 weapon APK
         env:
           GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ github.workspace }}/android_debug.keystore
           GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
           GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
         run: |
           mkdir -p builds/android
-          ./Godot_v4.6.3-stable_linux.x86_64 --verbose --headless --path . --export-debug "Android" builds/android/LastMagazine_P1_Mobile.apk
-          test -s builds/android/LastMagazine_P1_Mobile.apk
+          ./Godot_v4.6.3-stable_linux.x86_64 --verbose --headless --path . --export-debug "Android" builds/android/LastMagazine_P2_Weapons.apk
+          test -s builds/android/LastMagazine_P2_Weapons.apk
 
-      - name: Upload Android P1 mobile validation APK
+      - name: Upload Android P2 weapon APK
         uses: actions/upload-artifact@v4
         with:
-          name: LastMagazine-P1-Android
-          path: builds/android/LastMagazine_P1_Mobile.apk
+          name: LastMagazine-P2-Weapon-Android
+          path: builds/android/LastMagazine_P2_Weapons.apk
           if-no-files-found: error
