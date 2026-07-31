@@ -254,12 +254,12 @@ func get_display_name() -> String:
 
 func _loadout_for_frame(frame_id: StringName) -> Array[WeaponPartData]:
 	if _parts_by_frame.has(frame_id):
-		return _duplicate_parts(_parts_by_frame[frame_id] as Array[WeaponPartData])
+		return _duplicate_parts(_parts_by_frame[frame_id])
 	return WeaponPartCatalog.prototype_loadout_for(frame_id)
 
-func _duplicate_parts(parts: Array[WeaponPartData]) -> Array[WeaponPartData]:
+func _duplicate_parts(parts: Array) -> Array[WeaponPartData]:
 	var result: Array[WeaponPartData] = []
-	for part in parts:
-		if part != null:
-			result.append(part.duplicate_part())
+	for value in parts:
+		if value is WeaponPartData:
+			result.append((value as WeaponPartData).duplicate_part())
 	return result
