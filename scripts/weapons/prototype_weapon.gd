@@ -4,6 +4,7 @@ extends Node2D
 signal ammo_state_changed(current: int, capacity: int, reloading: bool)
 signal frame_changed(frame_id: StringName, display_name: String)
 signal build_changed(snapshot: Dictionary)
+signal weapon_misfired(chance: float)
 
 var wielder: Node2D
 var frame: WeaponFrameData
@@ -73,6 +74,10 @@ func try_fire() -> bool:
 		return false
 	if current_ammo < _ammo_cost():
 		start_reload()
+		return false
+	if _roll_misfire():
+		fire_cooldown = maxf(0.08, _statf("fire_interval", frame.fire_interval) * 0.5)
+		weapon_misfired.emit(float(_effects().get("misfire_chance", 0.0)))
 		return false
 	if frame.fire_mode == WeaponFrameData.FireMode.BURST:
 		var available_rounds := floori(float(current_ammo) / float(_ammo_cost()))
@@ -172,6 +177,10 @@ func _round_damage_multiplier() -> float:
 		return 1.0
 	return maxf(0.10, 1.0 - float(_last_round_index) * decay)
 
+func _roll_misfire() -> bool:
+	var chance := float(_effects().get("misfire_chance", 0.0))
+	return chance > 0.0 and randf() < chance
+
 func _capacity() -> int:
 	return _stati("magazine_capacity", frame.magazine_capacity if frame != null else 1)
 
@@ -205,7 +214,8 @@ func get_snapshot() -> Dictionary:
 		"reloading": reload_remaining > 0.0,
 		"reload_progress": 1.0 - clampf(reload_remaining / reload_time, 0.0, 1.0),
 		"fire_mode": frame.fire_mode,
-		"parts": get_build_snapshot().get("part_ids", PackedStringArray())
+		"parts": get_build_snapshot().get("part_ids", PackedStringArray()),
+		"overload": build.get("overload", {}).duplicate(true)
 	}
 
 func get_build_snapshot() -> Dictionary:
@@ -220,9 +230,20 @@ func get_build_snapshot() -> Dictionary:
 		"part_names": part_names,
 		"power_cost": int(build.get("power_cost", 0)),
 		"weight": float(build.get("weight", 0.0)),
+		"limits": build.get("limits", {}).duplicate(true),
+		"overload": build.get("overload", {}).duplicate(true),
 		"stats": _stats().duplicate(true),
 		"effects": _effects().duplicate(true)
 	}
+
+func get_move_speed_multiplier() -> float:
+	return float(_effects().get("move_speed_multiplier", 1.0))
+
+func get_dash_distance_multiplier() -> float:
+	return float(_effects().get("dash_distance_multiplier", 1.0))
+
+func get_swap_speed_multiplier() -> float:
+	return float(_effects().get("swap_speed_multiplier", 1.0))
 
 func get_display_name() -> String:
 	return frame.display_name if frame != null else "NO WEAPON"
