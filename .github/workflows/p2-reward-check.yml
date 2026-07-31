@@ -1,0 +1,26 @@
+name: P2 Reward Flow Validation
+
+on:
+  push:
+    branches: [agent/p2-core-loop]
+  pull_request:
+    branches: [godot-main]
+  workflow_dispatch:
+
+jobs:
+  reward-flow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Godot 4.6.3
+        run: |
+          curl -L --fail --retry 3 -o godot.zip https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          chmod +x Godot_v4.6.3-stable_linux.x86_64
+
+      - name: Import project headlessly
+        run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --editor --quit
+
+      - name: Run room reward flow tests
+        run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_reward_test_runner.gd
