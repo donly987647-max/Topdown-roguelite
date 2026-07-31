@@ -12,13 +12,17 @@ required = [
     'scripts/weapons/weapon_build_calculator.gd', 'scripts/weapons/prototype_weapon.gd',
     'scripts/rewards/weapon_part_reward_picker.gd',
     'scripts/inventory/backpack_item_data.gd', 'scripts/inventory/backpack_grid.gd',
+    'scripts/routes/route_room_data.gd', 'scripts/routes/prototype_route_run.gd',
     'scripts/projectiles/projectile.gd', 'scripts/projectiles/projectile_data.gd',
     'scripts/enemies/training_gunner.gd', 'scripts/world/test_room.gd',
     'scripts/camera/combat_camera.gd', 'scripts/ui/mobile_touch_controls.gd',
     'scripts/ui/weapon_reward_panel.gd', 'scripts/ui/backpack_cell.gd',
-    'scripts/ui/backpack_panel.gd',
+    'scripts/ui/backpack_panel.gd', 'scripts/ui/route_choice_panel.gd',
+    'scripts/ui/route_status_panel.gd',
     'tests/p1_test_runner.gd', 'tests/p2_weapon_test_runner.gd',
-    'tests/p2_reward_test_runner.gd', 'tests/p2_inventory_test_runner.gd'
+    'tests/p2_reward_test_runner.gd', 'tests/p2_inventory_test_runner.gd',
+    'tests/p2_loadout_persistence_test_runner.gd', 'tests/p2_route_test_runner.gd',
+    'tests/p2_route_runtime_test_runner.gd'
 ]
 missing = [p for p in required if not (root / p).exists()]
 if missing:
@@ -138,19 +142,54 @@ for literal in [
     if literal not in backpack_panel:
         raise SystemExit('P2 backpack UI contract missing: ' + literal)
 
+route_data = (root / 'scripts/routes/route_room_data.gd').read_text(encoding='utf-8')
+for literal in ['enum RoomType', 'COMBAT', 'ELITE', 'BOSS_GATE', 'enemy_health_multiplier', 'enemy_damage_multiplier', 'reward_tier']:
+    if literal not in route_data:
+        raise SystemExit('P2 route room data contract missing: ' + literal)
+
+route_run = (root / 'scripts/routes/prototype_route_run.gd').read_text(encoding='utf-8')
+for literal in [
+    'TOTAL_ROOMS := 8', 'get_next_options', 'choose_next', 'get_progress_snapshot',
+    '&"assembly_entry"', '&"crusher_bypass"', '&"overclocked_cell"',
+    '&"foreman_gate"', '&"gr01_antechamber"'
+]:
+    if literal not in route_run:
+        raise SystemExit('P2 eight-room route contract missing: ' + literal)
+
+route_panel = (root / 'scripts/ui/route_choice_panel.gd').read_text(encoding='utf-8')
+for literal in ['RESTART_ID', 'SELECT NEXT ROUTE', 'ROUTE COMPLETE', 'KEY_1', 'KEY_2', 'route_selected']:
+    if literal not in route_panel:
+        raise SystemExit('P2 route choice UI contract missing: ' + literal)
+
+route_status = (root / 'scripts/ui/route_status_panel.gd').read_text(encoding='utf-8')
+for literal in ['update_progress', 'ROOM %d/%d', 'current_room']:
+    if literal not in route_status:
+        raise SystemExit('P2 route status HUD contract missing: ' + literal)
+
 room = (root / 'scripts/world/test_room.gd').read_text(encoding='utf-8')
-for literal in ['reward_requested', '_active_enemy_count', '_offer_reward', 'can_open_inventory']:
+for literal in [
+    'reward_requested', 'room_cleared', '_active_enemy_count', '_offer_reward',
+    'can_open_inventory', 'configure(profile', 'carried_player', 'enemy_health_multiplier',
+    'enemy_damage_multiplier', 'BOSS_GATE'
+]:
     if literal not in room:
-        raise SystemExit('P2 room reward or inventory connection missing: ' + literal)
+        raise SystemExit('P2 route-aware room contract missing: ' + literal)
+
+enemy = (root / 'scripts/enemies/training_gunner.gd').read_text(encoding='utf-8')
+for literal in ['health_multiplier', 'damage_multiplier', 'elite_rank', 'data.damage = 10.0 *']:
+    if literal not in enemy:
+        raise SystemExit('P2 route threat scaling missing: ' + literal)
 
 main = (root / 'scripts/main/main.gd').read_text(encoding='utf-8')
 for literal in [
     'WeaponRewardPanel', '_on_reward_requested', 'WeaponPartRewardPicker.replace_slot',
     'BackpackGrid.new', 'BackpackPanel.new', '_on_backpack_equip_requested',
-    'add_and_auto_place', 'inventory_requested'
+    'add_and_auto_place', 'inventory_requested', 'PrototypeRouteRun.new',
+    'RouteChoicePanel.new', '_transition_to_room', 'route_run.choose_next',
+    'route_status.update_progress'
 ]:
     if literal not in main:
-        raise SystemExit('P2 reward or backpack connection missing: ' + literal)
+        raise SystemExit('P2 reward, backpack or route connection missing: ' + literal)
 
 mobile = (root / 'scripts/ui/mobile_touch_controls.gd').read_text(encoding='utf-8')
 for literal in [
@@ -169,4 +208,4 @@ exports = (root / 'export_presets.cfg').read_text(encoding='utf-8')
 if 'name="Android"' not in exports:
     raise SystemExit('Android export preset missing')
 
-print('P1 regression and P2 weapon, overload, reward and 6x5 backpack structure validated.')
+print('P1 regression and P2 weapon, overload, reward, backpack and eight-room route structure validated.')
