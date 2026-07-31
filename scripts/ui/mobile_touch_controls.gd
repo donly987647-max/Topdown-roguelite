@@ -15,10 +15,12 @@ var _aim_center := Vector2.ZERO
 var _dash_center := Vector2.ZERO
 var _reload_center := Vector2.ZERO
 var _weapon_center := Vector2.ZERO
+var _bag_center := Vector2.ZERO
 var _last_viewport_size := Vector2.ZERO
 var _dash_label: Label
 var _reload_label: Label
 var _weapon_label: Label
+var _bag_label: Label
 var _hint_label: Label
 
 func _ready() -> void:
@@ -50,6 +52,10 @@ func _input(event: InputEvent) -> void:
 
 func _handle_touch(event: InputEventScreenTouch) -> void:
 	if event.pressed:
+		if event.position.distance_to(_bag_center) <= BUTTON_RADIUS * 1.10:
+			EventBus.inventory_requested.emit()
+			accept_event()
+			return
 		if event.position.distance_to(_dash_center) <= BUTTON_RADIUS * 1.25:
 			InputRouter.pulse_mobile_dash()
 			accept_event()
@@ -133,12 +139,15 @@ func _update_layout(force := false) -> void:
 	_dash_center = Vector2(viewport_size.x - 304.0, bottom - 4.0)
 	_reload_center = Vector2(viewport_size.x - 228.0, bottom - 116.0)
 	_weapon_center = Vector2(viewport_size.x - 400.0, bottom - 116.0)
+	_bag_center = Vector2(72.0, 68.0)
 	if _dash_label != null:
 		_dash_label.position = _dash_center - Vector2(50.0, 15.0)
 	if _reload_label != null:
 		_reload_label.position = _reload_center - Vector2(50.0, 15.0)
 	if _weapon_label != null:
 		_weapon_label.position = _weapon_center - Vector2(50.0, 15.0)
+	if _bag_label != null:
+		_bag_label.position = _bag_center - Vector2(50.0, 15.0)
 	if _hint_label != null:
 		_hint_label.position = Vector2(viewport_size.x * 0.5 - 180.0, viewport_size.y - 32.0)
 	queue_redraw()
@@ -147,6 +156,7 @@ func _create_labels() -> void:
 	_dash_label = _make_label("DASH", 18)
 	_reload_label = _make_label("RELOAD", 15)
 	_weapon_label = _make_label("WEAPON", 14)
+	_bag_label = _make_label("BAG", 15)
 	_hint_label = _make_label("LEFT: MOVE    RIGHT: AIM / AUTO FIRE", 13)
 	_hint_label.modulate = Color(1, 1, 1, 0.62)
 
@@ -170,6 +180,7 @@ func _draw() -> void:
 	_draw_button(_dash_center, Color("6de7ef"))
 	_draw_button(_reload_center, Color("c7a7ff"))
 	_draw_button(_weapon_center, Color("ff8b72"))
+	_draw_button(_bag_center, Color("69e79a"))
 
 func _draw_stick(center: Vector2, vector: Vector2, accent: Color) -> void:
 	draw_circle(center, STICK_RADIUS, Color(0.02, 0.04, 0.06, 0.42))
