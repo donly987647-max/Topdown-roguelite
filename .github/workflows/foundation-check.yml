@@ -40,6 +40,12 @@ jobs:
       - name: Run P2 weapon-frame tests
         run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_weapon_test_runner.gd
 
+      - name: Run P2 room reward tests
+        run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_reward_test_runner.gd
+
+      - name: Run P2 backpack tests
+        run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_inventory_test_runner.gd
+
       - name: Install Godot export templates
         run: |
           curl -L --fail --retry 3 -o templates.tpz https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_export_templates.tpz
@@ -56,19 +62,19 @@ jobs:
       - name: Upload prototype captures
         uses: actions/upload-artifact@v4
         with:
-          name: LastMagazine-P2-Weapon-Captures
+          name: LastMagazine-P2-Core-Captures
           path: builds/captures/
           if-no-files-found: error
 
-      - name: Export Windows P2 weapon build
+      - name: Export Windows P2 core build
         run: |
           mkdir -p builds/windows
-          ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --export-release "Windows Desktop" builds/windows/LastMagazine_P2_Weapons.exe
+          ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --export-release "Windows Desktop" builds/windows/LastMagazine_P2_Core.exe
 
-      - name: Upload Windows P2 weapon build
+      - name: Upload Windows P2 core build
         uses: actions/upload-artifact@v4
         with:
-          name: LastMagazine-P2-Weapon-Windows
+          name: LastMagazine-P2-Core-Windows
           path: builds/windows/
           if-no-files-found: error
 
@@ -105,19 +111,19 @@ jobs:
             'export/android/debug_keystore_pass = "android"' \
             > "$HOME/.config/godot/editor_settings-4.6.tres"
 
-      - name: Export Android P2 weapon APK
+      - name: Export Android P2 core APK
         env:
           GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ github.workspace }}/android_debug.keystore
           GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
           GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
         run: |
           mkdir -p builds/android
-          ./Godot_v4.6.3-stable_linux.x86_64 --verbose --headless --path . --export-debug "Android" builds/android/LastMagazine_P2_Weapons.apk
-          test -s builds/android/LastMagazine_P2_Weapons.apk
+          ./Godot_v4.6.3-stable_linux.x86_64 --verbose --headless --path . --export-debug "Android" builds/android/LastMagazine_P2_Core.apk
+          test -s builds/android/LastMagazine_P2_Core.apk
 
-      - name: Upload Android P2 weapon APK
+      - name: Upload Android P2 core APK
         uses: actions/upload-artifact@v4
         with:
-          name: LastMagazine-P2-Weapon-Android
-          path: builds/android/LastMagazine_P2_Weapons.apk
+          name: LastMagazine-P2-Core-Android
+          path: builds/android/LastMagazine_P2_Core.apk
           if-no-files-found: error
