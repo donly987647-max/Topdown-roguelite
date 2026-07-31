@@ -6,6 +6,10 @@ const PREFERRED_DISTANCE := 250.0
 const DETECTION_RANGE := 700.0
 const TELEGRAPH_TIME := 0.65
 const ATTACK_COOLDOWN := 1.45
+const BURN_THRESHOLD := 100.0
+const BURN_DURATION := 3.0
+const BURN_TICK_INTERVAL := 0.5
+const BURN_TICK_DAMAGE := 3.0
 
 var target: PlayerController
 var health_component: HealthComponent
@@ -13,6 +17,10 @@ var _attack_cooldown := 0.8
 var _telegraph_remaining := 0.0
 var _strafe_sign := 1.0
 var _flash_remaining := 0.0
+var _burn_buildup := 0.0
+var _burn_remaining := 0.0
+var _burn_tick_remaining := 0.0
+var _burn_source: Node
 var spawn_index := 0
 
 func _ready() -> void:
@@ -35,6 +43,7 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_flash_remaining = maxf(0.0, _flash_remaining - delta)
+	_process_status(delta)
 	if target == null or not is_instance_valid(target):
 		target = get_tree().get_first_node_in_group("player") as PlayerController
 		return
@@ -111,6 +120,37 @@ func receive_projectile(packet: DamagePacket, direction: Vector2) -> bool:
 		return true
 	return false
 
+func apply_status_buildup(status_type: StringName, amount: float, source: Node) -> void:
+	if status_type != &"burn" or amount <= 0.0:
+		return
+	_burn_buildup += amount
+	while _burn_buildup >= BURN_THRESHOLD:
+		_burn_buildup -= BURN_THRESHOLD
+		_burn_remaining = maxf(_burn_remaining, BURN_DURATION)
+		_burn_tick_remaining = minf(_burn_tick_remaining, 0.08) if _burn_tick_remaining > 0.0 else 0.08
+		_burn_source = source
+	queue_redraw()
+
+func _process_status(delta: float) -> void:
+	if _burn_remaining <= 0.0:
+		return
+	_burn_remaining = maxf(0.0, _burn_remaining - delta)
+	_burn_tick_remaining -= delta
+	if _burn_tick_remaining > 0.0:
+		return
+	_burn_tick_remaining += BURN_TICK_INTERVAL
+	var packet := DamagePacket.new()
+	packet.amount = BURN_TICK_DAMAGE
+	packet.attack_id = StringName("burn:%s:%s" % [get_instance_id(), Time.get_ticks_msec()])
+	packet.source = _burn_source
+	packet.source_position = global_position
+	packet.team = &"player"
+	var result := health_component.apply_damage(packet, true)
+	if bool(result.accepted):
+		GameState.damage_dealt += packet.amount
+		_flash_remaining = 0.06
+		queue_redraw()
+
 func _on_damaged(_amount: float, _source: Vector2) -> void:
 	_flash_remaining = 0.09
 	queue_redraw()
@@ -121,9 +161,13 @@ func _on_died(_packet: DamagePacket) -> void:
 
 func _draw() -> void:
 	var color := Color("ffffff") if _flash_remaining > 0.0 else Color("ff536d")
+	if _burn_remaining > 0.0 and _flash_remaining <= 0.0:
+		color = Color("ff8a3d")
 	var points := PackedVector2Array([Vector2(0, -15), Vector2(13, 9), Vector2(0, 14), Vector2(-13, 9)])
 	draw_colored_polygon(points, Color(0.08, 0.04, 0.06, 0.95))
 	draw_polyline(PackedVector2Array([points[0], points[1], points[2], points[3], points[0]]), color, 3.0)
+	if _burn_remaining > 0.0:
+		draw_arc(Vector2.ZERO, 18.0, 0.0, TAU, 24, Color("ff8a3d"), 2.0)
 	if target != null:
 		var direction := (target.global_position - global_position).normalized()
 		draw_line(Vector2.ZERO, direction * 18.0, color, 3.0)
