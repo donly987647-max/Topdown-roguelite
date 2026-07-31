@@ -1,6 +1,8 @@
 class_name TestCombatRoom
 extends Node2D
 
+signal reward_requested(options: Array)
+
 const ROOM_RECT := Rect2(Vector2(-320.0, -192.0), Vector2(640.0, 384.0))
 const SAFE_RECT := Rect2(Vector2(-294.0, -166.0), Vector2(588.0, 332.0))
 const PLAYER_SPAWN := Vector2(-220.0, 0.0)
@@ -9,6 +11,8 @@ const OBSTACLES := [Rect2(Vector2(-38.0, -72.0), Vector2(76.0, 144.0)), Rect2(Ve
 const HAZARDS := [Rect2(Vector2(-150.0, 82.0), Vector2(70.0, 62.0))]
 
 var player: PlayerController
+var _reward_offered := false
+var _last_enemy_count := -1
 
 func _ready() -> void:
 	add_to_group("room_controller")
@@ -39,7 +43,29 @@ func _process(_delta: float) -> void:
 	_update_enemy_count()
 
 func _update_enemy_count() -> void:
-	EventBus.enemy_count_changed.emit(get_tree().get_nodes_in_group("enemy").size())
+	var count := _active_enemy_count()
+	if count != _last_enemy_count:
+		_last_enemy_count = count
+		EventBus.enemy_count_changed.emit(count)
+	if count == 0 and not _reward_offered and is_instance_valid(player):
+		_reward_offered = true
+		_offer_reward.call_deferred()
+
+func _active_enemy_count() -> int:
+	var count := 0
+	for child in get_children():
+		if child.is_in_group("enemy") and not child.is_queued_for_deletion():
+			count += 1
+	return count
+
+func _offer_reward() -> void:
+	if not is_instance_valid(player) or player.weapon == null:
+		return
+	var excluded := WeaponPartRewardPicker.equipped_ids(player.weapon.equipped_parts)
+	var options := WeaponPartRewardPicker.roll_options(3, excluded)
+	if options.size() < 3:
+		options = WeaponPartRewardPicker.roll_options(3)
+	reward_requested.emit(options)
 
 func correct_dash_direction(start: Vector2, desired_direction: Vector2, distance: float) -> Vector2:
 	if GameState.high_difficulty_hazard_correction_disabled:
