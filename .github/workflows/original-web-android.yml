@@ -75,6 +75,8 @@ jobs:
             "build-tools;35.0.1" \
             "emulator" \
             "system-images;android-35;google_apis;x86_64"
+          test -x "$ANDROID_HOME/emulator/emulator"
+          "$ANDROID_HOME/emulator/emulator" -version
 
       - uses: gradle/actions/setup-gradle@v4
         with:
@@ -117,7 +119,7 @@ jobs:
             --package "system-images;android-35;google_apis;x86_64" \
             --device "pixel_6"
 
-          emulator \
+          "$ANDROID_HOME/emulator/emulator" \
             -avd last-magazine-api35 \
             -no-window \
             -no-audio \
