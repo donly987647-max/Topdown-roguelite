@@ -11,12 +11,14 @@ required = [
     'scripts/weapons/weapon_part_data.gd', 'scripts/weapons/weapon_part_catalog.gd',
     'scripts/weapons/weapon_build_calculator.gd', 'scripts/weapons/prototype_weapon.gd',
     'scripts/rewards/weapon_part_reward_picker.gd',
+    'scripts/inventory/backpack_item_data.gd', 'scripts/inventory/backpack_grid.gd',
     'scripts/projectiles/projectile.gd', 'scripts/projectiles/projectile_data.gd',
     'scripts/enemies/training_gunner.gd', 'scripts/world/test_room.gd',
     'scripts/camera/combat_camera.gd', 'scripts/ui/mobile_touch_controls.gd',
-    'scripts/ui/weapon_reward_panel.gd',
+    'scripts/ui/weapon_reward_panel.gd', 'scripts/ui/backpack_cell.gd',
+    'scripts/ui/backpack_panel.gd',
     'tests/p1_test_runner.gd', 'tests/p2_weapon_test_runner.gd',
-    'tests/p2_reward_test_runner.gd'
+    'tests/p2_reward_test_runner.gd', 'tests/p2_inventory_test_runner.gd'
 ]
 missing = [p for p in required if not (root / p).exists()]
 if missing:
@@ -113,28 +115,58 @@ for literal in ['part_selected', 'KEY_1', 'KEY_2', 'KEY_3', 'get_tree().paused =
     if literal not in reward_panel:
         raise SystemExit('P2 reward UI contract missing: ' + literal)
 
+backpack_item = (root / 'scripts/inventory/backpack_item_data.gd').read_text(encoding='utf-8')
+for literal in ['base_cells', 'cells_for_rotation', 'connector_types', 'precision_barrel', 'compressed_magazine', 'clone_core']:
+    if literal not in backpack_item:
+        raise SystemExit('P2 backpack item profile missing: ' + literal)
+
+backpack_grid = (root / 'scripts/inventory/backpack_grid.gd').read_text(encoding='utf-8')
+for literal in [
+    'WIDTH := 6', 'HEIGHT := 5', 'can_place', 'place_item', 'rotate_item',
+    'auto_place', 'auto_arrange', 'create_snapshot', 'restore_snapshot',
+    'evaluate_connections', 'TERMINAL_CELLS'
+]:
+    if literal not in backpack_grid:
+        raise SystemExit('P2 backpack grid contract missing: ' + literal)
+
+backpack_panel = (root / 'scripts/ui/backpack_panel.gd').read_text(encoding='utf-8')
+for literal in [
+    'BackpackCell', 'equip_requested', 'loadout_restore_requested',
+    'ROTATE [R]', 'AUTO PLACE', 'AUTO ARRANGE', 'RESTORE',
+    'get_tree().paused = true'
+]:
+    if literal not in backpack_panel:
+        raise SystemExit('P2 backpack UI contract missing: ' + literal)
+
 room = (root / 'scripts/world/test_room.gd').read_text(encoding='utf-8')
-for literal in ['reward_requested', '_active_enemy_count', '_offer_reward']:
+for literal in ['reward_requested', '_active_enemy_count', '_offer_reward', 'can_open_inventory']:
     if literal not in room:
-        raise SystemExit('P2 room reward connection missing: ' + literal)
+        raise SystemExit('P2 room reward or inventory connection missing: ' + literal)
 
 main = (root / 'scripts/main/main.gd').read_text(encoding='utf-8')
-for literal in ['WeaponRewardPanel', '_on_reward_requested', 'WeaponPartRewardPicker.replace_slot']:
+for literal in [
+    'WeaponRewardPanel', '_on_reward_requested', 'WeaponPartRewardPicker.replace_slot',
+    'BackpackGrid.new', 'BackpackPanel.new', '_on_backpack_equip_requested',
+    'add_and_auto_place', 'inventory_requested'
+]:
     if literal not in main:
-        raise SystemExit('P2 reward equip connection missing: ' + literal)
+        raise SystemExit('P2 reward or backpack connection missing: ' + literal)
 
 mobile = (root / 'scripts/ui/mobile_touch_controls.gd').read_text(encoding='utf-8')
-for literal in ['InputEventScreenTouch', 'InputEventScreenDrag', 'pulse_mobile_dash', 'pulse_mobile_reload', 'pulse_mobile_weapon_next']:
+for literal in [
+    'InputEventScreenTouch', 'InputEventScreenDrag', 'pulse_mobile_dash',
+    'pulse_mobile_reload', 'pulse_mobile_weapon_next', 'inventory_requested', 'BAG'
+]:
     if literal not in mobile:
         raise SystemExit('Mobile control contract missing: ' + literal)
 
 input_router = (root / 'scripts/input/input_router.gd').read_text(encoding='utf-8')
-for literal in ['weapon_slot_1', 'weapon_slot_2', 'weapon_slot_3', 'weapon_next']:
+for literal in ['weapon_slot_1', 'weapon_slot_2', 'weapon_slot_3', 'weapon_next', 'inventory']:
     if literal not in input_router:
-        raise SystemExit('Weapon input action missing: ' + literal)
+        raise SystemExit('Weapon or inventory input action missing: ' + literal)
 
 exports = (root / 'export_presets.cfg').read_text(encoding='utf-8')
 if 'name="Android"' not in exports:
     raise SystemExit('Android export preset missing')
 
-print('P1 regression and P2 weapon, overload and room-reward structure validated.')
+print('P1 regression and P2 weapon, overload, reward and 6x5 backpack structure validated.')
