@@ -24,3 +24,6 @@ jobs:
 
       - name: Run 6x5 backpack tests
         run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_inventory_test_runner.gd
+
+      - name: Run frame loadout persistence tests
+        run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_loadout_persistence_test_runner.gd
