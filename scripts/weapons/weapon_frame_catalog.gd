@@ -18,6 +18,10 @@ static func service_pistol() -> WeaponFrameData:
 	data.projectile_radius = 3.0
 	data.knockback = 45.0
 	data.critical_chance = 0.05
+	# P2 prototype limits. GDD defines the system but not per-frame values.
+	data.max_power = 8
+	data.max_weight = 6.0
+	data.stability = 0.90
 	return data
 
 static func burst_carbine() -> WeaponFrameData:
@@ -39,6 +43,9 @@ static func burst_carbine() -> WeaponFrameData:
 	data.knockback = 32.0
 	data.critical_chance = 0.04
 	data.spread_degrees = 1.5
+	data.max_power = 10
+	data.max_weight = 8.0
+	data.stability = 0.82
 	return data
 
 static func breach_shotgun() -> WeaponFrameData:
@@ -58,6 +65,9 @@ static func breach_shotgun() -> WeaponFrameData:
 	data.knockback = 110.0
 	data.critical_chance = 0.03
 	data.spread_degrees = 22.0
+	data.max_power = 9
+	data.max_weight = 8.5
+	data.stability = 0.68
 	return data
 
 static func by_id(frame_id: StringName) -> WeaponFrameData:
