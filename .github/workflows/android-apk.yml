@@ -74,6 +74,32 @@ jobs:
           export/android/java_sdk_path = "$JAVA_HOME"
           EOF
 
+      - name: Prepare project for Android export
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          project = Path("godot/project.godot")
+          text = project.read_text(encoding="utf-8")
+          setting = "textures/vram_compression/import_etc2_astc=true"
+          if setting not in text:
+              marker = "[rendering]\n"
+              if marker not in text:
+                  text += f"\n[rendering]\n{setting}\n"
+              else:
+                  text = text.replace(marker, marker + setting + "\n", 1)
+          project.write_text(text, encoding="utf-8")
+
+          buses = Path("godot/default_bus_layout.tres")
+          bus_text = buses.read_text(encoding="utf-8")
+          bus_text = bus_text.replace(
+              "[gd_resource format=3]",
+              "[gd_resource type=\"AudioBusLayout\" format=3]",
+              1,
+          )
+          buses.write_text(bus_text, encoding="utf-8")
+          PY
+
       - name: Add temporary Android export preset
         run: |
           cat >> godot/export_presets.cfg <<'EOF'
