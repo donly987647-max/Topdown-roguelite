@@ -7,9 +7,14 @@ on:
     branches: [godot-main]
   workflow_dispatch:
 
+concurrency:
+  group: godot-core-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -32,19 +37,27 @@ jobs:
           chmod +x Godot_v4.6.3-stable_linux.x86_64
 
       - name: Import project headlessly
-        run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --editor --quit
+        run: |
+          set -o pipefail
+          ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --editor --quit 2>&1 | tee godot-import.log
+          if grep -E "SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script" godot-import.log; then
+            exit 1
+          fi
 
       - name: Run P1 regression tests
-        run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p1_test_runner.gd
+        run: timeout --signal=TERM 30s ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p1_test_runner.gd
 
       - name: Run P2 weapon-frame tests
-        run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_weapon_test_runner.gd
+        run: timeout --signal=TERM 30s ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_weapon_test_runner.gd
 
       - name: Run P2 room reward tests
-        run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_reward_test_runner.gd
+        run: timeout --signal=TERM 30s ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_reward_test_runner.gd
 
       - name: Run P2 backpack tests
-        run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_inventory_test_runner.gd
+        run: timeout --signal=TERM 30s ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_inventory_test_runner.gd
+
+      - name: Run P2 loadout persistence tests
+        run: timeout --signal=TERM 30s ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_loadout_persistence_test_runner.gd
 
       - name: Install Godot export templates
         run: |
@@ -56,12 +69,12 @@ jobs:
       - name: Capture current 960x540 prototype view
         run: |
           mkdir -p builds/captures
-          xvfb-run -a ./Godot_v4.6.3-stable_linux.x86_64 --path . --script res://tools/capture_p1_scale.gd
+          timeout --signal=TERM 45s xvfb-run -a ./Godot_v4.6.3-stable_linux.x86_64 --path . --script res://tools/capture_p1_scale.gd
           test -s builds/captures/p1_960x540.png
 
       - name: Capture 960x540 backpack view
         run: |
-          xvfb-run -a ./Godot_v4.6.3-stable_linux.x86_64 --path . --script res://tools/capture_p2_backpack.gd
+          timeout --signal=TERM 45s xvfb-run -a ./Godot_v4.6.3-stable_linux.x86_64 --path . --script res://tools/capture_p2_backpack.gd
           test -s builds/captures/p2_backpack_960x540.png
 
       - name: Upload prototype captures
@@ -74,7 +87,7 @@ jobs:
       - name: Export Windows P2 core build
         run: |
           mkdir -p builds/windows
-          ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --export-release "Windows Desktop" builds/windows/LastMagazine_P2_Core.exe
+          timeout --signal=TERM 120s ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --export-release "Windows Desktop" builds/windows/LastMagazine_P2_Core.exe
 
       - name: Upload Windows P2 core build
         uses: actions/upload-artifact@v4
@@ -123,7 +136,7 @@ jobs:
           GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
         run: |
           mkdir -p builds/android
-          ./Godot_v4.6.3-stable_linux.x86_64 --verbose --headless --path . --export-debug "Android" builds/android/LastMagazine_P2_Core.apk
+          timeout --signal=TERM 180s ./Godot_v4.6.3-stable_linux.x86_64 --verbose --headless --path . --export-debug "Android" builds/android/LastMagazine_P2_Core.apk
           test -s builds/android/LastMagazine_P2_Core.apk
 
       - name: Upload Android P2 core APK
