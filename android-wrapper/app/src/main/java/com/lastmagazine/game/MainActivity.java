@@ -45,7 +45,7 @@ public final class MainActivity extends Activity {
 
     @SuppressLint({"SetJavaScriptEnabled", "ObsoleteSdkInt"})
     private void createAndLoadWebView() {
-        webView = new WebView(getApplicationContext());
+        webView = new WebView(this);
         webView.setBackgroundColor(Color.BLACK);
         webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
         webView.setHapticFeedbackEnabled(false);
