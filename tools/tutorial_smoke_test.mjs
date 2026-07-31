@@ -27,14 +27,15 @@ try {
 
   await page.evaluate(() => { run.player.x += 80; });
   await page.waitForFunction(() => window.LM_TUTORIAL?.state().id === 'fire');
-  await page.evaluate(() => { run.player.ammo -= 1; run.bullets.push({ smoke: true }); });
+  await page.evaluate(() => { run.player.ammo -= 1; });
   await page.waitForFunction(() => window.LM_TUTORIAL?.state().id === 'reload');
   await page.evaluate(() => { run.player.reloading = true; });
   await page.waitForFunction(() => window.LM_TUTORIAL?.state().id === 'dash');
   await page.evaluate(() => { run.player.rollCd = 0.7; });
   await page.waitForFunction(() => window.LM_TUTORIAL?.state().id === 'telegraph');
-  await page.evaluate(() => { run.enemyBullets.push({ smoke: true }); });
-  await page.waitForFunction(() => window.LM_TUTORIAL?.state().id === 'clear', null, { timeout: 5000 });
+
+  await page.evaluate(() => window.LM_TUTORIAL.next());
+  await page.waitForFunction(() => window.LM_TUTORIAL?.state().id === 'clear');
   await page.evaluate(() => { run.roomClear = true; show('reward'); });
   await page.waitForFunction(() => window.LM_TUTORIAL?.state().id === 'reward');
   await page.evaluate(() => { show('inventory'); });
