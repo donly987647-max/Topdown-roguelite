@@ -74,33 +74,7 @@ jobs:
           export/android/java_sdk_path = "$JAVA_HOME"
           EOF
 
-      - name: Prepare project for Android export
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          project = Path("godot/project.godot")
-          text = project.read_text(encoding="utf-8")
-          setting = "textures/vram_compression/import_etc2_astc=true"
-          if setting not in text:
-              marker = "[rendering]\n"
-              if marker not in text:
-                  text += f"\n[rendering]\n{setting}\n"
-              else:
-                  text = text.replace(marker, marker + setting + "\n", 1)
-          project.write_text(text, encoding="utf-8")
-
-          buses = Path("godot/default_bus_layout.tres")
-          bus_text = buses.read_text(encoding="utf-8")
-          bus_text = bus_text.replace(
-              "[gd_resource format=3]",
-              "[gd_resource type=\"AudioBusLayout\" format=3]",
-              1,
-          )
-          buses.write_text(bus_text, encoding="utf-8")
-          PY
-
-      - name: Add temporary Android export preset
+      - name: Add Android export preset
         run: |
           cat >> godot/export_presets.cfg <<'EOF'
 
@@ -115,7 +89,7 @@ jobs:
           export_filter="all_resources"
           include_filter=""
           exclude_filter=""
-          export_path="../build/android/LAST_MAGAZINE-P1-debug.apk"
+          export_path="../build/android/LAST_MAGAZINE-P1-mobile-v2.apk"
           encryption_include_filters=""
           encryption_exclude_filters=""
           encrypt_pck=false
@@ -134,8 +108,8 @@ jobs:
           architectures/arm64-v8a=true
           architectures/x86=false
           architectures/x86_64=false
-          version/code=1
-          version/name="0.1.0-p1"
+          version/code=2
+          version/name="0.1.1-p1-mobile"
           package/unique_name="com.donly987647.lastmagazine"
           package/name="LAST MAGAZINE"
           package/signed=true
@@ -147,6 +121,7 @@ jobs:
           launcher_icons/adaptive_background_432x432=""
           graphics/opengl_debug=false
           xr_features/xr_mode=0
+          screen/orientation=4
           screen/immersive_mode=true
           screen/support_small=true
           screen/support_normal=true
@@ -160,18 +135,21 @@ jobs:
       - name: Import and validate project
         run: godot-bin/godot --headless --path godot --editor --quit --verbose
 
+      - name: Boot main scene
+        run: godot-bin/godot --headless --path godot --quit-after 120 --verbose
+
       - name: Export debug APK
         run: |
           mkdir -p build/android
           godot-bin/godot --headless --verbose --path godot \
             --export-debug "Android" \
-            "$GITHUB_WORKSPACE/build/android/LAST_MAGAZINE-P1-debug.apk"
-          test -s build/android/LAST_MAGAZINE-P1-debug.apk
+            "$GITHUB_WORKSPACE/build/android/LAST_MAGAZINE-P1-mobile-v2.apk"
+          test -s build/android/LAST_MAGAZINE-P1-mobile-v2.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: LAST_MAGAZINE-P1-Android
-          path: build/android/LAST_MAGAZINE-P1-debug.apk
+          name: LAST_MAGAZINE-P1-Mobile-v2
+          path: build/android/LAST_MAGAZINE-P1-mobile-v2.apk
           if-no-files-found: error
           retention-days: 7
