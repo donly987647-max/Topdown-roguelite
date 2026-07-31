@@ -27,5 +27,8 @@ jobs:
             exit 1
           fi
 
-      - name: Run eight-room route tests
+      - name: Run eight-room route data tests
         run: timeout --signal=TERM 30s ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_route_test_runner.gd
+
+      - name: Run live room transition tests
+        run: timeout --signal=TERM 30s ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_route_runtime_test_runner.gd
