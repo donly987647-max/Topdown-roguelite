@@ -6,6 +6,7 @@ const ACTIONS := [
 	"move_left", "move_right", "move_up", "move_down",
 	"aim_left", "aim_right", "aim_up", "aim_down",
 	"fire", "alt_fire", "dash", "reload", "interact",
+	"weapon_slot_1", "weapon_slot_2", "weapon_slot_3", "weapon_next",
 	"map", "inventory", "pause", "reset_room"
 ]
 
@@ -16,6 +17,7 @@ var _mobile_aim := Vector2.RIGHT
 var _mobile_fire_held := false
 var _mobile_dash_queued := false
 var _mobile_reload_queued := false
+var _mobile_weapon_next_queued := false
 
 func _ready() -> void:
 	_install_default_actions()
@@ -54,6 +56,13 @@ func get_aim_vector(origin_global: Vector2) -> Vector2:
 	return direction.normalized() if direction.length_squared() > 0.001 else Vector2.RIGHT
 
 func get_command_snapshot(origin_global: Vector2) -> Dictionary:
+	var requested_weapon_slot := -1
+	if Input.is_action_just_pressed("weapon_slot_1"):
+		requested_weapon_slot = 0
+	elif Input.is_action_just_pressed("weapon_slot_2"):
+		requested_weapon_slot = 1
+	elif Input.is_action_just_pressed("weapon_slot_3"):
+		requested_weapon_slot = 2
 	var snapshot := {
 		"move": get_move_vector(),
 		"aim": get_aim_vector(origin_global),
@@ -61,10 +70,13 @@ func get_command_snapshot(origin_global: Vector2) -> Dictionary:
 		"fire_held": Input.is_action_pressed("fire") or _mobile_fire_held,
 		"dash_pressed": Input.is_action_just_pressed("dash") or _mobile_dash_queued,
 		"reload_pressed": Input.is_action_just_pressed("reload") or _mobile_reload_queued,
+		"weapon_slot": requested_weapon_slot,
+		"weapon_next": Input.is_action_just_pressed("weapon_next") or _mobile_weapon_next_queued,
 		"device": last_device
 	}
 	_mobile_dash_queued = false
 	_mobile_reload_queued = false
+	_mobile_weapon_next_queued = false
 	return snapshot
 
 func set_mobile_move(value: Vector2) -> void:
@@ -88,11 +100,16 @@ func pulse_mobile_reload() -> void:
 	_mobile_reload_queued = true
 	_mark_touch_device()
 
+func pulse_mobile_weapon_next() -> void:
+	_mobile_weapon_next_queued = true
+	_mark_touch_device()
+
 func clear_mobile_state() -> void:
 	_mobile_move = Vector2.ZERO
 	_mobile_fire_held = false
 	_mobile_dash_queued = false
 	_mobile_reload_queued = false
+	_mobile_weapon_next_queued = false
 
 func _mark_touch_device() -> void:
 	if last_device != &"touch":
@@ -141,6 +158,11 @@ func _install_default_actions() -> void:
 	_add_joy_button(&"reload", 2)
 	_add_key(&"interact", KEY_E)
 	_add_joy_button(&"interact", 0)
+	_add_key(&"weapon_slot_1", KEY_1)
+	_add_key(&"weapon_slot_2", KEY_2)
+	_add_key(&"weapon_slot_3", KEY_3)
+	_add_key(&"weapon_next", KEY_Q)
+	_add_joy_button(&"weapon_next", 3)
 	_add_key(&"map", KEY_TAB)
 	_add_key(&"inventory", KEY_I)
 	_add_key(&"pause", KEY_ESCAPE)
