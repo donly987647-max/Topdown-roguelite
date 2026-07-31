@@ -7,9 +7,14 @@ on:
     branches: [godot-main]
   workflow_dispatch:
 
+concurrency:
+  group: p2-backpack-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backpack:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
@@ -20,10 +25,15 @@ jobs:
           chmod +x Godot_v4.6.3-stable_linux.x86_64
 
       - name: Import project headlessly
-        run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --editor --quit
+        run: |
+          set -o pipefail
+          ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --editor --quit 2>&1 | tee godot-import.log
+          if grep -E "SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script" godot-import.log; then
+            exit 1
+          fi
 
       - name: Run 6x5 backpack tests
-        run: ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_inventory_test_runner.gd
+        run: timeout --signal=TERM 30s ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_inventory_test_runner.gd
 
       - name: Run frame loadout persistence tests
-        run: timeout --signal=TERM 15s ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_loadout_persistence_test_runner.gd
+        run: timeout --signal=TERM 30s ./Godot_v4.6.3-stable_linux.x86_64 --headless --path . --script res://tests/p2_loadout_persistence_test_runner.gd
