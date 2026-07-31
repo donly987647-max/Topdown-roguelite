@@ -1,0 +1,49 @@
+name: Tutorial Validation
+
+on:
+  pull_request:
+    paths:
+      - 'tutorial.js'
+      - 'tutorial.css'
+      - 'viewport-fix.js'
+      - 'sw.js'
+      - 'tools/tutorial_smoke_test.mjs'
+      - '.github/workflows/tutorial-validation.yml'
+  push:
+    branches:
+      - 'feature/gdd-tutorial-pass'
+
+jobs:
+  tutorial-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate JavaScript syntax
+        run: |
+          node --check tutorial.js
+          node --check viewport-fix.js
+          node --check sw.js
+      - name: Install browser test runtime
+        run: npm install --no-save playwright-core@1.55.0
+      - name: Start local game server
+        run: |
+          python3 -m http.server 4173 > /tmp/last-magazine-tutorial-server.log 2>&1 &
+          echo $! > /tmp/last-magazine-tutorial-server.pid
+          for i in {1..30}; do curl -fsS http://127.0.0.1:4173/index.html >/dev/null && exit 0; sleep 1; done
+          cat /tmp/last-magazine-tutorial-server.log
+          exit 1
+      - name: Run tutorial interaction smoke test
+        run: node tools/tutorial_smoke_test.mjs
+      - name: Upload tutorial capture
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LastMagazine-Tutorial-Smoke
+          path: |
+            tutorial-smoke-960x540.png
+            /tmp/last-magazine-tutorial-server.log
+          if-no-files-found: ignore
