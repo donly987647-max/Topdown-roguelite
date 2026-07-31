@@ -47,16 +47,16 @@ func _ready() -> void:
 	weapon.ammo_state_changed.connect(_on_ammo_state_changed)
 	weapon.frame_changed.connect(_on_weapon_frame_changed)
 	weapon.setup(self, weapon_frames[weapon_index])
-	EventBus.player_spawned.emit(self)
+	_emit_event(&"player_spawned", [self])
 	_on_health_changed(health_component.get_snapshot())
 	queue_redraw()
 
 func _physics_process(delta: float) -> void:
 	_dash_cooldown_remaining = maxf(0.0, _dash_cooldown_remaining - delta)
 	_flash_remaining = maxf(0.0, _flash_remaining - delta)
-	var command := InputRouter.get_command_snapshot(global_position)
+	var command := _get_command_snapshot()
 	_handle_weapon_selection(command)
-	aim_direction = command.aim
+	aim_direction = command.get("aim", aim_direction)
 	weapon.set_aim(aim_direction)
 	if _dash_elapsed > 0.0:
 		_process_dash(delta)
@@ -66,15 +66,16 @@ func _physics_process(delta: float) -> void:
 		velocity = velocity.move_toward(Vector2.ZERO, move_speed / DECELERATION_TIME * delta)
 		move_and_slide()
 	else:
-		_process_normal_movement(command.move, delta)
-		if command.dash_pressed:
-			_start_dash(command.move)
-		if command.fire_pressed or (command.device == &"touch" and command.fire_held):
+		var move_input: Vector2 = command.get("move", Vector2.ZERO)
+		_process_normal_movement(move_input, delta)
+		if bool(command.get("dash_pressed", false)):
+			_start_dash(move_input)
+		if bool(command.get("fire_pressed", false)) or (StringName(command.get("device", &"")) == &"touch" and bool(command.get("fire_held", false))):
 			weapon.try_fire()
-		if command.reload_pressed:
+		if bool(command.get("reload_pressed", false)):
 			weapon.start_reload()
 	if Input.is_action_just_pressed("reset_room"):
-		EventBus.run_reset_requested.emit()
+		_emit_event(&"run_reset_requested")
 	queue_redraw()
 
 func _handle_weapon_selection(command: Dictionary) -> void:
@@ -113,7 +114,7 @@ func _start_dash(move_input: Vector2) -> void:
 	_dash_speed = dash_distance / DASH_DURATION
 	_dash_elapsed = 0.0001
 	_dash_recovery_remaining = 0.0
-	AudioManager.play_cue(&"dash", -8.0)
+	_play_audio(&"dash", -8.0)
 
 func _process_dash(delta: float) -> void:
 	_dash_elapsed += delta
@@ -142,15 +143,17 @@ func register_precision_dodge(projectile_id: int) -> void:
 	if _precision_dodge_ids.has(projectile_id):
 		return
 	_precision_dodge_ids[projectile_id] = true
-	EventBus.precision_dodge.emit(global_position)
-	EventBus.screen_shake.emit(0.6, global_position)
+	_emit_event(&"precision_dodge", [global_position])
+	_emit_event(&"screen_shake", [0.6, global_position])
 
 func receive_projectile(packet: DamagePacket, _direction: Vector2) -> bool:
 	if is_dash_invulnerable():
 		return false
 	var result := health_component.apply_damage(packet)
 	if bool(result.accepted):
-		GameState.damage_taken += packet.amount
+		var game_state := get_node_or_null("/root/GameState")
+		if game_state != null:
+			game_state.set("damage_taken", float(game_state.get("damage_taken")) + packet.amount)
 		return true
 	return false
 
@@ -160,26 +163,52 @@ func get_weapon_snapshot() -> Dictionary:
 func _on_health_changed(snapshot: Dictionary) -> void:
 	var merged := snapshot.duplicate()
 	merged["dash_ready"] = _dash_cooldown_remaining <= 0.0 and not is_dashing()
-	EventBus.player_stats_changed.emit(merged)
+	_emit_event(&"player_stats_changed", [merged])
 
 func _on_ammo_state_changed(current: int, capacity: int, reloading: bool) -> void:
 	var display_name := weapon.get_display_name() if weapon != null else "NO WEAPON"
-	EventBus.ammo_changed.emit(current, capacity, reloading, display_name)
+	_emit_event(&"ammo_changed", [current, capacity, reloading, display_name])
 
 func _on_weapon_frame_changed(_frame_id: StringName, _display_name: String) -> void:
 	queue_redraw()
 
 func _on_damaged(health_damage: float, source_position: Vector2) -> void:
 	_flash_remaining = 0.16
-	AudioManager.play_cue(&"hurt", -7.0, 0.08)
-	EventBus.player_damaged.emit(health_damage, source_position)
-	EventBus.screen_shake.emit(1.0, source_position)
+	_play_audio(&"hurt", -7.0, 0.08)
+	_emit_event(&"player_damaged", [health_damage, source_position])
+	_emit_event(&"screen_shake", [1.0, source_position])
 
 func _on_died(_packet: DamagePacket) -> void:
 	set_physics_process(false)
 	velocity = Vector2.ZERO
 	await get_tree().create_timer(1.0).timeout
-	EventBus.run_reset_requested.emit()
+	_emit_event(&"run_reset_requested")
+
+func _get_command_snapshot() -> Dictionary:
+	var input_router := get_node_or_null("/root/InputRouter")
+	if input_router != null and input_router.has_method("get_command_snapshot"):
+		return input_router.call("get_command_snapshot", global_position)
+	return {
+		"move": Vector2.ZERO,
+		"aim": aim_direction,
+		"dash_pressed": false,
+		"fire_pressed": false,
+		"fire_held": false,
+		"reload_pressed": false,
+		"weapon_slot": -1,
+		"weapon_next": false,
+		"device": &""
+	}
+
+func _emit_event(signal_name: StringName, arguments: Array = []) -> void:
+	var event_bus := get_node_or_null("/root/EventBus")
+	if event_bus != null and event_bus.has_signal(signal_name):
+		event_bus.emit_signal(signal_name, arguments)
+
+func _play_audio(cue: StringName, volume_db := 0.0, minimum_interval := 0.0) -> void:
+	var audio_manager := get_node_or_null("/root/AudioManager")
+	if audio_manager != null and audio_manager.has_method("play_cue"):
+		audio_manager.call("play_cue", cue, volume_db, minimum_interval)
 
 func _draw() -> void:
 	var body_color := Color("ffffff") if _flash_remaining > 0.0 else Color("69e79a")
