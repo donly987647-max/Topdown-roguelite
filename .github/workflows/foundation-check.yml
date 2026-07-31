@@ -44,6 +44,20 @@ jobs:
           mkdir -p "$HOME/.local/share/godot/export_templates/4.6.3.stable"
           cp -R templates/. "$HOME/.local/share/godot/export_templates/4.6.3.stable/"
 
+      - name: Capture P1 resolution comparison
+        run: |
+          mkdir -p builds/captures
+          xvfb-run -a ./Godot_v4.6.3-stable_linux.x86_64 --path . --script res://tools/capture_p1_scale.gd
+          test -s builds/captures/p1_640x360.png
+          test -s builds/captures/p1_960x540.png
+
+      - name: Upload P1 resolution captures
+        uses: actions/upload-artifact@v4
+        with:
+          name: LastMagazine-P1-Resolution-Captures
+          path: builds/captures/
+          if-no-files-found: error
+
       - name: Export Windows P1 build
         run: |
           mkdir -p builds/windows
