@@ -62,7 +62,8 @@ func _physics_process(delta: float) -> void:
 		_process_dash(delta)
 	elif _dash_recovery_remaining > 0.0:
 		_dash_recovery_remaining -= delta
-		velocity = velocity.move_toward(Vector2.ZERO, MOVE_SPEED / DECELERATION_TIME * delta)
+		var move_speed := _current_move_speed()
+		velocity = velocity.move_toward(Vector2.ZERO, move_speed / DECELERATION_TIME * delta)
 		move_and_slide()
 	else:
 		_process_normal_movement(command.move, delta)
@@ -94,19 +95,22 @@ func _equip_weapon_index(next_index: int) -> void:
 	queue_redraw()
 
 func _process_normal_movement(input_vector: Vector2, delta: float) -> void:
-	var target_velocity := input_vector.normalized() * MOVE_SPEED if input_vector.length_squared() > 0.001 else Vector2.ZERO
+	var move_speed := _current_move_speed()
+	var target_velocity := input_vector.normalized() * move_speed if input_vector.length_squared() > 0.001 else Vector2.ZERO
 	if target_velocity != Vector2.ZERO:
-		velocity = velocity.move_toward(target_velocity, MOVE_SPEED / ACCELERATION_TIME * delta)
+		velocity = velocity.move_toward(target_velocity, move_speed / ACCELERATION_TIME * delta)
 	else:
-		velocity = velocity.move_toward(Vector2.ZERO, MOVE_SPEED / DECELERATION_TIME * delta)
+		velocity = velocity.move_toward(Vector2.ZERO, move_speed / DECELERATION_TIME * delta)
 	move_and_slide()
 
 func _start_dash(move_input: Vector2) -> void:
 	if _dash_cooldown_remaining > 0.0:
 		return
 	_dash_direction = move_input.normalized() if move_input.length_squared() > 0.001 else aim_direction
+	var dash_distance := DASH_DISTANCE * _current_dash_distance_multiplier()
 	if room_controller != null and room_controller.has_method("correct_dash_direction"):
-		_dash_direction = room_controller.correct_dash_direction(global_position, _dash_direction, DASH_DISTANCE)
+		_dash_direction = room_controller.correct_dash_direction(global_position, _dash_direction, dash_distance)
+	_dash_speed = dash_distance / DASH_DURATION
 	_dash_elapsed = 0.0001
 	_dash_recovery_remaining = 0.0
 	AudioManager.play_cue(&"dash", -8.0)
@@ -120,6 +124,13 @@ func _process_dash(delta: float) -> void:
 		_dash_recovery_remaining = DASH_RECOVERY
 		_dash_cooldown_remaining = DASH_COOLDOWN
 		velocity *= 0.25
+
+func _current_move_speed() -> float:
+	var multiplier := weapon.get_move_speed_multiplier() if weapon != null else 1.0
+	return MOVE_SPEED * multiplier
+
+func _current_dash_distance_multiplier() -> float:
+	return weapon.get_dash_distance_multiplier() if weapon != null else 1.0
 
 func is_dashing() -> bool:
 	return _dash_elapsed > 0.0
