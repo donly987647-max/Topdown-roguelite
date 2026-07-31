@@ -30,6 +30,7 @@ func _test_frame_catalog_contract() -> void:
 	for frame in frames:
 		_expect(frame.validate_contract().is_empty(), "%s has an invalid data contract" % frame.display_name)
 		_expect(not ids.has(frame.frame_id), "Weapon frame IDs must be unique")
+		_expect(frame.max_power > 0 and frame.max_weight > 0.0, "%s must define assembly limits" % frame.display_name)
 		ids[frame.frame_id] = true
 	var pistol := WeaponFrameCatalog.service_pistol()
 	_expect(pistol.fire_mode == WeaponFrameData.FireMode.SEMI, "Service pistol must be semi-automatic")
@@ -78,10 +79,12 @@ func _test_build_compiler_contract() -> void:
 		[WeaponPartCatalog.precision_barrel(), WeaponPartCatalog.lightweight_magazine(), WeaponPartCatalog.photon_core()]
 	)
 	var precision_stats: Dictionary = precision_build["stats"]
+	var precision_overload: Dictionary = precision_build["overload"]
 	_expect(int(precision_stats["magazine_capacity"]) == 8, "Lightweight prototype pistol must compile to eight rounds")
 	_expect(is_equal_approx(float(precision_stats["reload_time"]), 1.15 * 0.65), "Lightweight magazine must reduce reload time")
 	_expect(is_equal_approx(float(precision_stats["projectile_speed"]), 1000.0 * 1.15 * 1.20), "Precision and photon speed multipliers must stack")
 	_expect(is_equal_approx(float(precision_stats["critical_chance"]), 0.10), "Photon core must add critical chance")
+	_expect(not bool(precision_overload["power"]) and not bool(precision_overload["weight"]), "Default pistol build must remain inside both limits")
 
 	var heavy_build := WeaponBuildCalculator.compile(
 		pistol,
@@ -89,10 +92,17 @@ func _test_build_compiler_contract() -> void:
 	)
 	var heavy_stats: Dictionary = heavy_build["stats"]
 	var heavy_effects: Dictionary = heavy_build["effects"]
+	var heavy_overload: Dictionary = heavy_build["overload"]
 	_expect(is_equal_approx(float(heavy_stats["damage"]), 18.0 * 1.70), "Compressed magazine must increase damage by seventy percent")
 	_expect(int(heavy_stats["ricochet_count"]) == 2, "Ricochet build must compile two bounces")
 	_expect(int(heavy_effects["ammo_cost"]) == 2, "Compressed build must compile double ammunition cost")
 	_expect(is_equal_approx(float(heavy_effects["ricochet_damage_multiplier"]), 1.20), "Ricochet damage bonus must match GDD")
+	_expect(bool(heavy_overload["power"]), "High-power pistol build must trigger power overload")
+	_expect(bool(heavy_overload["weight"]), "Heavy pistol build must trigger weight overload")
+	_expect(float(heavy_stats["reload_time"]) > pistol.reload_time, "Power overload must increase reload time")
+	_expect(float(heavy_effects["misfire_chance"]) > 0.0, "Power overload must create a low misfire chance")
+	_expect(float(heavy_effects["move_speed_multiplier"]) < 1.0, "Weight overload must reduce movement speed")
+	_expect(float(heavy_effects["dash_distance_multiplier"]) < 1.0, "Weight overload must reduce dash distance")
 
 	var flame_build := WeaponBuildCalculator.compile(
 		WeaponFrameCatalog.burst_carbine(),
@@ -126,6 +136,7 @@ func _test_runtime_contract() -> void:
 	if carbine_projectile != null:
 		_expect(carbine_projectile.data.pierce_count == 2, "Piercing barrel must reach projectile runtime")
 		_expect(carbine_projectile.data.status_type == &"burn", "Flame core must reach projectile runtime")
+		_expect(is_equal_approx(carbine_projectile.data.status_buildup, 25.0), "Flame buildup must reach projectile runtime")
 
 	_clear_projectiles(world)
 	weapon.equip_frame(WeaponFrameCatalog.breach_shotgun())
@@ -136,21 +147,35 @@ func _test_runtime_contract() -> void:
 	_expect(weapon.current_ammo == 4, "Breach shotgun must consume one shell")
 
 	_clear_projectiles(world)
-	weapon.equip_frame_with_parts(
+	var custom_weapon := PrototypeWeapon.new()
+	wielder.add_child(custom_weapon)
+	custom_weapon.wielder = wielder
+	custom_weapon.equip_frame_with_parts(
 		WeaponFrameCatalog.service_pistol(),
-		[WeaponPartCatalog.ricochet_barrel(), WeaponPartCatalog.compressed_magazine(), WeaponPartCatalog.impact_core()]
+		[WeaponPartCatalog.compressed_magazine(), WeaponPartCatalog.impact_core()]
 	)
-	_expect(weapon.try_fire(), "Custom heavy pistol build must fire")
-	_expect(weapon.current_ammo == 8, "Compressed magazine must consume two rounds")
-	var heavy_projectile := _first_projectile(world)
-	_expect(heavy_projectile != null, "Custom heavy build must spawn a projectile")
-	if heavy_projectile != null:
-		_expect(heavy_projectile.data.ricochet_count == 2, "Ricochet count must reach projectile runtime")
-		_expect(is_equal_approx(heavy_projectile.data.damage, 30.6), "Compressed damage must reach projectile runtime")
-		_expect(is_equal_approx(heavy_projectile.data.knockback, 45.0 * 1.75), "Impact knockback must reach projectile runtime")
+	_expect(custom_weapon.try_fire(), "Compressed pistol build under its power limit must fire")
+	_expect(custom_weapon.current_ammo == 8, "Compressed magazine must consume two rounds")
+	var compressed_projectile := _first_projectile(world)
+	_expect(compressed_projectile != null, "Compressed build must spawn a projectile")
+	if compressed_projectile != null:
+		_expect(is_equal_approx(compressed_projectile.data.damage, 30.6), "Compressed damage must reach projectile runtime")
+		_expect(is_equal_approx(compressed_projectile.data.knockback, 45.0 * 1.75), "Impact knockback must reach projectile runtime")
+
+	_clear_projectiles(world)
+	custom_weapon.equip_frame_with_parts(
+		WeaponFrameCatalog.service_pistol(),
+		[WeaponPartCatalog.ricochet_barrel(), WeaponPartCatalog.lightweight_magazine(), WeaponPartCatalog.impact_core()]
+	)
+	custom_weapon.current_ammo = int(custom_weapon.get_snapshot()["capacity"])
+	_expect(custom_weapon.try_fire(), "Ricochet pistol build under its power limit must fire")
+	var ricochet_projectile := _first_projectile(world)
+	_expect(ricochet_projectile != null, "Ricochet build must spawn a projectile")
+	if ricochet_projectile != null:
+		_expect(ricochet_projectile.data.ricochet_count == 2, "Ricochet count must reach projectile runtime")
 
 	weapon.equip_frame(WeaponFrameCatalog.service_pistol())
-	_expect(weapon.current_ammo == 8, "Default frame re-equip must clamp preserved ammunition to its compiled capacity")
+	_expect(weapon.current_ammo == 7, "Switching frames must preserve assembled pistol ammunition")
 	world.queue_free()
 	await process_frame
 
