@@ -5,7 +5,7 @@ var _finished := false
 
 func _initialize() -> void:
 	print("[P2 LOADOUT PERSISTENCE TEST] START")
-	get_root().get_tree().create_timer(5.0).timeout.connect(_watchdog_timeout)
+	create_timer(5.0).timeout.connect(_watchdog_timeout)
 	call_deferred("_run")
 
 func _run() -> void:
