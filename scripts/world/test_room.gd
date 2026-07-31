@@ -58,6 +58,9 @@ func _active_enemy_count() -> int:
 			count += 1
 	return count
 
+func can_open_inventory() -> bool:
+	return _reward_offered and _active_enemy_count() == 0
+
 func _offer_reward() -> void:
 	if not is_instance_valid(player) or player.weapon == null:
 		return
@@ -120,6 +123,5 @@ func _draw() -> void:
 		draw_rect(hazard, Color("ff536d"), false, 2.0)
 		for offset in range(-40, 90, 18):
 			draw_line(hazard.position + Vector2(offset, 0), hazard.position + Vector2(offset + 62, hazard.size.y), Color(1.0, 0.32, 0.42, 0.35), 2.0)
-	# Entrance and exit markers.
 	draw_rect(Rect2(Vector2(-320, -35), Vector2(12, 70)), Color("69e79a"), true)
 	draw_rect(Rect2(Vector2(308, -35), Vector2(12, 70)), Color("ffbd55"), true)
