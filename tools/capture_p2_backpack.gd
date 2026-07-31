@@ -3,6 +3,7 @@ extends SceneTree
 const OUTPUT_PATH := "res://builds/captures/p2_backpack_960x540.png"
 
 func _initialize() -> void:
+	print("[P2 BACKPACK CAPTURE] START")
 	call_deferred("_run")
 
 func _run() -> void:
@@ -14,6 +15,7 @@ func _run() -> void:
 		quit(1)
 		return
 
+	print("[P2 BACKPACK CAPTURE] BUILD WORLD")
 	var world := Node2D.new()
 	world.name = "BackpackCaptureWorld"
 	root.add_child(world)
@@ -38,14 +40,17 @@ func _run() -> void:
 		if index < sample_parts.size() - 1:
 			backpack.auto_place(item_id)
 
+	print("[P2 BACKPACK CAPTURE] BUILD PANEL")
 	var panel := BackpackPanel.new()
 	panel.name = "BackpackPanel"
 	panel.configure(backpack, player)
 	world.add_child(panel)
 	await process_frame
 	await process_frame
-	await create_timer(0.25, true).timeout
+	paused = false
+	await process_frame
 
+	print("[P2 BACKPACK CAPTURE] SAVE IMAGE")
 	var image := root.get_texture().get_image()
 	if image == null or image.is_empty():
 		push_error("[P2 BACKPACK CAPTURE] Empty viewport image")
