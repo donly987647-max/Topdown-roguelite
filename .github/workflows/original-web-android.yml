@@ -14,7 +14,7 @@ concurrency:
 jobs:
   validate-and-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - uses: actions/checkout@v4
@@ -66,10 +66,15 @@ jobs:
 
       - uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK components
+      - name: Install Android SDK and emulator components
         run: |
           yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.1"
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.1" \
+            "emulator" \
+            "system-images;android-35;google_apis;x86_64"
 
       - uses: gradle/actions/setup-gradle@v4
         with:
@@ -85,11 +90,15 @@ jobs:
             builds/android/LAST_MAGAZINE_ORIGINAL_ANDROID.apk
           test -s builds/android/LAST_MAGAZINE_ORIGINAL_ANDROID.apk
           unzip -l builds/android/LAST_MAGAZINE_ORIGINAL_ANDROID.apk | tee builds/android/apk-files.txt
+          test "$(unzip -l builds/android/LAST_MAGAZINE_ORIGINAL_ANDROID.apk | grep -c 'classes[0-9]*\.dex')" -eq 1
           for asset in index.html style.css responsive.css data.js game-1.js game-3-1.js game-4-2.js asset-manifest.json; do
             grep -q "assets/$asset" builds/android/apk-files.txt
           done
           "$ANDROID_HOME/build-tools/35.0.1/aapt2" dump permissions \
             builds/android/LAST_MAGAZINE_ORIGINAL_ANDROID.apk | tee builds/android/apk-permissions.txt
+          "$ANDROID_HOME/build-tools/35.0.1/aapt2" dump badging \
+            builds/android/LAST_MAGAZINE_ORIGINAL_ANDROID.apk | tee builds/android/apk-badging.txt
+          grep -q "launchable-activity: name='com.lastmagazine.game.MainActivity'" builds/android/apk-badging.txt
           if grep -q "android.permission.INTERNET" builds/android/apk-permissions.txt; then
             echo "Offline wrapper must not request INTERNET permission"
             exit 1
@@ -98,6 +107,62 @@ jobs:
             assets/asset-manifest.json > builds/android/asset-manifest.json
           sha256sum builds/android/LAST_MAGAZINE_ORIGINAL_ANDROID.apk \
             | tee builds/android/SHA256SUMS.txt
+
+      - name: Boot APK on Android 15 emulator
+        run: |
+          sudo chmod 666 /dev/kvm || true
+          echo no | avdmanager create avd \
+            --force \
+            --name last-magazine-api35 \
+            --package "system-images;android-35;google_apis;x86_64" \
+            --device "pixel_6"
+
+          nohup emulator \
+            -avd last-magazine-api35 \
+            -no-window \
+            -no-audio \
+            -no-boot-anim \
+            -gpu swiftshader_indirect \
+            -camera-back none \
+            -camera-front none \
+            -wipe-data \
+            > builds/android/emulator.log 2>&1 &
+
+          adb wait-for-device
+          BOOTED=""
+          for attempt in $(seq 1 180); do
+            BOOTED="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
+            if [ "$BOOTED" = "1" ]; then
+              break
+            fi
+            sleep 2
+          done
+          test "$BOOTED" = "1"
+
+          adb install -r builds/android/LAST_MAGAZINE_ORIGINAL_ANDROID.apk \
+            | tee builds/android/adb-install.txt
+          adb logcat -c
+          adb shell am start -W -n com.lastmagazine.game/.MainActivity \
+            | tee builds/android/activity-start.txt
+          grep -q "Status: ok" builds/android/activity-start.txt
+
+          sleep 10
+          APP_PID="$(adb shell pidof com.lastmagazine.game | tr -d '\r')"
+          test -n "$APP_PID"
+          echo "$APP_PID" > builds/android/app-pid.txt
+
+          adb shell dumpsys activity activities \
+            > builds/android/activity-state.txt
+          grep -q "com.lastmagazine.game/.MainActivity" builds/android/activity-state.txt
+
+          adb exec-out screencap -p > builds/android/emulator-startup.png
+          test -s builds/android/emulator-startup.png
+          adb logcat -d > builds/android/logcat.txt
+
+          if grep -E "FATAL EXCEPTION|Process: com\.lastmagazine\.game|Unable to start activity.*lastmagazine" builds/android/logcat.txt; then
+            echo "LAST MAGAZINE crashed during Android startup"
+            exit 1
+          fi
 
       - name: Upload original Android APK
         uses: actions/upload-artifact@v4
