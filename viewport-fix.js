@@ -35,6 +35,21 @@
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   }
 
+  function loadTutorialLayer() {
+    if (!document.querySelector('link[href="tutorial.css"]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'tutorial.css';
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector('script[src="tutorial.js"]')) {
+      const script = document.createElement('script');
+      script.src = 'tutorial.js';
+      script.defer = true;
+      document.body.appendChild(script);
+    }
+  }
+
   resize = fitViewportFullBleed;
   window.addEventListener('resize', fitViewportFullBleed, { passive: true });
   window.addEventListener('orientationchange', () => {
@@ -46,4 +61,5 @@
 
   fitViewportFullBleed();
   window.setTimeout(fitViewportFullBleed, 100);
+  loadTutorialLayer();
 })();
