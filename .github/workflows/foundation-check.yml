@@ -59,6 +59,11 @@ jobs:
           xvfb-run -a ./Godot_v4.6.3-stable_linux.x86_64 --path . --script res://tools/capture_p1_scale.gd
           test -s builds/captures/p1_960x540.png
 
+      - name: Capture 960x540 backpack view
+        run: |
+          xvfb-run -a ./Godot_v4.6.3-stable_linux.x86_64 --path . --script res://tools/capture_p2_backpack.gd
+          test -s builds/captures/p2_backpack_960x540.png
+
       - name: Upload prototype captures
         uses: actions/upload-artifact@v4
         with:
