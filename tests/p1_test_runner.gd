@@ -13,6 +13,7 @@ func _run() -> void:
 	_test_projectile_contract()
 	_test_room_contract()
 	_test_mobile_contract()
+	_test_pc_input_contract()
 	if failures.is_empty():
 		print("[P1 TEST] PASS")
 		quit(0)
@@ -29,6 +30,7 @@ func _test_project_resources() -> void:
 	_expect(ResourceLoader.exists("res://scenes/main/Main.tscn"), "Main scene missing")
 	_expect(ResourceLoader.exists("res://scripts/player/player_controller.gd"), "Player controller missing")
 	_expect(ResourceLoader.exists("res://scripts/enemies/training_gunner.gd"), "Training enemy missing")
+	_expect(ResourceLoader.exists("res://tools/capture_p1_scale.gd"), "P1 resolution capture runner missing")
 
 func _test_movement_constants() -> void:
 	_expect(is_equal_approx(PlayerController.MOVE_SPEED, 260.0), "Move speed must be 260 px/s")
@@ -82,3 +84,38 @@ func _test_mobile_contract() -> void:
 	_expect(input_router.has_method("set_mobile_aim"), "Mobile aim bridge missing")
 	_expect(input_router.has_method("pulse_mobile_dash"), "Mobile dash bridge missing")
 	_expect(input_router.has_method("pulse_mobile_reload"), "Mobile reload bridge missing")
+
+func _test_pc_input_contract() -> void:
+	var input_router := root.get_node_or_null("InputRouter")
+	_expect(input_router != null, "InputRouter autoload missing for PC contract")
+	if input_router == null:
+		return
+	input_router.call("clear_mobile_state")
+	Input.action_press("move_right", 1.0)
+	var move_vector: Vector2 = input_router.call("get_move_vector")
+	_expect(move_vector.x > 0.9 and absf(move_vector.y) < 0.01, "Keyboard movement action bridge failed")
+	Input.action_release("move_right")
+
+	var joy_event := InputEventJoypadMotion.new()
+	joy_event.axis = 2
+	joy_event.axis_value = 1.0
+	input_router.call("_input", joy_event)
+	_expect(StringName(input_router.get("last_device")) == &"gamepad", "Gamepad device switching failed")
+	Input.action_press("aim_right", 1.0)
+	var aim_vector: Vector2 = input_router.call("get_aim_vector", Vector2.ZERO)
+	_expect(aim_vector.x > 0.9 and absf(aim_vector.y) < 0.01, "Gamepad aim action bridge failed")
+	Input.action_release("aim_right")
+
+	var mouse_event := InputEventMouseMotion.new()
+	mouse_event.position = Vector2(320.0, 180.0)
+	input_router.call("_input", mouse_event)
+	_expect(StringName(input_router.get("last_device")) == &"keyboard_mouse", "Mouse device switching failed")
+	_expect(_action_has_event_type(&"fire", "InputEventMouseButton"), "Mouse fire binding missing")
+	_expect(_action_has_event_type(&"dash", "InputEventKey"), "Keyboard dash binding missing")
+	_expect(_action_has_event_type(&"reload", "InputEventJoypadButton"), "Gamepad reload binding missing")
+
+func _action_has_event_type(action: StringName, expected_class: String) -> bool:
+	for event in InputMap.action_get_events(action):
+		if event.get_class() == expected_class:
+			return true
+	return false
