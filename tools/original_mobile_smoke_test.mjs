@@ -9,7 +9,15 @@ const entry = path.join(root, 'index.html');
 const outputDir = path.join(root, 'builds', 'original-web-smoke');
 fs.mkdirSync(outputDir, { recursive: true });
 
-const browser = await chromium.launch({ headless: true });
+const launchOptions = {
+  headless: true,
+  args: ['--disable-dev-shm-usage', '--no-sandbox'],
+};
+if (process.env.CHROME_PATH) {
+  launchOptions.executablePath = process.env.CHROME_PATH;
+}
+
+const browser = await chromium.launch(launchOptions);
 const context = await browser.newContext({
   viewport: { width: 1280, height: 720 },
   screen: { width: 1280, height: 720 },
