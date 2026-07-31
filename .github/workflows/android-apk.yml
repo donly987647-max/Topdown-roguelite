@@ -1,0 +1,148 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - build/android-apk-p1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GODOT_VERSION: 4.7.1
+      GODOT_ANDROID_KEYSTORE_DEBUG_PATH: /home/runner/.android/debug.keystore
+      GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+      GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools build-tools;35.0.1 platforms;android-35'
+
+      - name: Create debug keystore
+        run: |
+          mkdir -p "$HOME/.android"
+          keytool -genkeypair -v \
+            -keystore "$HOME/.android/debug.keystore" \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -dname "CN=Android Debug,O=Android,C=US" \
+            -keyalg RSA -keysize 2048 -validity 10000
+
+      - name: Download Godot and export templates
+        run: |
+          curl --fail --location --retry 3 \
+            --output godot.zip \
+            "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          curl --fail --location --retry 3 \
+            --output templates.tpz \
+            "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q godot.zip -d godot-bin
+          mv "godot-bin/Godot_v${GODOT_VERSION}-stable_linux.x86_64" godot-bin/godot
+          chmod +x godot-bin/godot
+          mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          unzip -q templates.tpz -d export-templates
+          cp -R export-templates/templates/. "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+
+      - name: Configure Godot Android paths
+        run: |
+          mkdir -p "$HOME/.config/godot"
+          cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_SDK_ROOT"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          EOF
+
+      - name: Add temporary Android export preset
+        run: |
+          cat >> godot/export_presets.cfg <<'EOF'
+
+          [preset.3]
+
+          name="Android"
+          platform="Android"
+          runnable=true
+          advanced_options=false
+          dedicated_server=false
+          custom_features=""
+          export_filter="all_resources"
+          include_filter=""
+          exclude_filter=""
+          export_path="../build/android/LAST_MAGAZINE-P1-debug.apk"
+          encryption_include_filters=""
+          encryption_exclude_filters=""
+          encrypt_pck=false
+          encrypt_directory=false
+          script_export_mode=2
+
+          [preset.3.options]
+
+          custom_template/debug=""
+          custom_template/release=""
+          gradle_build/use_gradle_build=false
+          gradle_build/export_format=0
+          gradle_build/min_sdk=""
+          gradle_build/target_sdk=""
+          architectures/armeabi-v7a=false
+          architectures/arm64-v8a=true
+          architectures/x86=false
+          architectures/x86_64=false
+          version/code=1
+          version/name="0.1.0-p1"
+          package/unique_name="com.donly987647.lastmagazine"
+          package/name="LAST MAGAZINE"
+          package/signed=true
+          package/app_category=0
+          package/retain_data_on_uninstall=false
+          package/exclude_from_recents=false
+          launcher_icons/main_192x192="res://assets/icon.svg"
+          launcher_icons/adaptive_foreground_432x432="res://assets/icon.svg"
+          launcher_icons/adaptive_background_432x432=""
+          graphics/opengl_debug=false
+          xr_features/xr_mode=0
+          screen/immersive_mode=true
+          screen/support_small=true
+          screen/support_normal=true
+          screen/support_large=true
+          screen/support_xlarge=true
+          user_data_backup/allow=false
+          command_line/extra_args=""
+          permissions/custom_permissions=PackedStringArray()
+          EOF
+
+      - name: Import and validate project
+        run: godot-bin/godot --headless --path godot --editor --quit --verbose
+
+      - name: Export debug APK
+        run: |
+          mkdir -p build/android
+          godot-bin/godot --headless --verbose --path godot \
+            --export-debug "Android" \
+            "$GITHUB_WORKSPACE/build/android/LAST_MAGAZINE-P1-debug.apk"
+          test -s build/android/LAST_MAGAZINE-P1-debug.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: LAST_MAGAZINE-P1-Android
+          path: build/android/LAST_MAGAZINE-P1-debug.apk
+          if-no-files-found: error
+          retention-days: 7
