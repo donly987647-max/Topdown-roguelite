@@ -1,0 +1,11 @@
+{
+  "name": "last-magazine-original-wrapper",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:original-mobile": "node tools/original_mobile_smoke_test.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.52.0"
+  }
+}
