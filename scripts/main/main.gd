@@ -118,11 +118,7 @@ func _on_backpack_equip_requested(item_id: StringName) -> void:
 		if not placed:
 			backpack.restore_snapshot(grid_snapshot)
 			room.player.weapon.equip_parts(previous_parts)
-			if is_instance_valid(backpack_panel):
-				backpack_panel.notify_action("교체된 부품을 가방에 되돌릴 공간이 없습니다.")
 			return
-	if is_instance_valid(backpack_panel):
-		backpack_panel.notify_action("부품을 교체했습니다.")
 
 func _on_backpack_loadout_restore_requested(parts: Array[WeaponPartData]) -> void:
 	if _has_active_player():
