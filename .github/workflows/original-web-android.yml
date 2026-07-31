@@ -78,6 +78,7 @@ jobs:
             "emulator" \
             "system-images;android-35;google_apis;x86_64"
           test -x "$ANDROID_HOME/emulator/emulator"
+          test -x "$ANDROID_HOME/cmdline-tools/16.0/bin/avdmanager"
           "$ANDROID_HOME/emulator/emulator" -version
 
       - uses: gradle/actions/setup-gradle@v4
@@ -115,14 +116,28 @@ jobs:
       - name: Boot APK on Android 15 emulator
         run: |
           sudo chmod 666 /dev/kvm || true
-          echo no | avdmanager create avd \
+          export ANDROID_AVD_HOME="$RUNNER_TEMP/android-avd"
+          export AVDMANAGER="$ANDROID_HOME/cmdline-tools/16.0/bin/avdmanager"
+          export AVD_NAME="last-magazine-api35"
+          export AVD_PATH="$ANDROID_AVD_HOME/$AVD_NAME.avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+
+          echo no | "$AVDMANAGER" create avd \
             --force \
-            --name last-magazine-api35 \
+            --name "$AVD_NAME" \
+            --path "$AVD_PATH" \
             --package "system-images;android-35;google_apis;x86_64" \
             --device "pixel_6"
 
+          "$AVDMANAGER" list avd | tee builds/android/avd-list.txt
+          find "$ANDROID_AVD_HOME" -maxdepth 2 -type f -o -type d \
+            | sort | tee builds/android/avd-files.txt
+          test -d "$AVD_PATH"
+          test -f "$ANDROID_AVD_HOME/$AVD_NAME.ini"
+          grep -q "Name: $AVD_NAME" builds/android/avd-list.txt
+
           "$ANDROID_HOME/emulator/emulator" \
-            -avd last-magazine-api35 \
+            -avd "$AVD_NAME" \
             -no-window \
             -no-audio \
             -no-boot-anim \
