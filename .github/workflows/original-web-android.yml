@@ -1,0 +1,100 @@
+name: Original Web Android Validation
+
+on:
+  push:
+    branches: [android/original-web-wrapper]
+  pull_request:
+    branches: [playtest-stable]
+  workflow_dispatch:
+
+concurrency:
+  group: original-web-android-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify original game files are unchanged
+        run: |
+          git diff --exit-code c23bdddec9f8b0dfab355faff5d4b212e6755be7 -- \
+            index.html style.css responsive.css viewport-fix.js manifest.json sw.js data.js \
+            game-1.js game-2-v1.js game-2-v2.js game-2-v3.js game-2-v4.js \
+            game-3-1.js game-3-2.js game-3-3.js game-4-1.js game-4-2.js
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install mobile smoke-test runtime
+        run: npm install --no-audit --no-fund
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Test first-room mobile reward, inventory and route touch flow
+        run: npm run test:original-mobile
+
+      - name: Upload mobile smoke capture
+        uses: actions/upload-artifact@v4
+        with:
+          name: LastMagazine-Original-Mobile-Smoke
+          path: builds/original-web-smoke/
+          if-no-files-found: error
+
+      - name: Pack immutable original web assets
+        run: python3 tools/prepare_original_android_assets.py --output android-wrapper/app/src/main/assets
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK components
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.1"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Build offline original-game APK
+        run: gradle -p android-wrapper --no-daemon :app:assembleDebug
+
+      - name: Validate APK contents and permissions
+        run: |
+          mkdir -p builds/android
+          cp android-wrapper/app/build/outputs/apk/debug/app-debug.apk \
+            builds/android/LAST_MAGAZINE_ORIGINAL_ANDROID.apk
+          test -s builds/android/LAST_MAGAZINE_ORIGINAL_ANDROID.apk
+          unzip -l builds/android/LAST_MAGAZINE_ORIGINAL_ANDROID.apk | tee builds/android/apk-files.txt
+          for asset in index.html style.css responsive.css data.js game-1.js game-3-1.js game-4-2.js asset-manifest.json; do
+            grep -q "assets/$asset" builds/android/apk-files.txt
+          done
+          "$ANDROID_HOME/build-tools/35.0.1/aapt2" dump permissions \
+            builds/android/LAST_MAGAZINE_ORIGINAL_ANDROID.apk | tee builds/android/apk-permissions.txt
+          if grep -q "android.permission.INTERNET" builds/android/apk-permissions.txt; then
+            echo "Offline wrapper must not request INTERNET permission"
+            exit 1
+          fi
+          unzip -p builds/android/LAST_MAGAZINE_ORIGINAL_ANDROID.apk \
+            assets/asset-manifest.json > builds/android/asset-manifest.json
+          sha256sum builds/android/LAST_MAGAZINE_ORIGINAL_ANDROID.apk \
+            | tee builds/android/SHA256SUMS.txt
+
+      - name: Upload original Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: LastMagazine-Original-Android
+          path: builds/android/
+          if-no-files-found: error
