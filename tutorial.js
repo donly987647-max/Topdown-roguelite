@@ -68,6 +68,9 @@ function enterStep(){
  if(!state.active)return;
  state.stepStarted=performance.now();state.baseline=null;
  if(run?.player)state.baseline={x:run.player.x,y:run.player.y,ammo:run.player.ammo,bullets:run.bullets?.length||0};
+ const id=steps[state.index].id;
+ if(id==='reward'&&isActiveScreen('reward'))state.rewardSeen=true;
+ if(id==='assembly'&&isActiveScreen('inventory'))state.inventorySeen=true;
  render();save.tutorial.step=state.index;store();
 }
 function render(){
