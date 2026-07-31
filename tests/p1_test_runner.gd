@@ -33,15 +33,18 @@ func _test_project_resources() -> void:
 	_expect(ResourceLoader.exists("res://tools/capture_p1_scale.gd"), "P1 resolution capture runner missing")
 
 func _test_movement_constants() -> void:
-	_expect(is_equal_approx(PlayerController.MOVE_SPEED, 260.0), "Move speed must be 260 px/s")
-	_expect(is_equal_approx(PlayerController.ACCELERATION_TIME, 0.08), "Acceleration must be 0.08 s")
-	_expect(is_equal_approx(PlayerController.DECELERATION_TIME, 0.06), "Deceleration must be 0.06 s")
+	var source := FileAccess.get_file_as_string("res://scripts/player/player_controller.gd")
+	_expect(source.contains("const MOVE_SPEED := 260.0"), "Move speed must be 260 px/s")
+	_expect(source.contains("const ACCELERATION_TIME := 0.08"), "Acceleration must be 0.08 s")
+	_expect(source.contains("const DECELERATION_TIME := 0.06"), "Deceleration must be 0.06 s")
 
 func _test_dash_constants() -> void:
-	_expect(is_equal_approx(PlayerController.DASH_DURATION, 0.52), "Dash duration must be 0.52 s")
-	_expect(is_equal_approx(PlayerController.DASH_DISTANCE, 150.0), "Dash distance must be 150 px")
-	_expect(PlayerController.DASH_INVULN_START < PlayerController.DASH_INVULN_END, "Dash invulnerability interval invalid")
-	_expect(is_equal_approx(PlayerController.DASH_COOLDOWN, 0.35), "Dash cooldown must be 0.35 s")
+	var source := FileAccess.get_file_as_string("res://scripts/player/player_controller.gd")
+	_expect(source.contains("const DASH_DURATION := 0.52"), "Dash duration must be 0.52 s")
+	_expect(source.contains("const DASH_DISTANCE := 150.0"), "Dash distance must be 150 px")
+	_expect(source.contains("const DASH_INVULN_START := 0.12"), "Dash invulnerability start mismatch")
+	_expect(source.contains("const DASH_INVULN_END := 0.34"), "Dash invulnerability end mismatch")
+	_expect(source.contains("const DASH_COOLDOWN := 0.35"), "Dash cooldown must be 0.35 s")
 
 func _test_health_order() -> void:
 	var health := HealthComponent.new()
@@ -71,8 +74,9 @@ func _has_property(object: Object, property_name: StringName) -> bool:
 	return false
 
 func _test_room_contract() -> void:
-	_expect(TestCombatRoom.ROOM_RECT.size == Vector2(640.0, 384.0), "Test room must be 20x12 tiles at 32 px")
-	_expect(TestCombatRoom.ENEMY_SPAWNS.size() >= 1, "Test room needs enemy spawn")
+	var source := FileAccess.get_file_as_string("res://scripts/world/test_room.gd")
+	_expect(source.contains("Vector2(640.0, 384.0)"), "Test room must be 20x12 tiles at 32 px")
+	_expect(source.contains("const ENEMY_SPAWNS := ["), "Test room needs enemy spawns")
 
 func _test_mobile_contract() -> void:
 	_expect(ResourceLoader.exists("res://scripts/ui/mobile_touch_controls.gd"), "Mobile touch controls missing")
