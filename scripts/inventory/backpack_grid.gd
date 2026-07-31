@@ -188,7 +188,7 @@ func evaluate_connections() -> Dictionary:
 		var queue: Array[StringName] = [seed_id]
 		var visited: Dictionary = {}
 		while not queue.is_empty():
-			var item_id := queue.pop_front()
+			var item_id: StringName = queue.pop_front()
 			if visited.has(item_id):
 				continue
 			visited[item_id] = true
