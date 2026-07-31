@@ -3,11 +3,14 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+BASE_GAME_COMMIT = "c23bdddec9f8b0dfab355faff5d4b212e6755be7"
 
 
 def sha256(path: Path) -> str:
@@ -16,6 +19,15 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def git_value(*args: str, fallback: str) -> str:
+    try:
+        return subprocess.check_output(
+            ["git", *args], cwd=ROOT, text=True, stderr=subprocess.DEVNULL
+        ).strip() or fallback
+    except (OSError, subprocess.CalledProcessError):
+        return fallback
 
 
 def parse_service_worker_assets() -> list[str]:
@@ -73,17 +85,25 @@ def main() -> None:
     for name in assets:
         source = ROOT / name
         if not source.is_file() or source.stat().st_size == 0:
-            raise SystemExit(f"Missing or empty original web asset: {name}")
+            raise SystemExit(f"Missing or empty web asset: {name}")
         destination = output / name
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, destination)
         manifest[name] = sha256(source)
 
+    source_branch = os.environ.get("GITHUB_HEAD_REF") or os.environ.get("GITHUB_REF_NAME") or git_value(
+        "rev-parse", "--abbrev-ref", "HEAD", fallback="android/tutorial-integration"
+    )
+    source_commit = os.environ.get("GITHUB_SHA") or git_value("rev-parse", "HEAD", fallback="unknown")
+
     (output / "asset-manifest.json").write_text(
         json.dumps(
             {
-                "source_branch": "playtest-stable",
-                "source_commit": "c23bdddec9f8b0dfab355faff5d4b212e6755be7",
+                "source_branch": source_branch,
+                "source_commit": source_commit,
+                "base_game_branch": "playtest-stable",
+                "base_game_commit": BASE_GAME_COMMIT,
+                "feature_set": ["original-web-game", "gdd-guided-tutorial"],
                 "assets": manifest,
             },
             ensure_ascii=False,
@@ -92,7 +112,7 @@ def main() -> None:
         + "\n",
         encoding="utf-8",
     )
-    print(f"Packed {len(assets)} original web assets into {output}")
+    print(f"Packed {len(assets)} web assets into {output}")
 
 
 if __name__ == "__main__":

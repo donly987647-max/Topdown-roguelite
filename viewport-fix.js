@@ -20,7 +20,6 @@
     root.style.setProperty('--viewport-left', `${view.left}px`);
     root.style.setProperty('--viewport-top', `${view.top}px`);
 
-    // Do not block portrait play or shrink the combat canvas into a 16:9 letterbox.
     body.classList.remove('portrait-layout', 'run-active');
 
     if (typeof canvas === 'undefined' || typeof ctx === 'undefined') return;
@@ -35,6 +34,21 @@
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   }
 
+  function loadTutorialLayer() {
+    if (!document.querySelector('link[href="tutorial.css"]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'tutorial.css';
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector('script[src="tutorial.js"]')) {
+      const script = document.createElement('script');
+      script.src = 'tutorial.js';
+      script.defer = true;
+      document.body.appendChild(script);
+    }
+  }
+
   resize = fitViewportFullBleed;
   window.addEventListener('resize', fitViewportFullBleed, { passive: true });
   window.addEventListener('orientationchange', () => {
@@ -46,4 +60,5 @@
 
   fitViewportFullBleed();
   window.setTimeout(fitViewportFullBleed, 100);
+  loadTutorialLayer();
 })();
