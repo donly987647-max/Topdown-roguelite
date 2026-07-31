@@ -124,6 +124,7 @@ func _test_runtime_contract() -> void:
 	_expect(weapon.current_ammo == 8, "Default prototype pistol loadout must start with eight rounds")
 	_expect(weapon.try_fire(), "Service pistol must fire")
 	_expect(weapon.current_ammo == 7, "Service pistol must consume one round")
+	_clear_projectiles(world)
 
 	weapon.equip_frame(WeaponFrameCatalog.burst_carbine())
 	_expect(weapon.current_ammo == 38, "Extended burst carbine must start with 38 rounds")
