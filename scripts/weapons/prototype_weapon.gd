@@ -98,7 +98,7 @@ func start_reload() -> bool:
 	if frame == null or reload_remaining > 0.0 or current_ammo >= _capacity() or _burst_remaining > 0:
 		return false
 	reload_remaining = _statf("reload_time", frame.reload_time)
-	AudioManager.play_cue(&"reload", -8.0)
+	_play_audio(&"reload", -8.0)
 	ammo_state_changed.emit(current_ammo, _capacity(), true)
 	return true
 
@@ -139,7 +139,7 @@ func _spawn_volley() -> void:
 			shot_direction = aim_direction.rotated(deg_to_rad(angle_degrees))
 		_spawn_projectile(shot_direction, round_damage_multiplier, true)
 	var volume := -4.5 if frame.fire_mode == WeaponFrameData.FireMode.SHOTGUN else -7.0
-	AudioManager.play_cue(&"fire", volume, 0.03)
+	_play_audio(&"fire", volume, 0.03)
 
 func _spawn_projectile(direction: Vector2, damage_multiplier: float, allow_clone: bool) -> void:
 	_create_projectile(direction, damage_multiplier)
@@ -228,13 +228,16 @@ func get_build_snapshot() -> Dictionary:
 	for part in equipped_parts:
 		part_ids.append(String(part.part_id))
 		part_names.append(part.display_name)
+	var limits: Dictionary = build.get("limits", {})
 	return {
 		"frame_id": frame.frame_id if frame != null else &"",
 		"part_ids": part_ids,
 		"part_names": part_names,
 		"power_cost": int(build.get("power_cost", 0)),
 		"weight": float(build.get("weight", 0.0)),
-		"limits": build.get("limits", {}).duplicate(true),
+		"max_power": int(limits.get("max_power", 0)),
+		"max_weight": float(limits.get("max_weight", 0.0)),
+		"limits": limits.duplicate(true),
 		"overload": build.get("overload", {}).duplicate(true),
 		"stats": _stats().duplicate(true),
 		"effects": _effects().duplicate(true)
@@ -263,3 +266,8 @@ func _duplicate_parts(parts: Array) -> Array[WeaponPartData]:
 		if value is WeaponPartData:
 			result.append((value as WeaponPartData).duplicate_part())
 	return result
+
+func _play_audio(cue: StringName, volume_db := 0.0, minimum_interval := 0.0) -> void:
+	var audio_manager: Node = get_node_or_null("/root/AudioManager")
+	if audio_manager != null and audio_manager.has_method("play_cue"):
+		audio_manager.call("play_cue", cue, volume_db, minimum_interval)
