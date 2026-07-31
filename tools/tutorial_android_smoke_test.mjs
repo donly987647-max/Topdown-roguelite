@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { chromium } from 'playwright';
 
+fs.mkdirSync('builds/tutorial-android-smoke', { recursive: true });
 const chromeCandidates = [
   process.env.CHROME_PATH,
   '/usr/bin/google-chrome',
@@ -9,6 +10,7 @@ const chromeCandidates = [
   '/usr/bin/chromium-browser'
 ].filter(Boolean);
 const executablePath = chromeCandidates.find(path => fs.existsSync(path));
+if (!executablePath) throw new Error('System Chrome/Chromium was not found.');
 const browser = await chromium.launch({ executablePath, headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, isMobile: true, hasTouch: true });
 const errors = [];
