@@ -1,0 +1,221 @@
+name: Tutorial Android Validation
+
+on:
+  push:
+    branches: [android/tutorial-integration]
+  pull_request:
+    branches: [android/original-web-wrapper]
+  workflow_dispatch:
+
+concurrency:
+  group: tutorial-android-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-build-boot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate tutorial source
+        run: |
+          node --check tutorial.js
+          node --check viewport-fix.js
+          node --check sw.js
+          grep -q "tutorial.js" sw.js
+          grep -q "tutorial.css" sw.js
+
+      - name: Install browser test runtime
+        run: npm install --no-audit --no-fund
+
+      - name: Locate Chrome for touch simulation
+        run: |
+          CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          if [ -z "$CHROME_PATH" ]; then
+            npx playwright install chromium
+            CHROME_PATH="$(node -e "import('playwright').then(({chromium})=>process.stdout.write(chromium.executablePath()))")"
+          fi
+          test -x "$CHROME_PATH"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          "$CHROME_PATH" --version
+
+      - name: Start local game server
+        run: |
+          python3 -m http.server 4173 > /tmp/last-magazine-tutorial-android-server.log 2>&1 &
+          echo $! > /tmp/last-magazine-tutorial-android-server.pid
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/index.html >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/last-magazine-tutorial-android-server.log
+          exit 1
+
+      - name: Regress original mobile reward flow
+        run: npm run test:original-mobile
+
+      - name: Test guided tutorial touch flow
+        run: npm run test:tutorial-mobile
+
+      - name: Upload browser interaction captures
+        uses: actions/upload-artifact@v4
+        with:
+          name: LastMagazine-Tutorial-Mobile-Smoke
+          path: |
+            builds/original-web-smoke/
+            builds/tutorial-android-smoke/
+            /tmp/last-magazine-tutorial-android-server.log
+          if-no-files-found: error
+
+      - name: Pack tutorial web assets
+        run: python3 tools/prepare_original_android_assets.py --output android-wrapper/app/src/main/assets
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK and emulator components
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpulse0 libgl1 libx11-6 libxcomposite1 libxcursor1 libxi6 libxtst6
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.1" \
+            "emulator" \
+            "system-images;android-35;google_apis;x86_64"
+          test -x "$ANDROID_HOME/emulator/emulator"
+          test -x "$ANDROID_HOME/cmdline-tools/16.0/bin/avdmanager"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Build tutorial APK
+        run: gradle -p android-wrapper --no-daemon :app:assembleDebug
+
+      - name: Validate APK contents and permissions
+        run: |
+          mkdir -p builds/android-tutorial
+          cp android-wrapper/app/build/outputs/apk/debug/app-debug.apk \
+            builds/android-tutorial/LAST_MAGAZINE_TUTORIAL_ANDROID.apk
+          test -s builds/android-tutorial/LAST_MAGAZINE_TUTORIAL_ANDROID.apk
+          unzip -l builds/android-tutorial/LAST_MAGAZINE_TUTORIAL_ANDROID.apk \
+            | tee builds/android-tutorial/apk-files.txt
+          test "$(unzip -l builds/android-tutorial/LAST_MAGAZINE_TUTORIAL_ANDROID.apk | grep -c 'classes[0-9]*\.dex')" -eq 1
+          for asset in index.html data.js game-1.js tutorial.js tutorial.css viewport-fix.js asset-manifest.json; do
+            grep -q "assets/$asset" builds/android-tutorial/apk-files.txt
+          done
+          "$ANDROID_HOME/build-tools/35.0.1/aapt2" dump permissions \
+            builds/android-tutorial/LAST_MAGAZINE_TUTORIAL_ANDROID.apk \
+            | tee builds/android-tutorial/apk-permissions.txt
+          "$ANDROID_HOME/build-tools/35.0.1/aapt2" dump badging \
+            builds/android-tutorial/LAST_MAGAZINE_TUTORIAL_ANDROID.apk \
+            | tee builds/android-tutorial/apk-badging.txt
+          grep -q "versionCode='10501'" builds/android-tutorial/apk-badging.txt
+          grep -q "versionName='1.0.5-tutorial.1'" builds/android-tutorial/apk-badging.txt
+          grep -q "launchable-activity: name='com.lastmagazine.game.MainActivity'" builds/android-tutorial/apk-badging.txt
+          if grep -q "android.permission.INTERNET" builds/android-tutorial/apk-permissions.txt; then
+            echo "Offline wrapper must not request INTERNET permission"
+            exit 1
+          fi
+          unzip -p builds/android-tutorial/LAST_MAGAZINE_TUTORIAL_ANDROID.apk \
+            assets/asset-manifest.json > builds/android-tutorial/asset-manifest.json
+          grep -q '"gdd-guided-tutorial"' builds/android-tutorial/asset-manifest.json
+          sha256sum builds/android-tutorial/LAST_MAGAZINE_TUTORIAL_ANDROID.apk \
+            | tee builds/android-tutorial/SHA256SUMS.txt
+
+      - name: Boot tutorial APK on Android 15 emulator
+        run: |
+          sudo chmod 666 /dev/kvm || true
+          export ANDROID_AVD_HOME="$RUNNER_TEMP/android-avd"
+          export AVDMANAGER="$ANDROID_HOME/cmdline-tools/16.0/bin/avdmanager"
+          export AVD_NAME="last-magazine-tutorial-api35"
+          export AVD_PATH="$ANDROID_AVD_HOME/$AVD_NAME.avd"
+          mkdir -p "$ANDROID_AVD_HOME"
+
+          echo no | "$AVDMANAGER" create avd \
+            --force \
+            --name "$AVD_NAME" \
+            --path "$AVD_PATH" \
+            --package "system-images;android-35;google_apis;x86_64" \
+            --device "pixel_6"
+
+          "$ANDROID_HOME/emulator/emulator" \
+            -avd "$AVD_NAME" \
+            -no-window \
+            -no-audio \
+            -no-boot-anim \
+            -no-snapshot \
+            -gpu swiftshader_indirect \
+            -camera-back none \
+            -camera-front none \
+            -wipe-data \
+            > builds/android-tutorial/emulator.log 2>&1 &
+          EMULATOR_PID=$!
+
+          DEVICE_READY=""
+          for attempt in $(seq 1 90); do
+            if ! kill -0 "$EMULATOR_PID" 2>/dev/null; then
+              cat builds/android-tutorial/emulator.log
+              exit 1
+            fi
+            if adb get-state 2>/dev/null | grep -q '^device$'; then
+              DEVICE_READY="1"
+              break
+            fi
+            sleep 2
+          done
+          test "$DEVICE_READY" = "1"
+
+          BOOTED=""
+          for attempt in $(seq 1 180); do
+            if ! kill -0 "$EMULATOR_PID" 2>/dev/null; then
+              cat builds/android-tutorial/emulator.log
+              exit 1
+            fi
+            BOOTED="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
+            if [ "$BOOTED" = "1" ]; then break; fi
+            sleep 2
+          done
+          test "$BOOTED" = "1"
+
+          adb install -r builds/android-tutorial/LAST_MAGAZINE_TUTORIAL_ANDROID.apk \
+            | tee builds/android-tutorial/adb-install.txt
+          adb logcat -c
+          adb shell am start -W -n com.lastmagazine.game/.MainActivity \
+            | tee builds/android-tutorial/activity-start.txt
+          grep -q "Status: ok" builds/android-tutorial/activity-start.txt
+          sleep 10
+          APP_PID="$(adb shell pidof com.lastmagazine.game | tr -d '\r')"
+          test -n "$APP_PID"
+          echo "$APP_PID" > builds/android-tutorial/app-pid.txt
+          adb shell dumpsys activity activities > builds/android-tutorial/activity-state.txt
+          grep -q "com.lastmagazine.game/.MainActivity" builds/android-tutorial/activity-state.txt
+          adb exec-out screencap -p > builds/android-tutorial/emulator-startup.png
+          test -s builds/android-tutorial/emulator-startup.png
+          adb logcat -d > builds/android-tutorial/logcat.txt
+          if grep -E "FATAL EXCEPTION|Process: com\.lastmagazine\.game|Unable to start activity.*lastmagazine" builds/android-tutorial/logcat.txt; then
+            exit 1
+          fi
+          adb emu kill || true
+
+      - name: Upload tutorial Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: LastMagazine-Tutorial-Android
+          path: builds/android-tutorial/
+          if-no-files-found: error
