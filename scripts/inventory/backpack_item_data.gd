@@ -1,7 +1,7 @@
 class_name BackpackItemData
 extends Resource
 
-const VALID_CONNECTORS := PackedStringArray(["power", "ammo", "cooling", "signal"])
+const VALID_CONNECTORS := ["power", "ammo", "cooling", "signal"]
 
 @export var instance_id: StringName = &""
 @export var part: WeaponPartData
