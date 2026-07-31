@@ -7,7 +7,8 @@ required = [
     'scripts/input/input_router.gd', 'scripts/player/player_controller.gd',
     'scripts/combat/health_component.gd', 'scripts/weapons/service_pistol.gd',
     'scripts/weapons/weapon_frame_data.gd', 'scripts/weapons/weapon_frame_catalog.gd',
-    'scripts/weapons/prototype_weapon.gd',
+    'scripts/weapons/weapon_part_data.gd', 'scripts/weapons/weapon_part_catalog.gd',
+    'scripts/weapons/weapon_build_calculator.gd', 'scripts/weapons/prototype_weapon.gd',
     'scripts/projectiles/projectile.gd', 'scripts/projectiles/projectile_data.gd',
     'scripts/enemies/training_gunner.gd', 'scripts/world/test_room.gd',
     'scripts/camera/combat_camera.gd', 'scripts/ui/mobile_touch_controls.gd',
@@ -58,6 +59,28 @@ for literal in [
     if literal not in catalog:
         raise SystemExit('P2 weapon catalog mismatch: ' + literal)
 
+part_catalog = (root / 'scripts/weapons/weapon_part_catalog.gd').read_text(encoding='utf-8')
+for literal in [
+    '&"precision_barrel"', '&"spread_barrel"', '&"piercing_barrel"', '&"ricochet_barrel"',
+    '&"extended_magazine"', '&"lightweight_magazine"', '&"compressed_magazine"', '&"reverse_magazine"',
+    '&"impact_core"', '&"photon_core"', '&"clone_core"', '&"flame_core"',
+    '"spread_degrees": 0.65', '"pellet_count": 2.0', '"pierce_count": 2.0',
+    '"ricochet_count": 2.0', '"magazine_capacity": 1.60', '"ammo_cost": 2',
+    '"reverse_round_damage_decay": 0.03', '"status_type": &"burn"',
+]:
+    if literal not in part_catalog:
+        raise SystemExit('P2 weapon part catalog mismatch: ' + literal)
+
+prototype = (root / 'scripts/weapons/prototype_weapon.gd').read_text(encoding='utf-8')
+for literal in ['WeaponBuildCalculator.compile', 'equip_frame_with_parts', 'pierce_damage_decay', 'ricochet_damage_multiplier', 'clone_chance', 'status_type']:
+    if literal not in prototype:
+        raise SystemExit('P2 weapon part runtime missing: ' + literal)
+
+projectile = (root / 'scripts/projectiles/projectile.gd').read_text(encoding='utf-8')
+for literal in ['_remaining_ricochets', 'direction.bounce', 'apply_status_buildup', 'pierce_damage_decay']:
+    if literal not in projectile:
+        raise SystemExit('P2 projectile modifier runtime missing: ' + literal)
+
 mobile = (root / 'scripts/ui/mobile_touch_controls.gd').read_text(encoding='utf-8')
 for literal in ['InputEventScreenTouch', 'InputEventScreenDrag', 'pulse_mobile_dash', 'pulse_mobile_reload', 'pulse_mobile_weapon_next']:
     if literal not in mobile:
@@ -72,4 +95,4 @@ exports = (root / 'export_presets.cfg').read_text(encoding='utf-8')
 if 'name="Android"' not in exports:
     raise SystemExit('Android export preset missing')
 
-print('P1 regression and P2 weapon-frame structure validated.')
+print('P1 regression and P2 weapon-frame/part structure validated.')
