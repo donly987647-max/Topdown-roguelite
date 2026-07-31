@@ -203,7 +203,9 @@ func _get_command_snapshot() -> Dictionary:
 func _emit_event(signal_name: StringName, arguments: Array = []) -> void:
 	var event_bus := get_node_or_null("/root/EventBus")
 	if event_bus != null and event_bus.has_signal(signal_name):
-		event_bus.emit_signal(signal_name, arguments)
+		var call_arguments: Array = [signal_name]
+		call_arguments.append_array(arguments)
+		event_bus.callv("emit_signal", call_arguments)
 
 func _play_audio(cue: StringName, volume_db := 0.0, minimum_interval := 0.0) -> void:
 	var audio_manager := get_node_or_null("/root/AudioManager")
