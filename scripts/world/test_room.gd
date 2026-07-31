@@ -46,7 +46,7 @@ func _update_enemy_count() -> void:
 	var count := _active_enemy_count()
 	if count != _last_enemy_count:
 		_last_enemy_count = count
-		EventBus.enemy_count_changed.emit(count)
+		_emit_event(&"enemy_count_changed", [count])
 	if count == 0 and not _reward_offered and is_instance_valid(player):
 		_reward_offered = true
 		_offer_reward.call_deferred()
@@ -71,7 +71,8 @@ func _offer_reward() -> void:
 	reward_requested.emit(options)
 
 func correct_dash_direction(start: Vector2, desired_direction: Vector2, distance: float) -> Vector2:
-	if GameState.high_difficulty_hazard_correction_disabled:
+	var game_state := get_node_or_null("/root/GameState")
+	if game_state != null and bool(game_state.get("high_difficulty_hazard_correction_disabled")):
 		return desired_direction.normalized()
 	var desired_end := start + desired_direction.normalized() * distance
 	var safe_end := Vector2(
@@ -107,6 +108,13 @@ func _build_static_rect(rect: Rect2, _color: Color) -> void:
 	collider.shape = shape
 	body.add_child(collider)
 	add_child(body)
+
+func _emit_event(signal_name: StringName, arguments: Array = []) -> void:
+	var event_bus := get_node_or_null("/root/EventBus")
+	if event_bus != null and event_bus.has_signal(signal_name):
+		var call_arguments: Array = [signal_name]
+		call_arguments.append_array(arguments)
+		event_bus.callv("emit_signal", call_arguments)
 
 func _draw() -> void:
 	draw_rect(ROOM_RECT, Color("0b1014"), true)
