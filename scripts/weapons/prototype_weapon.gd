@@ -17,6 +17,7 @@ var aim_direction := Vector2.RIGHT
 var _burst_remaining := 0
 var _burst_timer := 0.0
 var _ammo_by_frame: Dictionary = {}
+var _parts_by_frame: Dictionary = {}
 var _last_round_index := 0
 
 func setup(owner_actor: Node2D, initial_frame: WeaponFrameData) -> void:
@@ -37,18 +38,18 @@ func _process(delta: float) -> void:
 func equip_frame(next_frame: WeaponFrameData) -> void:
 	if next_frame == null:
 		return
-	equip_frame_with_parts(next_frame, WeaponPartCatalog.prototype_loadout_for(next_frame.frame_id))
+	var next_parts := _loadout_for_frame(next_frame.frame_id)
+	equip_frame_with_parts(next_frame, next_parts)
 
 func equip_frame_with_parts(next_frame: WeaponFrameData, parts: Array[WeaponPartData]) -> void:
 	if next_frame == null:
 		return
 	if frame != null:
 		_ammo_by_frame[frame.frame_id] = current_ammo
+		_parts_by_frame[frame.frame_id] = _duplicate_parts(equipped_parts)
 	frame = next_frame.duplicate_frame()
-	equipped_parts.clear()
-	for part in parts:
-		if part != null:
-			equipped_parts.append(part.duplicate_part())
+	equipped_parts = _duplicate_parts(parts)
+	_parts_by_frame[frame.frame_id] = _duplicate_parts(equipped_parts)
 	build = WeaponBuildCalculator.compile(frame, equipped_parts)
 	current_ammo = clampi(int(_ammo_by_frame.get(frame.frame_id, _capacity())), 0, _capacity())
 	fire_cooldown = 0.0
@@ -63,6 +64,9 @@ func equip_parts(parts: Array[WeaponPartData]) -> void:
 	if frame == null:
 		return
 	equip_frame_with_parts(frame, parts)
+
+func get_parts_for_frame(frame_id: StringName) -> Array[WeaponPartData]:
+	return _loadout_for_frame(frame_id)
 
 func set_aim(direction: Vector2) -> void:
 	if direction.length_squared() > 0.001:
@@ -247,3 +251,15 @@ func get_swap_speed_multiplier() -> float:
 
 func get_display_name() -> String:
 	return frame.display_name if frame != null else "NO WEAPON"
+
+func _loadout_for_frame(frame_id: StringName) -> Array[WeaponPartData]:
+	if _parts_by_frame.has(frame_id):
+		return _duplicate_parts(_parts_by_frame[frame_id] as Array[WeaponPartData])
+	return WeaponPartCatalog.prototype_loadout_for(frame_id)
+
+func _duplicate_parts(parts: Array[WeaponPartData]) -> Array[WeaponPartData]:
+	var result: Array[WeaponPartData] = []
+	for part in parts:
+		if part != null:
+			result.append(part.duplicate_part())
+	return result
