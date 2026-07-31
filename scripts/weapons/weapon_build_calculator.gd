@@ -29,7 +29,11 @@ static func compile(frame: WeaponFrameData, parts: Array[WeaponPartData]) -> Dic
 		"reverse_round_damage_decay": 0.0,
 		"clone_chance": 0.0,
 		"clone_damage_multiplier": 0.0,
-		"status_type": &""
+		"status_type": &"",
+		"swap_speed_multiplier": 1.0,
+		"misfire_chance": 0.0,
+		"move_speed_multiplier": 1.0,
+		"dash_distance_multiplier": 1.0
 	}
 	var equipped_slots: Dictionary = {}
 	var total_power := 0
@@ -53,6 +57,20 @@ static func compile(frame: WeaponFrameData, parts: Array[WeaponPartData]) -> Dic
 	for key in stats:
 		stats[key] = float(stats[key]) * float(multipliers.get(key, 1.0)) + float(additions.get(key, 0.0))
 
+	var power_overload_ratio := maxf(0.0, float(total_power - frame.max_power) / float(maxi(frame.max_power, 1)))
+	var weight_overload_ratio := maxf(0.0, (total_weight - frame.max_weight) / maxf(frame.max_weight, 0.01))
+	var power_overloaded := power_overload_ratio > 0.0
+	var weight_overloaded := weight_overload_ratio > 0.0
+
+	# GDD overload rules implemented for the systems currently present in P2.
+	# Heat and active-charge penalties are deferred until those systems exist.
+	stats["reload_time"] = float(stats["reload_time"]) * (1.0 + power_overload_ratio * 0.50)
+	effects["misfire_chance"] = clampf(power_overload_ratio * 0.12 * (1.10 - frame.stability * 0.40), 0.0, 0.25)
+	effects["move_speed_multiplier"] = clampf(1.0 - weight_overload_ratio * 0.18, 0.72, 1.0)
+	effects["dash_distance_multiplier"] = clampf(1.0 - weight_overload_ratio * 0.15, 0.75, 1.0)
+	var base_swap_multiplier := float(effects.get("swap_speed_multiplier", 1.0))
+	effects["swap_speed_multiplier"] = maxf(0.55, base_swap_multiplier / (1.0 + weight_overload_ratio * 0.40))
+
 	stats["damage"] = maxf(0.1, float(stats["damage"]))
 	stats["fire_interval"] = maxf(0.01, float(stats["fire_interval"]))
 	stats["magazine_capacity"] = maxi(1, roundi(float(stats["magazine_capacity"])))
@@ -75,5 +93,16 @@ static func compile(frame: WeaponFrameData, parts: Array[WeaponPartData]) -> Dic
 		"effects": effects,
 		"equipped_slots": equipped_slots,
 		"power_cost": total_power,
-		"weight": total_weight
+		"weight": total_weight,
+		"limits": {
+			"max_power": frame.max_power,
+			"max_weight": frame.max_weight,
+			"stability": frame.stability
+		},
+		"overload": {
+			"power": power_overloaded,
+			"weight": weight_overloaded,
+			"power_ratio": power_overload_ratio,
+			"weight_ratio": weight_overload_ratio
+		}
 	}
