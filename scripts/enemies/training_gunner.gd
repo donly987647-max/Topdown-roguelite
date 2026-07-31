@@ -13,6 +13,9 @@ const BURN_TICK_DAMAGE := 3.0
 
 var target: PlayerController
 var health_component: HealthComponent
+var health_multiplier := 1.0
+var damage_multiplier := 1.0
+var elite_rank := 0
 var _attack_cooldown := 0.8
 var _telegraph_remaining := 0.0
 var _strafe_sign := 1.0
@@ -29,16 +32,18 @@ func _ready() -> void:
 	collision_mask = GameConstants.LAYER_WORLD | GameConstants.LAYER_PLAYER | GameConstants.LAYER_ENEMY
 	var collider := CollisionShape2D.new()
 	var shape := CircleShape2D.new()
-	shape.radius = 13.0
+	shape.radius = 13.0 + float(elite_rank) * 1.5
 	collider.shape = shape
 	add_child(collider)
 	health_component = HealthComponent.new()
-	health_component.max_health = 54.0
-	health_component.max_armor_plates = 0
+	health_component.max_health = 54.0 * maxf(0.1, health_multiplier)
+	health_component.max_armor_plates = elite_rank
+	health_component.armor_per_plate = 12.0
 	add_child(health_component)
 	health_component.damaged.connect(_on_damaged)
 	health_component.died.connect(_on_died)
 	_strafe_sign = -1.0 if spawn_index % 2 == 0 else 1.0
+	_attack_cooldown = maxf(0.45, 0.8 - float(elite_rank) * 0.08)
 	queue_redraw()
 
 func _physics_process(delta: float) -> void:
@@ -48,13 +53,14 @@ func _physics_process(delta: float) -> void:
 		target = get_tree().get_first_node_in_group("player") as PlayerController
 		return
 	var offset := target.global_position - global_position
+	var move_speed := MOVE_SPEED * (1.0 + float(elite_rank) * 0.08)
 	if offset.length() > DETECTION_RANGE:
-		velocity = velocity.move_toward(Vector2.ZERO, MOVE_SPEED * 5.0 * delta)
+		velocity = velocity.move_toward(Vector2.ZERO, move_speed * 5.0 * delta)
 		move_and_slide()
 		return
 	if _telegraph_remaining > 0.0:
 		_telegraph_remaining -= delta
-		velocity = velocity.move_toward(Vector2.ZERO, MOVE_SPEED * 8.0 * delta)
+		velocity = velocity.move_toward(Vector2.ZERO, move_speed * 8.0 * delta)
 		move_and_slide()
 		if _telegraph_remaining <= 0.0:
 			_fire_at_target()
@@ -70,11 +76,11 @@ func _physics_process(delta: float) -> void:
 	else:
 		move_direction = offset.normalized().orthogonal() * _strafe_sign
 	move_direction += _separation_force() * 0.7
-	velocity = velocity.move_toward(move_direction.normalized() * MOVE_SPEED, MOVE_SPEED * 5.0 * delta)
+	velocity = velocity.move_toward(move_direction.normalized() * move_speed, move_speed * 5.0 * delta)
 	move_and_slide()
 	if _attack_cooldown <= 0.0 and _has_line_of_sight():
-		_telegraph_remaining = TELEGRAPH_TIME
-		_attack_cooldown = ATTACK_COOLDOWN
+		_telegraph_remaining = maxf(0.38, TELEGRAPH_TIME - float(elite_rank) * 0.08)
+		_attack_cooldown = maxf(0.72, ATTACK_COOLDOWN - float(elite_rank) * 0.12)
 		AudioManager.play_cue(&"telegraph", -6.0, 0.12)
 	queue_redraw()
 
@@ -87,11 +93,11 @@ func _fire_at_target() -> void:
 		return
 	var direction := (target.global_position + target.velocity * 0.12 - global_position).normalized()
 	var data := ProjectileData.new()
-	data.damage = 10.0
-	data.speed = 430.0
+	data.damage = 10.0 * maxf(0.1, damage_multiplier)
+	data.speed = 430.0 * (1.0 + float(elite_rank) * 0.04)
 	data.lifetime = 2.4
-	data.radius = 4.0
-	data.knockback = 18.0
+	data.radius = 4.0 + float(elite_rank) * 0.4
+	data.knockback = 18.0 + float(elite_rank) * 4.0
 	data.critical_chance = 0.0
 	data.faction = &"enemy"
 	data.collision_mask = GameConstants.LAYER_WORLD | GameConstants.LAYER_PLAYER
@@ -160,18 +166,26 @@ func _on_died(_packet: DamagePacket) -> void:
 	queue_free()
 
 func _draw() -> void:
-	var color := Color("ffffff") if _flash_remaining > 0.0 else Color("ff536d")
+	var base_color := Color("ff536d")
+	if elite_rank == 1:
+		base_color = Color("ff9f43")
+	elif elite_rank >= 2:
+		base_color = Color("d78cff")
+	var color := Color("ffffff") if _flash_remaining > 0.0 else base_color
 	if _burn_remaining > 0.0 and _flash_remaining <= 0.0:
 		color = Color("ff8a3d")
 	var points := PackedVector2Array([Vector2(0, -15), Vector2(13, 9), Vector2(0, 14), Vector2(-13, 9)])
 	draw_colored_polygon(points, Color(0.08, 0.04, 0.06, 0.95))
-	draw_polyline(PackedVector2Array([points[0], points[1], points[2], points[3], points[0]]), color, 3.0)
+	draw_polyline(PackedVector2Array([points[0], points[1], points[2], points[3], points[0]]), color, 3.0 + float(elite_rank))
+	if elite_rank > 0:
+		draw_arc(Vector2.ZERO, 19.0 + float(elite_rank) * 2.0, 0.0, TAU, 24, base_color, 2.0)
 	if _burn_remaining > 0.0:
 		draw_arc(Vector2.ZERO, 18.0, 0.0, TAU, 24, Color("ff8a3d"), 2.0)
 	if target != null:
 		var direction := (target.global_position - global_position).normalized()
 		draw_line(Vector2.ZERO, direction * 18.0, color, 3.0)
 		if _telegraph_remaining > 0.0:
-			var alpha := 0.35 + 0.65 * (1.0 - _telegraph_remaining / TELEGRAPH_TIME)
+			var telegraph_time := maxf(0.38, TELEGRAPH_TIME - float(elite_rank) * 0.08)
+			var alpha := 0.35 + 0.65 * (1.0 - _telegraph_remaining / telegraph_time)
 			draw_line(direction * 20.0, direction * 420.0, Color(1.0, 0.25, 0.3, alpha), 2.0)
-			draw_arc(Vector2.ZERO, 20.0, -PI / 2.0, -PI / 2.0 + TAU * (1.0 - _telegraph_remaining / TELEGRAPH_TIME), 24, Color("ffbd55"), 3.0)
+			draw_arc(Vector2.ZERO, 20.0, -PI / 2.0, -PI / 2.0 + TAU * (1.0 - _telegraph_remaining / telegraph_time), 24, Color("ffbd55"), 3.0)
