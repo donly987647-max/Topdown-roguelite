@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:original-mobile": "node tools/original_mobile_smoke_test.mjs"
+    "test:original-mobile": "node tools/original_mobile_smoke_test.mjs",
+    "test:tutorial-mobile": "node tools/tutorial_android_smoke_test.mjs"
   },
   "devDependencies": {
     "playwright": "1.52.0"
