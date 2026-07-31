@@ -24,10 +24,10 @@ func _ready() -> void:
 	enemy_label = _make_label(root, Vector2(760, 20), 18)
 	status_label = _make_label(root, Vector2(18, 490), 14)
 	if OS.has_feature("mobile") or DisplayServer.is_touchscreen_available():
-		status_label.text = "MOBILE P2  ·  LEFT MOVE  ·  RIGHT AIM/FIRE  ·  WEAPON / DASH / RELOAD"
+		status_label.text = "MOBILE P2  ·  LEFT MOVE  ·  RIGHT AIM/FIRE  ·  WEAPON / DASH / RELOAD / BAG"
 		status_label.position = Vector2(18, 458)
 	else:
-		status_label.text = "WASD MOVE  ·  MOUSE FIRE  ·  1/2/3 OR Q WEAPON  ·  SPACE DASH  ·  R RELOAD"
+		status_label.text = "WASD MOVE  ·  MOUSE FIRE  ·  1/2/3 OR Q WEAPON  ·  SPACE DASH  ·  R RELOAD  ·  I BAG"
 	precision_label = _make_label(root, Vector2(370, 80), 24)
 	precision_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	precision_label.size = Vector2(220, 40)
@@ -52,9 +52,9 @@ func _sync_initial_state() -> void:
 	var player := get_tree().get_first_node_in_group("player")
 	if player == null:
 		return
-	var health := player.get("health_component")
-	if health != null and health.has_method("get_snapshot"):
-		_on_stats(health.get_snapshot())
+	var health_node: Node = player.get_node_or_null("HealthComponent")
+	if health_node != null and health_node.has_method("get_snapshot"):
+		_on_stats(health_node.get_snapshot())
 	if player.has_method("get_weapon_snapshot"):
 		var snapshot: Dictionary = player.get_weapon_snapshot()
 		_on_ammo(
