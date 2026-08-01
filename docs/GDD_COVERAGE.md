@@ -34,28 +34,28 @@
 | 5 | 전체 게임 구조 | **NOT STARTED** | GDD 기준 구현 필요 |
 | 6 | 게임 루프 | **NOT STARTED** | GDD 기준 구현 필요 |
 | 7 | 플레이어 조작 | **PARTIAL** | PC/Android 입력 기반 일부 구현; 게임패드 미구현 |
-| 8 | 플레이어 이동 | **PARTIAL** | 이동/가감속 구현, GDD 수치·감각 검증 미완 |
+| 8 | 플레이어 이동 | **PARTIAL** | 이동/가감속 구현, GDD 수치·감각 검증 미완; Rail Lancer 충전 이동감속 미연결 |
 | 9 | 회피 구르기 | **PARTIAL** | 대시/i-frame 구현, 정밀 회피/낙하 방지 미완 |
-| 10 | 생명력과 방어 | **PARTIAL** | HP/피격/사망 일부, 방어판/임시 보호막 미완 |
-| 11 | 조준과 사격 | **PARTIAL** | 조준/사격/탄환 충돌 일부, 명중 피드백 미완 |
-| 12 | 재장전 시스템 | **PARTIAL** | 예비 탄약, 자동 재장전 옵션, 완벽 재장전 타이밍 훅, 대시 취소 구현; 부품별 변형/실행 검증 미완 |
-| 13 | 과열 시스템 | **PARTIAL** | 0~100 열/냉각/과열 잠금 프레임워크 구현; 고열 빌드 효과/실행 검증 미완 |
-| 14 | 무기 시스템 | **PARTIAL** | 프레임/총열/탄창/코어 데이터 구조 시작; 전력·중량·안정성·호환·과부하 런타임 미완 |
-| 15 | 무기 프레임 | **PARTIAL** | GDD 12종 전체 데이터 카탈로그 입력 완료; 각 프레임 고유 공격 런타임 미구현 |
-| 16 | 총열 부품 | **PARTIAL** | GDD 12종 전체 데이터 카탈로그 입력 완료; 효과 실행 계층 미구현 |
-| 17 | 탄창 부품 | **PARTIAL** | GDD 12종 전체 데이터 카탈로그 입력 완료; 효과 실행 계층 미구현 |
-| 18 | 코어 부품 | **PARTIAL** | GDD 12종 전체 데이터 카탈로그 입력 완료; 효과 실행 계층 미구현 |
-| 19 | 상태 이상 | **PARTIAL** | GDD 7종 상태 데이터 카탈로그 입력 완료; 축적/틱/보스 변환 런타임 미구현 |
+| 10 | 생명력과 방어 | **PARTIAL** | HP/피격/사망과 임시 보호막 런타임 구현; 정식 방어판/UI/전체 검증 미완 |
+| 11 | 조준과 사격 | **PARTIAL** | 조준/사격, payload 탄환, 관통·유도·치명타·폭발·연쇄, swept ray 연속충돌과 표면법선 도탄 구현; 명중 피드백·충돌마스크·실행 QA 미완 |
+| 12 | 재장전 시스템 | **PARTIAL** | 예비 탄약, 자동 재장전 옵션, 완벽 재장전, 대시 취소, 서비스 피스톨 첫 탄 확정 치명타 구현; 탄창별 고유 규칙/실행 검증 미완 |
+| 13 | 과열 시스템 | **PARTIAL** | 0~100 열/냉각/과열 잠금과 Rotary/Beam 연동; 고열 특수 빌드·밸런스·실행 검증 미완 |
+| 14 | 무기 시스템 | **PARTIAL** | WeaponBuild 조립, 호환, 전력·중량 과부하, WeaponController 실전 스탯 반영, 범용 effect payload 실행 계층 구현; UI/저장/전체 부품 규칙 미완 |
+| 15 | 무기 프레임 | **PARTIAL** | 12종 데이터 + 서비스/버스트/SMG/샷건/레일/로터리/런처/아크/빔/톱날/드론기초/해머 런타임 분기 구현. 영구 드론, 레일 이동감속, 런처 자폭 등 최종 fidelity 및 Godot 검증 미완 |
+| 16 | 총열 부품 | **PARTIAL** | GDD 12종 전체 데이터 카탈로그 입력 완료; 공통 payload 효과 일부 실행 가능하나 12종 고유 규칙 전체 구현 미완 |
+| 17 | 탄창 부품 | **PARTIAL** | GDD 12종 전체 데이터 카탈로그 입력 완료; 완벽 재장전 기반은 존재하나 교차/반응/도박/이중 등 고유 규칙 전체 구현 미완 |
+| 18 | 코어 부품 | **PARTIAL** | 12종 데이터. Fire/Cold/Shock/Corrosion/Bleed + Void/Impact/Absorption/Photon/Replication/Devour/Inverse Phase 실행 경로 구현; 충격 벽보너스, Devour 엘리트 지속, 지형 전도 등 fidelity/QA 미완 |
+| 19 | 상태 이상 | **PARTIAL** | Burn/Cold/Shock/Corrosion/Bleed/Confusion/Vulnerable 축적·틱·동결·연쇄·피해증폭 구현, Burn+폭발 및 동결 파쇄 반응 구현; 보스 혼란 변환/물 지형/전체 QA 미완 |
 | 20 | 장비 격자 시스템 | **PARTIAL** | 6×5 배치/회전/점유/인접/최대 3칸 확장 코어 구현; UI·단자·전투중 잠금 미완 |
 | 21 | 패시브 모듈 | **NOT STARTED** | GDD 기준 구현 필요 |
 | 22 | 액티브 장비 | **NOT STARTED** | GDD 기준 구현 필요 |
 | 23 | 등급과 희귀도 | **NOT STARTED** | GDD 기준 구현 필요 |
-| 24 | 시너지 시스템 | **NOT STARTED** | GDD 기준 구현 필요 |
+| 24 | 시너지 시스템 | **PARTIAL** | BackpackSynergyResolver로 인접/단자/전력/tag 기반 판정 기반 존재; 정식 시너지 50종, UI, 전체 전력망 미완 |
 | 25 | 캐릭터 | **NOT STARTED** | GDD 기준 구현 필요 |
 | 26 | 방과 맵 생성 | **NOT STARTED** | GDD 기준 구현 필요 |
 | 27 | 방 종류 | **NOT STARTED** | GDD 기준 구현 필요 |
 | 28 | 전투 위협도 | **NOT STARTED** | GDD 기준 구현 필요 |
-| 29 | 적 AI 공통 규칙 | **PARTIAL** | Chaser/Ranged AI 일부, 공통 인식·벽 끼임·예고 규칙 미완 |
+| 29 | 적 AI 공통 규칙 | **PARTIAL** | Chaser/Ranged AI, 상태이상 속도/동결/혼란 영향 일부 구현; 공통 인식·벽 끼임·예고 규칙 미완 |
 | 30 | 제1구역: 폐기 조립라인 | **NOT STARTED** | GDD 기준 구현 필요 |
 | 31 | 제1구역 보스: 폐기물 압축기 GR-01 | **NOT STARTED** | GDD 기준 구현 필요 |
 | 32 | 제2구역: 생화학 처리시설 | **NOT STARTED** | GDD 기준 구현 필요 |
@@ -73,13 +73,13 @@
 | 44 | 허브 | **NOT STARTED** | GDD 기준 구현 필요 |
 | 45 | 난도 시스템 | **NOT STARTED** | GDD 기준 구현 필요 |
 | 46 | 튜토리얼 | **NOT STARTED** | GDD 기준 구현 필요 |
-| 47 | UI 구조 | **PARTIAL** | M1 HUD 일부, 전체 UI 우선순위/피해 숫자 미완 |
+| 47 | UI 구조 | **PARTIAL** | M1 HUD 일부, 전체 UI 우선순위/피해 숫자/프레임 charge-spin-beam 상태표시 미완 |
 | 48 | 인벤토리 UI | **NOT STARTED** | GDD 기준 구현 필요 |
 | 49 | 지도 UI | **NOT STARTED** | GDD 기준 구현 필요 |
 | 50 | 접근성 | **NOT STARTED** | GDD 기준 구현 필요 |
 | 51 | 그래픽 방향 | **NOT STARTED** | GDD 기준 구현 필요 |
 | 52 | 카메라 | **PARTIAL** | 카메라 구조 미완; 흔들림/보스 카메라 미구현 |
-| 53 | 이펙트 | **PARTIAL** | 기초 플래시 훅 일부, 전체 VFX 정책 미구현 |
+| 53 | 이펙트 | **PARTIAL** | 기초 플래시 훅 일부, 전체 VFX 정책·빔/폭발/상태 시각 피드백 미구현 |
 | 54 | 사운드 | **NOT STARTED** | GDD 기준 구현 필요 |
 | 55 | 대사와 텍스트 | **NOT STARTED** | GDD 기준 구현 필요 |
 | 56 | 로컬라이징 | **NOT STARTED** | GDD 기준 구현 필요 |
@@ -89,7 +89,7 @@
 | 60 | 일일 시드와 도전 | **NOT STARTED** | GDD 기준 구현 필요 |
 | 61 | 밸런스 기준 | **NOT STARTED** | GDD 기준 구현 필요 |
 | 62 | 무작위성 원칙 | **NOT STARTED** | GDD 기준 구현 필요 |
-| 63 | 기술 구조 | **PARTIAL** | Resource 정의와 JSON 카탈로그로 데이터 중심 구조 착수; 범용 효과 실행/검증 도구 미구현 |
+| 63 | 기술 구조 | **PARTIAL** | Resource/JSON 데이터 구조 + WeaponBuild/WeaponEffectResolver/StatusReceiver 범용 실행 계층 구현; headless 검증·회귀테스트·콘텐츠 validation tooling 미완 |
 | 64 | 성능 목표 | **NOT STARTED** | GDD 기준 구현 필요 |
 | 65 | 화면 비율과 디스플레이 | **PARTIAL** | 1920x1080 기반만 존재, 비율/모드/UI 배율 미검증 |
 | 66 | Steam 출시 기능 | **NOT STARTED** | GDD 기준 구현 필요 |
@@ -130,6 +130,8 @@ GDD 67.1 기준 목표량:
 - [ ] 업적 40~50개
 - [ ] 엔딩 3종 이상
 
+> 무기/부품 카탈로그에 목표 수량 데이터가 존재하더라도 실제 런 등장·효과·UI·저장·입력·QA 조건을 만족하기 전에는 위 콘텐츠 수량 게이트를 체크하지 않는다.
+
 ## Minimum Mandatory Launch Scope (GDD 74.1)
 
 - [ ] 캐릭터 3명 이상
@@ -162,7 +164,7 @@ GDD 67.1 기준 목표량:
 
 ## Current Conclusion
 
-현재 코드는 GDD 전체 구현판이 아니다. M1 전투 기반의 일부만 구현된 상태이며, 본 매트릭스 기준으로 대부분의 섹션은 `NOT STARTED`다. 따라서 사용자에게 "기획서가 완벽하게 포함된 빌드"라고 제시하면 안 된다.
+현재 코드는 GDD 전체 구현판이 아니다. 무기/상태/가방 기반의 코드 커버리지는 크게 확장됐지만 실제 Godot 실행 검증이 끝나지 않았고, 런 구조·콘텐츠·UI·저장·플랫폼 범위 대부분이 아직 남아 있다. 따라서 사용자에게 "기획서가 완벽하게 포함된 빌드"라고 제시하면 안 된다.
 
 ## Update Rule
 
