@@ -1,0 +1,31 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource path="res://scripts/enemies/ranged_enemy.gd" type="Script" id="1_ranged"]
+[ext_resource path="res://scenes/combat/EnemyProjectile.tscn" type="PackedScene" id="2_projectile"]
+
+[sub_resource type="CircleShape2D" id="Circle_body"]
+radius = 21.0
+
+[node name="RangedEnemy" type="CharacterBody2D"]
+script = ExtResource("1_ranged")
+projectile_scene = ExtResource("2_projectile")
+collision_layer = 16
+collision_mask = 3
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("Circle_body")
+
+[node name="BodyVisual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-24, -18, 14, -22, 26, 0, 14, 22, -24, 18, -14, 0)
+color = Color(0.68, 0.16, 0.72, 1)
+
+[node name="Muzzle" type="Marker2D" parent="."]
+position = Vector2(30, 0)
+
+[node name="HealthBar" type="ProgressBar" parent="."]
+offset_left = -32.0
+offset_top = -40.0
+offset_right = 32.0
+offset_bottom = -33.0
+show_percentage = false
+value = 55.0
