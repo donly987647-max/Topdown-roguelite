@@ -66,10 +66,9 @@ func _instantiate_room_root(room_template: RoomTemplateDefinition) -> Node:
 		var resource := load(room_template.scene_path)
 		if resource is PackedScene:
 			return resource.instantiate()
-	var fallback := Node2D.new()
-	fallback.name = "Room_%s" % String(room_template.id)
-	fallback.set_meta("generated_room_shell", true)
-	return fallback
+	var builder := AuthoredRoomShellBuilder.new()
+	builder.tile_world_size = tile_world_size
+	return builder.build(room_template)
 
 func _on_wave_ready(wave_index: int, entries: Array, spawn_cells: Array[Vector2i]) -> void:
 	var spawn_points := _resolve_spawn_points(spawn_cells)
