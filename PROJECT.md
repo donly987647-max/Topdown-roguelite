@@ -1,6 +1,6 @@
 # LAST MAGAZINE — Project Roadmap & Handoff
 
-> Operational source of truth for development continuity. Read this file before changing the project in any future conversation.
+> Operational source of truth. Read this file before changing the project in any future conversation.
 
 ## Goal
 Build **LAST MAGAZINE** from scratch as a commercially releasable 2D top-down bullet-hell action roguelite for Windows PC / Steam in Godot 4.x. Target: paid Steam 1.0 quality, not prototype quality.
@@ -14,219 +14,140 @@ Core identity:
 - Skill-first combat and high build variety
 
 ## Canonical Design Source
-`LAST_MAGAZINE_GDD.md` is the design source of truth. Do not silently redesign major systems. Intentional deviations must be recorded under Design Decisions. The discarded legacy prototype must not be restored.
+`LAST_MAGAZINE_GDD.md` is the design source of truth. Do not silently redesign major systems. Intentional deviations belong under Design Decisions. Never restore the discarded legacy prototype as an implementation/design authority.
 
-## Development Quality Rules
+## Development / Playtest Rules
 - Production-quality architecture over throwaway demo hacks.
-- A feature is not done merely because it executes.
-- Each feature must work in play, handle obvious edge cases, avoid error spam, remain maintainable, and support expansion.
-- Do not mass-produce content before core combat and the core game loop pass their quality gates.
+- Implementation is not acceptance; runtime feel/quality gates still matter.
 - Code changes and progress-document updates are one development unit.
-- Do not interrupt the user for routine micro-decisions. Build a substantial playable checkpoint first, then request focused feedback.
-
-## User Playtest / APK Policy
-PC/Steam remains the primary release target, but Android is a supported development/playtest target.
-
-Rules:
-1. Gameplay logic is shared between PC and Android.
-2. PC input: keyboard/mouse.
-3. Android input: virtual movement stick + aim/fire stick + dash/reload controls.
-4. Do not ask the user to verify tiny intermediate changes.
-5. At a meaningful checkpoint, provide Android APK when a compatible build environment is available.
-6. APK feedback should focus on high-value feel questions, not implementation details.
-7. Android release signing credentials must never be committed.
+- Do not ask the user to verify tiny intermediate changes. Build a substantial checkpoint first.
+- PC/Steam remains the primary release target.
+- Android is a supported development/playtest target using the same gameplay code.
+- At a meaningful review checkpoint, provide an Android APK when a compatible build environment is available.
+- Never commit Android signing credentials.
 
 ## Milestones
-### M1 — Core Combat Prototype (Phases 0–5)
-1. Project foundation
-2. Player movement/collision
-3. Mouse aim
-4. Firing
-5. Magazine/reload
-6. Dash/i-frames
-7. Damage/HP/death
-8. Basic enemy AI
-9. Combat room
-10. Combat feedback/polish
-
-Acceptance: moving, aiming, shooting, dodging and fighting must already be enjoyable, readable and predictable.
-
-### M2 — Core Game Prototype (Phases 6–13)
-`Combat → Reward → Gun Construction → Backpack → Route Choice → Combat → Boss`
-
-### M3 — Commercial Vertical Slice
-One representative production-quality zone slice suitable for Steam store/trailer footage.
-
-### M4 — Alpha
-Full run playable start-to-ending; major systems complete; all zones structurally present.
-
-### M5 — Beta
-Content complete; balance; accessibility; controller; localization; Steam features; performance; save validation; external testing.
-
-### M6 — Release Candidate / Steam 1.0
-Feature freeze; zero known progression blockers/save corruption/major collision defects; stable performance; complete KBM/controller runs; validated Steam packaging.
+- **M1 — Core Combat Prototype:** foundation, player, gun combat, enemies, readability, combat-room loop.
+- **M2 — Core Game Prototype:** `Combat → Reward → Gun Construction → Backpack → Route Choice → Combat → Boss`.
+- **M3 — Commercial Vertical Slice:** one representative zone at store/trailer quality.
+- **M4 — Alpha:** full run structurally playable start-to-ending.
+- **M5 — Beta:** content complete, balance, accessibility, controller, localization, Steam, performance, saves, external testing.
+- **M6 — RC / Steam 1.0:** feature freeze and release validation.
 
 ## Full Phase Order
-0 Foundation → 1 Player → 2 Gun Combat → 3 Enemy Framework → 4 Combat Readability → 5 Combat Rooms → 6 Run/Route → 7 Weapon Frames → 8 Gun Construction → 9 6×5 Backpack → 10 Backpack Synergies → 11 Reward Economy → 12 Facilities → 13 Boss Framework → 14 Complete Run → 15 Meta Progression → 16 Content Architecture → 17 Full Content → 18 Production Art → 19 VFX/Audio/Music → 20 UI/UX → 21 Tutorial → 22 Save → 23 Controller → 24 Settings/Accessibility → 25 Balance → 26 Optimization → 27 QA → 28 Steam Integration → 29 Store Assets → 30 Release Candidate → 31 Steam 1.0 → 32 Post-launch.
+0 Foundation → 1 Player → 2 Gun Combat → 3 Enemy Framework → 4 Combat Readability → 5 Combat Rooms → 6 Run/Route → 7 Weapon Frames → 8 Gun Construction → 9 6×5 Backpack → 10 Backpack Synergies → 11 Reward Economy → 12 Facilities → 13 Boss Framework → 14 Complete Run → 15 Meta Progression → 16 Content Architecture → 17 Full Content → 18 Production Art → 19 VFX/Audio/Music → 20 UI/UX → 21 Tutorial → 22 Save → 23 Controller → 24 Settings/Accessibility → 25 Balance → 26 Optimization → 27 QA → 28 Steam Integration → 29 Store Assets → 30 RC → 31 Steam 1.0 → 32 Post-launch.
 
 ## Current Development State
 **Last updated:** 2026-08-01
 
 **Current milestone:** `M1 — Core Combat Prototype`
 
-**Current working phase:** `Phase 4/5 — Combat Readability + Combat Room flow`, with core Phase 1–3 implementation present but runtime acceptance still pending.
+**Current working phase:** `Phase 4/5 — Combat Readability + Combat Room flow`.
 
 ### Implemented
-Foundation:
-- Clean Godot project bootstrap and main scene.
-- 1920×1080 internal viewport.
-- 60 Hz physics tick.
-- Named collision layers.
-- Windows/Android playtest export presets.
-
-Player:
-- 8-direction normalized movement.
-- Acceleration/deceleration.
-- Mouse aim.
-- World collision.
-- Dash, cooldown and i-frame timing hooks.
-- HP, damage, knockback and death.
-- Player hurt flash.
-- Mobile move/aim input overrides.
+Foundation / player:
+- Clean Godot project, 1920×1080 internal viewport, 60 Hz physics, named collision layers.
+- WASD movement, normalized diagonal movement, acceleration/deceleration, mouse aim.
+- Dash, cooldown, i-frame hook, HP, damage, knockback, death and hurt flash.
+- Android left-stick movement, right-stick aim/fire, dash and reload controls.
+- Windows and Android playtest export presets.
 
 Gun combat:
 - Reusable `WeaponController`.
-- Automatic/semi-auto hook.
-- Magazine/ammo state.
-- Manual and empty-mag reload.
-- Spread.
-- Projectile speed/damage configuration.
-- Projectile lifetime, world/enemy collision, damage, knockback and piercing hook.
+- Automatic/semi-auto hook, fire cadence, magazine/reload, spread.
+- Player projectile lifetime, collision, damage, knockback and piercing hook.
+- Muzzle flash visual and `shot_fired` feedback hook.
 
 Enemies:
-- Stationary damage target dummy.
-- Chaser melee-pressure archetype with pursuit/contact damage.
-- Ranged enemy archetype with preferred/retreat distance behavior.
-- Enemy projectile scene and player damage path.
+- Target dummy.
+- Chaser melee-pressure archetype.
+- Ranged spacing archetype.
+- Enemy projectile → player damage path.
+- Ranged pre-shot telegraph/wind-up with visible aiming line before projectile release.
 - Enemy HP, hit flash, knockback and death cleanup.
 
 Combat room:
-- Combat lab arena.
-- Wave 1: pre-placed Chasers.
-- Wave 2: dynamically spawned Ranged enemies from room spawn markers.
-- Wave transition delay.
-- Enemy tracking and room-clear detection.
-- Lockable room-door components.
-- Doors lock while combat is active and unlock on final clear.
-- Reward scene spawned after final clear.
-- Reward collection event.
-- HUD updates for wave, hostiles, room clear and reward collection.
-
-Android controls:
-- Shared gameplay code with mobile input layer.
-- Left movement touch zone.
-- Right aim/fire touch zone.
-- Aim threshold to fire.
-- Dash and reload touch buttons.
-- Hidden automatically on desktop.
-
-### New primary files
-- `scripts/combat/enemy_projectile.gd`
-- `scenes/combat/EnemyProjectile.tscn`
-- `scripts/enemies/ranged_enemy.gd`
-- `scenes/enemies/RangedEnemy.tscn`
-- `scripts/rooms/room_door.gd`
-- `scenes/rooms/RoomDoor.tscn`
-- `scripts/rewards/reward_pickup.gd`
-- `scenes/rewards/RewardPickup.tscn`
+- Wave 1 Chasers → Wave 2 dynamically spawned Ranged enemies.
+- Spawn markers, wave transition delay and enemy tracking.
+- Doors lock during combat and unlock after final clear.
+- Room-clear reward spawn and collection event.
+- HUD for HP, ammo, reload, wave, hostiles, clear/reward status.
+- Debug HUD for FPS, enemy count, player speed, dash cooldown, i-frame timer and desktop/mobile input mode.
 
 ### Validation status
-The current environment has not executed the Godot project. Therefore implementation exists, but runtime acceptance is not claimed.
+The current ChatGPT environment has not executed the Godot project, so runtime acceptance is **still pending**. Implemented means code/scene structure exists in GitHub, not that feel or parsing has been accepted.
 
-Required runtime validation before user review:
-- Parse all scenes/scripts.
-- Verify player movement/collision and dash.
-- Verify projectile collision masks.
-- Verify reload timing.
-- Verify Chaser contact damage.
-- Verify Ranged enemy spacing/fire cadence.
-- Verify enemy projectile → player damage path.
-- Verify wave 1 → wave 2 transition.
-- Verify final room clear, door unlock and reward spawn.
-- Verify reward collection signal.
-- Verify Android multitouch and export/install/startup.
+Runtime/device validation required before user review:
+- Scene/script parse.
+- Movement/collision/dash feel.
+- Projectile masks and damage paths.
+- Reload timing.
+- Chaser pressure and Ranged spacing.
+- Ranged telegraph readability and projectile cadence.
+- Wave transition, door state and reward spawn.
+- Muzzle/hurt feedback.
+- Android multitouch, install and startup.
 
 ### Known technical debt / pending work
-- No Godot runtime test yet.
-- No automated headless validation/CI.
-- Ranged enemy currently fires directly without a pre-shot telegraph; add readable wind-up before M1 acceptance.
-- Doors are functional blockers/indicators but the combat lab is not yet connected to neighboring rooms.
-- Reward is still a prototype salvage pickup, not the final GDD reward-choice system.
-- No camera shake/muzzle flash/audio layer yet.
-- Placeholder geometric visuals only.
-- Mobile control sizing requires physical-device tuning.
-- Android APK not yet produced/device-tested.
+- No actual Godot runtime validation yet.
+- No automated headless CI yet.
+- Reward is still a single prototype salvage pickup rather than GDD reward choice.
+- No production audio or camera shake yet.
+- Placeholder geometry visuals only.
+- Mobile layout still requires physical-device tuning.
+- Android APK has not yet been produced/device-tested.
+- Data-driven Resource definitions should be introduced before weapon/enemy content scales further.
 
-## Next Work — execute without asking for routine confirmation
-1. Add ranged-enemy pre-shot telegraph and cancel behavior.
-2. Add muzzle flash and limited hit-impact feedback.
-3. Add lightweight debug overlay for player state, enemy count, wave and input mode.
-4. Add room-entry/exit hooks so door lock/unlock can later connect to multiple rooms.
-5. Add first structured reward-choice prototype instead of a single pickup.
-6. Introduce data-driven Resource definitions before enemy/weapon content count grows.
-7. Runtime-validate and repair the M1 combat lab when Godot execution becomes available.
-8. Stabilize Android controls and produce APK at the first meaningful feedback checkpoint.
-9. Ask user only for feel feedback: movement, dash, shooting, enemy pressure/readability, mobile ergonomics.
-10. Iterate until M1 acceptance passes, then enter M2.
+## Next Work — continue without routine confirmation
+1. Add first structured reward-choice prototype (three mutually exclusive choices).
+2. Add lightweight impact feedback and bounded camera-shake hook.
+3. Add room entry/exit transition hooks for future multi-room routing.
+4. Introduce data Resources for weapon/enemy/reward definitions before content scale-up.
+5. Add automated/headless parse validation if repository CI tooling permits it.
+6. Runtime-validate and repair M1 in a real Godot environment.
+7. Stabilize Android controls and export/install a playtest APK.
+8. Ask user only for high-value feel judgment: movement, dash, shooting, enemy pressure/readability, mobile ergonomics.
+9. Iterate until M1 quality gate passes, then enter M2.
 
 ## M1 Quality Gate Checklist
-- [x] Clean fresh project baseline implemented
-- [x] Player movement/collision implementation
-- [x] Mouse aim implementation
+- [x] Fresh project baseline
+- [x] Player movement/collision
+- [x] Mouse aim
 - [x] Dash/i-frame implementation
-- [x] Player HP/damage/death implementation
-- [x] Gun firing pipeline implementation
-- [x] Magazine/reload implementation
-- [x] Projectile/damage pipeline implementation
-- [x] Melee-pressure enemy implementation
-- [x] Ranged enemy implementation
-- [x] Enemy projectile implementation
-- [x] Multi-wave combat-room implementation
-- [x] Door lock/unlock implementation
-- [x] Room-clear reward spawn implementation
-- [x] Basic HUD implementation
-- [x] Android touch-input foundation implementation
-- [ ] Ranged attack telegraph pass
-- [ ] Muzzle/impact readability pass
+- [x] HP/damage/death
+- [x] Gun firing pipeline
+- [x] Magazine/reload
+- [x] Projectile/damage pipeline
+- [x] Chaser enemy
+- [x] Ranged enemy + enemy projectile
+- [x] Ranged pre-shot telegraph implementation
+- [x] Multi-wave combat room
+- [x] Door lock/unlock
+- [x] Room-clear reward spawn
+- [x] Basic combat HUD
+- [x] Debug HUD
+- [x] Player hurt + muzzle feedback hooks
+- [x] Android touch-input foundation
+- [ ] Structured reward choice
+- [ ] Impact/camera feedback pass
 - [ ] Godot runtime parsing/functional validation
 - [ ] Android APK device validation
-- [ ] M1 playtest acceptance
-
-## Definition of Done
-For each task:
-- Works in actual play once runtime validation is available.
-- No obvious error spam.
-- Relevant edge cases handled.
-- Architecture supports expansion.
-- User-facing behavior is understandable.
-- `PROJECT.md` updated.
-
-Milestones require gameplay quality acceptance, not technical completion alone.
+- [ ] M1 user playtest acceptance
 
 ## Design Decisions
 - 2026-08-01: Legacy prototype discarded; clean restart confirmed.
 - 2026-08-01: Steam 1.0 commercial quality is the end target.
-- 2026-08-01: Code changes and progress-document updates are one development unit.
-- 2026-08-01: Android is a development/playtest target; PC/Steam remains primary release target.
-- 2026-08-01: User review requests are batched at meaningful checkpoints; provide APK when feedback is required and build tooling is available.
-- 2026-08-01: PC and Android share gameplay code; platform differences belong in input/presentation layers.
-- 2026-08-01: M1 combat room uses two deliberately different pressure types: melee Chaser wave followed by Ranged wave.
+- 2026-08-01: Code changes and progress-document updates are one unit.
+- 2026-08-01: Android is a development/playtest target; PC/Steam stays primary.
+- 2026-08-01: User review is batched at meaningful checkpoints and should use APK when practical.
+- 2026-08-01: PC and Android share gameplay code; platform differences stay in input/presentation.
+- 2026-08-01: M1 uses deliberately different melee and ranged pressure waves.
 
 ## Continuation Protocol
 1. Read `PROJECT.md` first.
 2. Read `LAST_MAGAZINE_GDD.md` for design/content/balance behavior.
 3. Inspect current repository state before coding.
-4. Continue from the first incomplete item in `Next Work` unless priority changes.
+4. Continue from the first incomplete item in Next Work unless priority changes.
 5. Never restore discarded prototype code.
 6. Do not ask for frequent confirmation.
 7. Update this document after meaningful implementation.
@@ -236,20 +157,16 @@ Suggested continuation prompt:
 
 ## Progress Log
 ### 2026-08-01 — Fresh restart
-- Previous project removed.
-- New Godot bootstrap created.
-- Steam-quality roadmap/handoff policy established.
+- Previous project removed; new Godot bootstrap and Steam-quality roadmap created.
 
-### 2026-08-01 — M1 player foundation
-- Added movement, aim, dash, i-frame, HP/damage/death hooks.
+### 2026-08-01 — M1 player / gun / Android foundation
+- Added movement, aim, dash/i-frame, HP/damage/death, weapon controller, projectiles, magazine/reload and Android controls.
 
-### 2026-08-01 — M1 gun combat and Android input foundation
-- Added weapon controller, projectile pipeline, magazine/reload, HUD, Chaser enemy and Android controls.
+### 2026-08-01 — M1 room/ranged expansion
+- Added Chaser/Ranged pressure types, enemy projectiles, two-wave room flow, doors and room-clear reward.
 
-### 2026-08-01 — M1 wave/ranged/reward expansion
-- Added Ranged enemy and enemy projectiles.
-- Added two-wave combat flow.
-- Added combat room door lock/unlock components.
-- Added room-clear salvage reward and collection state.
-- Added player hurt flash and expanded HUD wave/reward feedback.
+### 2026-08-01 — M1 readability expansion
+- Added Ranged pre-shot telegraph.
+- Added player muzzle flash feedback hook.
+- Added expanded debug HUD for runtime tuning.
 - Runtime and APK validation remain pending before user feedback is requested.
