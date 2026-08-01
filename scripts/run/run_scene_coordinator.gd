@@ -12,14 +12,19 @@ signal map_state_changed(state: Dictionary)
 var run_state: RunStateController
 var room_runtime: RoomSceneRuntime
 var template_registry: RoomTemplateRegistry
+var player: Node2D
+var camera: Camera2D
+var entry_camera := RoomEntryCameraController.new()
 var _transitioning := false
 
-func configure(state: RunStateController, runtime: RoomSceneRuntime, registry: RoomTemplateRegistry) -> bool:
+func configure(state: RunStateController, runtime: RoomSceneRuntime, registry: RoomTemplateRegistry, player_node: Node2D = null, camera_node: Camera2D = null) -> bool:
 	if state == null or runtime == null or registry == null:
 		return false
 	run_state = state
 	room_runtime = runtime
 	template_registry = registry
+	player = player_node
+	camera = camera_node
 	_bind_signals()
 	return true
 
@@ -50,9 +55,18 @@ func _on_room_entered(room_id: StringName, room_type: StringName) -> void:
 		_transitioning = false
 		push_warning("Failed to load room template %s" % String(template.id))
 		return
+	_apply_room_entry_and_camera(template)
 	_transitioning = false
 	room_transition_finished.emit(room_id, template.id)
 	_emit_map_state()
+
+func _apply_room_entry_and_camera(template: RoomTemplateDefinition) -> void:
+	if room_runtime.room_root == null:
+		return
+	if player != null:
+		entry_camera.place_player(player, room_runtime.room_root, template)
+	if camera != null:
+		entry_camera.apply_camera_bounds(camera, room_runtime.room_root, template)
 
 func _select_and_bind_template(room_id: StringName, room_type: StringName) -> RoomTemplateDefinition:
 	var node := run_state.current_node()
