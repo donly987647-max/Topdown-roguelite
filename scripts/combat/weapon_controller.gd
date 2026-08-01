@@ -10,6 +10,10 @@ signal shot_fired
 signal heat_changed(current: float, maximum: float)
 signal overheated(duration: float)
 signal overheat_recovered
+signal build_applied(build: WeaponBuild)
+
+@export_category("Assembly")
+@export var weapon_build: WeaponBuild
 
 @export_category("Projectile")
 @export var projectile_scene: PackedScene
@@ -48,11 +52,15 @@ var _reload_left := 0.0
 var _is_reloading := false
 var _overheat_left := 0.0
 var _overheated := false
+var _build_stats: Dictionary = {}
+var _perfect_reload_damage_bonus := 1.0
 
 @onready var muzzle: Marker2D = $Muzzle
 @onready var muzzle_flash: Polygon2D = get_node_or_null("MuzzleFlash") as Polygon2D
 
 func _ready() -> void:
+	if weapon_build != null:
+		apply_build(weapon_build)
 	ammo = magazine_capacity
 	reserve_ammo = maxi(0, starting_reserve_ammo)
 	_emit_ammo()
@@ -60,10 +68,28 @@ func _ready() -> void:
 	if muzzle_flash != null:
 		muzzle_flash.visible = false
 
+func apply_build(build: WeaponBuild) -> bool:
+	if build == null or not build.is_complete() or not build.is_compatible():
+		return false
+	weapon_build = build
+	_build_stats = build.computed_stats()
+	damage = float(_build_stats.get("damage", damage))
+	var interval := maxf(0.01, float(_build_stats.get("fire_interval", 1.0 / maxf(rounds_per_second, 0.01))))
+	rounds_per_second = 1.0 / interval
+	magazine_capacity = maxi(1, int(round(_build_stats.get("magazine_size", magazine_capacity))))
+	reload_duration = maxf(0.05, float(_build_stats.get("reload_time", reload_duration)))
+	uses_heat = bool(_build_stats.get("uses_heat", uses_heat))
+	heat_per_shot = maxf(0.0, float(_build_stats.get("heat_per_shot", heat_per_shot)))
+	if _build_stats.has("projectile_speed"):
+		projectile_speed = maxf(1.0, float(_build_stats["projectile_speed"]))
+	if _build_stats.has("spread"):
+		spread_degrees = maxf(0.0, float(_build_stats["spread"]))
+	build_applied.emit(build)
+	return true
+
 func _process(delta: float) -> void:
 	_fire_cooldown = maxf(0.0, _fire_cooldown - delta)
 	_update_heat(delta)
-
 	if _is_reloading:
 		if cancel_reload_on_dash and Input.is_action_just_pressed("dash"):
 			cancel_reload()
@@ -75,11 +101,9 @@ func _process(delta: float) -> void:
 		if _reload_left <= 0.0:
 			_finish_reload()
 		return
-
 	if Input.is_action_just_pressed("reload"):
 		start_reload()
 		return
-
 	var wants_fire := Input.is_action_pressed("fire") if automatic else Input.is_action_just_pressed("fire")
 	if wants_fire:
 		try_fire()
@@ -94,6 +118,11 @@ func try_fire() -> bool:
 	if projectile_scene == null:
 		push_warning("WeaponController has no projectile_scene")
 		return false
+	if weapon_build != null and weapon_build.power_overload_ratio() > 0.0:
+		var failure_chance := clampf(weapon_build.power_overload_ratio() * 0.12, 0.0, 0.35)
+		if randf() < failure_chance:
+			_fire_cooldown = 0.12
+			return false
 
 	ammo -= 1
 	_fire_cooldown = 1.0 / maxf(rounds_per_second, 0.01)
@@ -104,20 +133,32 @@ func try_fire() -> bool:
 			_begin_overheat()
 	_emit_ammo()
 
-	var projectile := projectile_scene.instantiate() as Projectile
-	if projectile == null:
-		push_error("Projectile scene root must inherit Projectile")
-		return false
-
+	var payload := WeaponEffectResolver.shot_payload(weapon_build, _build_stats)
+	payload["owner"] = get_parent().get_parent() if get_parent() != null else owner
+	var pellet_count := WeaponEffectResolver.pellet_count(weapon_build, _build_stats)
+	var total_spread := WeaponEffectResolver.pellet_spread_degrees(weapon_build, _build_stats, spread_degrees)
 	var base_direction := Vector2.RIGHT.rotated(global_rotation)
-	var spread_radians := deg_to_rad(randf_range(-spread_degrees, spread_degrees))
-	var shot_direction := base_direction.rotated(spread_radians)
-	projectile.global_position = muzzle.global_position
-	projectile.configure(shot_direction, damage, projectile_speed)
-	get_tree().current_scene.add_child(projectile)
+	for i in range(pellet_count):
+		var offset_degrees := 0.0
+		if pellet_count > 1:
+			var t := float(i) / float(maxi(1, pellet_count - 1))
+			offset_degrees = lerpf(-total_spread * 0.5, total_spread * 0.5, t)
+		else:
+			offset_degrees = randf_range(-total_spread, total_spread)
+		_spawn_projectile(base_direction.rotated(deg_to_rad(offset_degrees)), payload, _perfect_reload_damage_bonus)
+	_perfect_reload_damage_bonus = 1.0
 	_play_muzzle_flash()
 	shot_fired.emit()
 	return true
+
+func _spawn_projectile(direction: Vector2, payload: Dictionary, damage_multiplier: float) -> void:
+	var projectile := projectile_scene.instantiate() as Projectile
+	if projectile == null:
+		push_error("Projectile scene root must inherit Projectile")
+		return
+	get_tree().current_scene.add_child(projectile)
+	projectile.global_position = muzzle.global_position
+	projectile.configure(direction, damage * damage_multiplier, projectile_speed, payload)
 
 func start_reload() -> bool:
 	if _is_reloading or ammo >= magazine_capacity:
@@ -139,6 +180,9 @@ func cancel_reload() -> void:
 func _trigger_perfect_reload() -> void:
 	perfect_reload.emit()
 	_reload_left = minf(_reload_left, reload_duration * perfect_reload_time_reduction)
+	_perfect_reload_damage_bonus = maxf(_perfect_reload_damage_bonus, float(_build_stats.get("perfect_reload_damage_multiplier", 1.25)))
+	if weapon_build != null and weapon_build.frame != null and weapon_build.frame.id == &"service_pistol":
+		_build_stats["critical_chance"] = 1.0
 
 func _finish_reload() -> void:
 	_is_reloading = false
