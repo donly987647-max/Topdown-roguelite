@@ -23,6 +23,9 @@ var _dash_time_left := 0.0
 var _dash_cooldown_left := 0.0
 var _invulnerability_left := 0.0
 var _dead := false
+var _mobile_move := Vector2.ZERO
+var _mobile_aim := Vector2.ZERO
+var _mobile_aim_active := false
 
 @onready var body_visual: Polygon2D = $BodyVisual
 @onready var aim_pivot: Node2D = $AimPivot
@@ -39,7 +42,10 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 
-	var input_direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	var keyboard_direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	var input_direction := _mobile_move if _mobile_move.length_squared() > 0.0001 else keyboard_direction
+	if input_direction.length_squared() > 1.0:
+		input_direction = input_direction.normalized()
 	if input_direction.length_squared() > 0.0:
 		_last_move_direction = input_direction.normalized()
 
@@ -56,10 +62,24 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 func _update_aim() -> void:
-	var mouse_vector := get_global_mouse_position() - global_position
-	if mouse_vector.length_squared() > 1.0:
-		aim_direction = mouse_vector.normalized()
-		aim_pivot.rotation = aim_direction.angle()
+	if _mobile_aim_active and _mobile_aim.length_squared() > 0.0001:
+		aim_direction = _mobile_aim.normalized()
+	else:
+		var mouse_vector := get_global_mouse_position() - global_position
+		if mouse_vector.length_squared() > 1.0:
+			aim_direction = mouse_vector.normalized()
+	aim_pivot.rotation = aim_direction.angle()
+
+func set_mobile_move(value: Vector2) -> void:
+	_mobile_move = value.limit_length(1.0)
+
+func set_mobile_aim(value: Vector2, active: bool = true) -> void:
+	_mobile_aim = value.limit_length(1.0)
+	_mobile_aim_active = active
+
+func clear_mobile_aim() -> void:
+	_mobile_aim = Vector2.ZERO
+	_mobile_aim_active = false
 
 func _try_start_dash(input_direction: Vector2) -> void:
 	if _dash_cooldown_left > 0.0 or _dash_time_left > 0.0:
@@ -92,6 +112,9 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO) -> bool:
 
 func is_invulnerable() -> bool:
 	return _invulnerability_left > 0.0
+
+func is_dead() -> bool:
+	return _dead
 
 func _die() -> void:
 	_dead = true
