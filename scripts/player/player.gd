@@ -113,6 +113,15 @@ func is_invulnerable() -> bool:
 func is_dead() -> bool:
 	return _dead
 
+func dash_cooldown_remaining() -> float:
+	return _dash_cooldown_left
+
+func invulnerability_remaining() -> float:
+	return _invulnerability_left
+
+func mobile_input_active() -> bool:
+	return _mobile_move.length_squared() > 0.0001 or _mobile_aim_active
+
 func _die() -> void:
 	_dead = true
 	body_visual.modulate = Color(0.45, 0.45, 0.45, 1.0)
