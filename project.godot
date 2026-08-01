@@ -23,6 +23,16 @@ textures/canvas_textures/default_texture_filter=0
 [physics]
 common/physics_ticks_per_second=60
 
+[layer_names]
+2d_physics/layer_1="PlayerBody"
+2d_physics/layer_2="World"
+2d_physics/layer_3="PlayerHurtbox"
+2d_physics/layer_4="PlayerProjectile"
+2d_physics/layer_5="EnemyBody"
+2d_physics/layer_6="EnemyProjectile"
+2d_physics/layer_7="EnemyAttack"
+2d_physics/layer_8="Pickup"
+
 [input]
 move_left={
 "deadzone": 0.2,
