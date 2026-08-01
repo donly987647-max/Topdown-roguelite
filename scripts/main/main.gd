@@ -8,6 +8,7 @@ extends Node2D
 @onready var reload_bar: ProgressBar = $HUD/ReloadBar
 @onready var status_label: Label = $HUD/Status
 @onready var room_label: Label = $HUD/RoomState
+@onready var debug_label: Label = $HUD/Debug
 
 var _base_status := "WASD Move | Mouse Aim/Fire | R Reload | Space Dash"
 
@@ -30,6 +31,18 @@ func _process(_delta: float) -> void:
 		reload_bar.value = weapon.reload_progress() * 100.0
 	else:
 		reload_bar.visible = false
+	_update_debug_overlay()
+
+func _update_debug_overlay() -> void:
+	var enemy_count := get_tree().get_nodes_in_group("enemy").size()
+	debug_label.text = "FPS %d\nENEMIES %d\nSPEED %.0f\nDASH CD %.2f\nI-FRAME %.2f\nINPUT %s" % [
+		Engine.get_frames_per_second(),
+		enemy_count,
+		player.velocity.length(),
+		player.dash_cooldown_remaining(),
+		player.invulnerability_remaining(),
+		"MOBILE" if player.mobile_input_active() else "DESKTOP"
+	]
 
 func _on_ammo_changed(current: int, capacity: int) -> void:
 	ammo_label.text = "AMMO  %02d / %02d" % [current, capacity]
