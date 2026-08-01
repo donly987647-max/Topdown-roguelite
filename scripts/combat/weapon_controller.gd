@@ -4,6 +4,7 @@ extends Node2D
 signal ammo_changed(current: int, capacity: int)
 signal reload_started(duration: float)
 signal reload_finished
+signal shot_fired
 
 @export var projectile_scene: PackedScene
 @export var damage: float = 20.0
@@ -13,6 +14,7 @@ signal reload_finished
 @export var spread_degrees: float = 1.5
 @export var projectile_speed: float = 1250.0
 @export var automatic: bool = true
+@export var muzzle_flash_duration: float = 0.045
 
 var ammo: int
 var _fire_cooldown := 0.0
@@ -20,10 +22,13 @@ var _reload_left := 0.0
 var _is_reloading := false
 
 @onready var muzzle: Marker2D = $Muzzle
+@onready var muzzle_flash: Polygon2D = get_node_or_null("MuzzleFlash") as Polygon2D
 
 func _ready() -> void:
 	ammo = magazine_capacity
 	ammo_changed.emit(ammo, magazine_capacity)
+	if muzzle_flash != null:
+		muzzle_flash.visible = false
 
 func _process(delta: float) -> void:
 	_fire_cooldown = maxf(0.0, _fire_cooldown - delta)
@@ -67,7 +72,20 @@ func try_fire() -> bool:
 	projectile.global_position = muzzle.global_position
 	projectile.configure(shot_direction, damage, projectile_speed)
 	get_tree().current_scene.add_child(projectile)
+	_play_muzzle_flash()
+	shot_fired.emit()
 	return true
+
+func _play_muzzle_flash() -> void:
+	if muzzle_flash == null:
+		return
+	muzzle_flash.visible = true
+	muzzle_flash.rotation = randf_range(-0.15, 0.15)
+	var timer := get_tree().create_timer(muzzle_flash_duration)
+	timer.timeout.connect(func():
+		if is_instance_valid(muzzle_flash):
+			muzzle_flash.visible = false
+	)
 
 func start_reload() -> bool:
 	if _is_reloading or ammo >= magazine_capacity:
