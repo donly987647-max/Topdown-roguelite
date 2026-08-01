@@ -9,6 +9,7 @@ static func shot_payload(build: WeaponBuild, stats: Dictionary) -> Dictionary:
 		"critical_chance": float(stats.get("critical_chance", 0.0)),
 		"critical_multiplier": float(stats.get("critical_multiplier", 2.0)),
 		"explosion_radius": float(stats.get("explosion_radius", 0.0)),
+		"explosion_damage_multiplier": float(stats.get("explosion_damage_multiplier", 1.0)),
 		"status_id": StringName(stats.get("status_id", StringName())),
 		"status_stacks": int(stats.get("status_stacks", 0)),
 		"faction": &"player",
@@ -21,15 +22,21 @@ static func shot_payload(build: WeaponBuild, stats: Dictionary) -> Dictionary:
 		"devour": bool(stats.get("devour", false)),
 		"inverse_phase": bool(stats.get("inverse_phase", false)),
 		"impact_multiplier": float(stats.get("impact_multiplier", 1.0)),
+		"chain_count": int(stats.get("chain_count", 0)),
+		"chain_range": float(stats.get("chain_range", 240.0)),
+		"ignore_world_collision": bool(stats.get("ignore_world_collision", false)),
 	}
 	if build == null:
 		return payload
 	for effect_id in build.effect_ids():
 		_apply_effect(effect_id, payload)
+	_apply_frame_defaults(frame_id(build), payload)
 	return payload
 
 static func pellet_count(build: WeaponBuild, stats: Dictionary) -> int:
 	var count := maxi(1, int(stats.get("pellet_count", 1)))
+	if frame_id(build) == &"breach_shotgun":
+		count = maxi(count, 8)
 	if build == null:
 		return count
 	for effect_id in build.effect_ids():
@@ -42,12 +49,28 @@ static func pellet_spread_degrees(build: WeaponBuild, stats: Dictionary, fallbac
 	var spread := float(stats.get("spread", fallback))
 	if pellet_count(build, stats) > 1:
 		spread = maxf(spread, float(stats.get("pellet_spread", 16.0)))
+	if frame_id(build) == &"breach_shotgun":
+		spread = maxf(spread, 18.0)
 	return spread
 
 static func frame_id(build: WeaponBuild) -> StringName:
 	if build == null or build.frame == null:
 		return StringName()
 	return build.frame.id
+
+static func _apply_frame_defaults(id: StringName, payload: Dictionary) -> void:
+	match id:
+		&"shrapnel_launcher":
+			payload["explosion_radius"] = maxf(float(payload["explosion_radius"]), 145.0)
+			payload["explosion_damage_multiplier"] = maxf(float(payload["explosion_damage_multiplier"]), 2.25)
+			payload["ignore_world_collision"] = true
+		&"arc_projector":
+			payload["status_id"] = &"shock"
+			payload["status_stacks"] = maxi(1, int(payload["status_stacks"]))
+			payload["chain_count"] = maxi(3, int(payload["chain_count"]))
+			payload["chain_range"] = maxf(260.0, float(payload["chain_range"]))
+		&"sawblade_caster":
+			payload["ricochet"] = maxi(3, int(payload["ricochet"]))
 
 static func _apply_effect(effect_id: StringName, payload: Dictionary) -> void:
 	var text := String(effect_id).to_lower()
