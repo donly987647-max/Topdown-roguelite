@@ -1,0 +1,65 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://scripts/ui/mobile_controls.gd" type="Script" id="1_mobile"]
+
+[node name="MobileControls" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_mobile")
+
+[node name="MoveBase" type="Panel" parent="."]
+visible = false
+custom_minimum_size = Vector2(260, 260)
+offset_right = 260.0
+offset_bottom = 260.0
+mouse_filter = 2
+modulate = Color(1, 1, 1, 0.28)
+
+[node name="Knob" type="Panel" parent="MoveBase"]
+custom_minimum_size = Vector2(80, 80)
+offset_left = 90.0
+offset_top = 90.0
+offset_right = 170.0
+offset_bottom = 170.0
+mouse_filter = 2
+modulate = Color(1, 1, 1, 0.55)
+
+[node name="AimBase" type="Panel" parent="."]
+visible = false
+custom_minimum_size = Vector2(300, 300)
+offset_right = 300.0
+offset_bottom = 300.0
+mouse_filter = 2
+modulate = Color(1, 1, 1, 0.24)
+
+[node name="Knob" type="Panel" parent="AimBase"]
+custom_minimum_size = Vector2(84, 84)
+offset_left = 108.0
+offset_top = 108.0
+offset_right = 192.0
+offset_bottom = 192.0
+mouse_filter = 2
+modulate = Color(1, 1, 1, 0.5)
+
+[node name="DashButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 1625.0
+offset_top = 805.0
+offset_right = 1785.0
+offset_bottom = 965.0
+theme_override_font_sizes/font_size = 26
+text = "DASH"
+
+[node name="ReloadButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 1440.0
+offset_top = 865.0
+offset_right = 1580.0
+offset_bottom = 1005.0
+theme_override_font_sizes/font_size = 22
+text = "R"
