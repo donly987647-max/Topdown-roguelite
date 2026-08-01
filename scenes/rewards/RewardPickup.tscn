@@ -1,0 +1,28 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource path="res://scripts/rewards/reward_pickup.gd" type="Script" id="1_reward"]
+
+[sub_resource type="CircleShape2D" id="Circle_reward"]
+radius = 20.0
+
+[node name="RewardPickup" type="Area2D"]
+script = ExtResource("1_reward")
+collision_layer = 64
+collision_mask = 1
+monitoring = true
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("Circle_reward")
+
+[node name="Visual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, -22, 19, -11, 19, 11, 0, 22, -19, 11, -19, -11)
+color = Color(0.2, 0.92, 0.72, 1)
+
+[node name="Label" type="Label" parent="."]
+offset_left = -68.0
+offset_top = 30.0
+offset_right = 68.0
+offset_bottom = 58.0
+text = "SALVAGE"
+horizontal_alignment = 1
