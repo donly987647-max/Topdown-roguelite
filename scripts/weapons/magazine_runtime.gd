@@ -22,10 +22,19 @@ static func attach_to_player(player: Player) -> MagazineRuntime:
 	return runtime
 
 func _ready() -> void:
+	add_to_group(&"room_lifecycle_listener")
 	set_process(true)
 	call_deferred("_bind_weapon")
 	if _player != null and _player.has_signal("damaged"):
 		_player.damaged.connect(_on_player_damaged)
+
+func on_room_entered(_room_id: StringName, _room_type: StringName) -> void:
+	_reaction_window = 0.0
+	_reaction_used = false
+	_dual_half_loaded = false
+
+func on_room_cleared(_room_id: StringName) -> void:
+	_reaction_window = 0.0
 
 func _process(delta: float) -> void:
 	if _weapon == null or not is_instance_valid(_weapon):
