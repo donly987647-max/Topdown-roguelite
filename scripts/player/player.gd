@@ -1,6 +1,8 @@
 class_name Player
 extends CharacterBody2D
 
+signal temporary_shield_changed(current: float, maximum: float)
+
 @export_category("Movement")
 @export var max_speed: float = 360.0
 @export var acceleration: float = 2400.0
@@ -14,14 +16,18 @@ extends CharacterBody2D
 
 @export_category("Health")
 @export var max_health: float = 100.0
+@export var max_temporary_shield: float = 50.0
+@export var temporary_shield_duration: float = 6.0
 
 var health: float
+var temporary_shield := 0.0
 var aim_direction := Vector2.RIGHT
 var _last_move_direction := Vector2.RIGHT
 var _dash_direction := Vector2.ZERO
 var _dash_time_left := 0.0
 var _dash_cooldown_left := 0.0
 var _invulnerability_left := 0.0
+var _temporary_shield_left := 0.0
 var _dead := false
 var _mobile_move := Vector2.ZERO
 var _mobile_aim := Vector2.ZERO
@@ -32,6 +38,7 @@ var _mobile_aim_active := false
 
 func _ready() -> void:
 	health = max_health
+	temporary_shield_changed.emit(temporary_shield, max_temporary_shield)
 
 func _physics_process(delta: float) -> void:
 	_update_timers(delta)
@@ -90,11 +97,34 @@ func _update_timers(delta: float) -> void:
 	_dash_time_left = maxf(0.0, _dash_time_left - delta)
 	_dash_cooldown_left = maxf(0.0, _dash_cooldown_left - delta)
 	_invulnerability_left = maxf(0.0, _invulnerability_left - delta)
+	if temporary_shield > 0.0:
+		_temporary_shield_left = maxf(0.0, _temporary_shield_left - delta)
+		if _temporary_shield_left <= 0.0:
+			temporary_shield = 0.0
+			temporary_shield_changed.emit(temporary_shield, max_temporary_shield)
+
+func add_temporary_shield(amount: float) -> float:
+	if amount <= 0.0 or _dead:
+		return 0.0
+	var before := temporary_shield
+	temporary_shield = minf(max_temporary_shield, temporary_shield + amount)
+	var gained := temporary_shield - before
+	if gained > 0.0:
+		_temporary_shield_left = temporary_shield_duration
+		temporary_shield_changed.emit(temporary_shield, max_temporary_shield)
+	return gained
 
 func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO) -> bool:
 	if _dead or _invulnerability_left > 0.0 or amount <= 0.0:
 		return false
-	health = maxf(0.0, health - amount)
+	var remaining := amount
+	if temporary_shield > 0.0:
+		var absorbed := minf(temporary_shield, remaining)
+		temporary_shield -= absorbed
+		remaining -= absorbed
+		temporary_shield_changed.emit(temporary_shield, max_temporary_shield)
+	if remaining > 0.0:
+		health = maxf(0.0, health - remaining)
 	velocity += knockback
 	_invulnerability_left = 0.35
 	body_visual.modulate = Color(1.0, 0.35, 0.35, 1.0)
