@@ -36,29 +36,24 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_update_timers(delta)
 	_update_aim()
-
 	if _dead:
 		velocity = velocity.move_toward(Vector2.ZERO, deceleration * delta)
 		move_and_slide()
 		return
-
 	var keyboard_direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	var input_direction := _mobile_move if _mobile_move.length_squared() > 0.0001 else keyboard_direction
 	if input_direction.length_squared() > 1.0:
 		input_direction = input_direction.normalized()
 	if input_direction.length_squared() > 0.0:
 		_last_move_direction = input_direction.normalized()
-
 	if Input.is_action_just_pressed("dash"):
 		_try_start_dash(input_direction)
-
 	if _dash_time_left > 0.0:
 		velocity = _dash_direction * dash_speed
 	else:
 		var target_velocity := input_direction * max_speed
 		var rate := acceleration if input_direction.length_squared() > 0.0 else deceleration
 		velocity = velocity.move_toward(target_velocity, rate * delta)
-
 	move_and_slide()
 
 func _update_aim() -> void:
@@ -84,11 +79,9 @@ func clear_mobile_aim() -> void:
 func _try_start_dash(input_direction: Vector2) -> void:
 	if _dash_cooldown_left > 0.0 or _dash_time_left > 0.0:
 		return
-
 	_dash_direction = input_direction.normalized() if input_direction.length_squared() > 0.0 else _last_move_direction
 	if _dash_direction == Vector2.ZERO:
 		_dash_direction = aim_direction
-
 	_dash_time_left = dash_duration
 	_dash_cooldown_left = dash_cooldown
 	_invulnerability_left = maxf(_invulnerability_left, dash_invulnerability)
@@ -101,14 +94,18 @@ func _update_timers(delta: float) -> void:
 func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO) -> bool:
 	if _dead or _invulnerability_left > 0.0 or amount <= 0.0:
 		return false
-
 	health = maxf(0.0, health - amount)
 	velocity += knockback
 	_invulnerability_left = 0.35
-
+	body_visual.modulate = Color(1.0, 0.35, 0.35, 1.0)
+	get_tree().create_timer(0.09).timeout.connect(_restore_visual)
 	if health <= 0.0:
 		_die()
 	return true
+
+func _restore_visual() -> void:
+	if is_instance_valid(body_visual) and not _dead:
+		body_visual.modulate = Color.WHITE
 
 func is_invulnerable() -> bool:
 	return _invulnerability_left > 0.0
