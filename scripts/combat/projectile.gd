@@ -17,10 +17,19 @@ extends Area2D
 
 var direction := Vector2.RIGHT
 var owner_node: Node
+var weapon_controller: Node
 var _remaining_pierces := 0
 var _remaining_ricochets := 0
 var _alive := true
 var _already_hit: Dictionary = {}
+var _returning := false
+var _inverse_phase := false
+var _void_proc_chance := 0.0
+var _void_health_fraction := 0.08
+var _absorption_ratio := 0.0
+var _absorption_cap := 30.0
+var _devour := false
+var _impact_multiplier := 1.0
 
 func _ready() -> void:
 	_remaining_pierces = max_pierces
@@ -42,7 +51,16 @@ func configure(new_direction: Vector2, new_damage: float, new_speed: float = -1.
 	status_id = StringName(payload.get("status_id", status_id))
 	status_stacks = int(payload.get("status_stacks", status_stacks))
 	owner_node = payload.get("owner", owner_node)
+	weapon_controller = payload.get("weapon_controller", weapon_controller)
 	faction = StringName(payload.get("faction", faction))
+	_inverse_phase = bool(payload.get("inverse_phase", false))
+	_void_proc_chance = float(payload.get("void_proc_chance", 0.0))
+	_void_health_fraction = float(payload.get("void_health_fraction", 0.08))
+	_absorption_ratio = float(payload.get("absorption_ratio", 0.0))
+	_absorption_cap = float(payload.get("absorption_cap", 30.0))
+	_devour = bool(payload.get("devour", false))
+	_impact_multiplier = float(payload.get("impact_multiplier", 1.0))
+	knockback_force *= _impact_multiplier
 	_remaining_pierces = max_pierces
 	_remaining_ricochets = max_ricochets
 	rotation = direction.angle()
@@ -50,12 +68,44 @@ func configure(new_direction: Vector2, new_damage: float, new_speed: float = -1.
 func _physics_process(delta: float) -> void:
 	if not _alive:
 		return
-	if homing_strength > 0.0:
+	if _returning:
+		_update_inverse_return(delta)
+	elif homing_strength > 0.0:
 		_apply_homing(delta)
-	global_position += direction * speed * delta
+	var travel := direction * speed * delta
+	_sweep_motion(travel)
 	rotation = direction.angle()
 	lifetime -= delta
 	if lifetime <= 0.0:
+		queue_free()
+
+func _sweep_motion(travel: Vector2) -> void:
+	if travel.length_squared() <= 0.0001:
+		return
+	var query := PhysicsRayQueryParameters2D.create(global_position, global_position + travel, collision_mask)
+	query.collide_with_areas = true
+	query.collide_with_bodies = true
+	query.exclude = [get_rid()]
+	var hit := get_world_2d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		global_position += travel
+		return
+	global_position = hit.get("position", global_position)
+	var collider: Object = hit.get("collider")
+	if collider is Node:
+		var receiver := _resolve_receiver(collider as Node)
+		if receiver != null and receiver.has_method("take_damage"):
+			_try_hit(receiver)
+			if _alive:
+				global_position += direction * 3.0
+			return
+	var normal: Vector2 = hit.get("normal", Vector2.ZERO)
+	if _remaining_ricochets > 0 and normal.length_squared() > 0.0:
+		_remaining_ricochets -= 1
+		direction = direction.bounce(normal).normalized()
+		global_position += direction * 5.0
+	else:
+		_alive = false
 		queue_free()
 
 func _apply_homing(delta: float) -> void:
@@ -72,37 +122,85 @@ func _apply_homing(delta: float) -> void:
 	var desired := (closest.global_position - global_position).normalized()
 	direction = direction.slerp(desired, clampf(homing_strength * delta, 0.0, 1.0)).normalized()
 
+func _update_inverse_return(delta: float) -> void:
+	if not is_instance_valid(owner_node) or not (owner_node is Node2D):
+		return
+	var owner_2d := owner_node as Node2D
+	var desired := global_position.direction_to(owner_2d.global_position)
+	direction = direction.slerp(desired, clampf(8.0 * delta, 0.0, 1.0)).normalized()
+	if global_position.distance_squared_to(owner_2d.global_position) <= 28.0 * 28.0:
+		if is_instance_valid(weapon_controller) and weapon_controller.has_method("on_inverse_projectile_returned"):
+			weapon_controller.on_inverse_projectile_returned()
+		_alive = false
+		queue_free()
+
 func _on_body_entered(body: Node) -> void:
 	_try_hit(body)
 
 func _on_area_entered(area: Area2D) -> void:
 	_try_hit(area)
 
-func _try_hit(target: Node) -> void:
-	if not _alive or target == owner_node:
-		return
+func _resolve_receiver(target: Node) -> Node:
 	var receiver: Node = target
 	if not receiver.has_method("take_damage") and target.get_parent() != null and target.get_parent().has_method("take_damage"):
 		receiver = target.get_parent()
+	return receiver
+
+func _try_hit(target: Node) -> void:
+	if not _alive or target == owner_node:
+		return
+	var receiver := _resolve_receiver(target)
+	if receiver == null or not receiver.has_method("take_damage"):
+		return
 	if _already_hit.has(receiver.get_instance_id()):
 		return
-	if receiver.has_method("take_damage"):
-		_already_hit[receiver.get_instance_id()] = true
-		var final_damage := damage
-		if randf() < critical_chance:
-			final_damage *= critical_multiplier
-		receiver.take_damage(final_damage, direction * knockback_force)
-		_apply_status(receiver)
-		if explosion_radius > 0.0:
-			_explode(final_damage)
-		_consume_enemy_hit()
-	elif target is PhysicsBody2D:
-		if _remaining_ricochets > 0:
-			_remaining_ricochets -= 1
-			direction = -direction
-			global_position += direction * 8.0
-		else:
-			queue_free()
+	_already_hit[receiver.get_instance_id()] = true
+	var final_damage := damage
+	var critical := randf() < critical_chance
+	if critical:
+		final_damage *= critical_multiplier
+	final_damage += _void_bonus_damage(receiver)
+	if receiver.has_method("react_to_projectile_hit"):
+		final_damage += float(receiver.react_to_projectile_hit(final_damage, explosion_radius > 0.0))
+	var health_before := _read_health(receiver)
+	var dealt := final_damage
+	receiver.take_damage(final_damage, direction * knockback_force)
+	var health_after := _read_health(receiver)
+	if health_before >= 0.0 and health_after >= 0.0:
+		dealt = maxf(0.0, health_before - health_after)
+	var killed := health_before > 0.0 and health_after == 0.0
+	_apply_status(receiver)
+	if explosion_radius > 0.0:
+		_explode(final_damage)
+	_notify_damage_dealt(receiver, dealt, killed, critical)
+	if _inverse_phase and not _returning:
+		_returning = true
+		_remaining_pierces = maxi(_remaining_pierces, 99)
+		homing_strength = 0.0
+		return
+	_consume_enemy_hit()
+
+func _void_bonus_damage(receiver: Node) -> float:
+	if _void_proc_chance <= 0.0 or randf() >= _void_proc_chance:
+		return 0.0
+	if receiver.is_in_group("boss"):
+		return damage * 0.6
+	var maximum := receiver.get("max_health")
+	if maximum is float or maximum is int:
+		return float(maximum) * _void_health_fraction
+	return damage * 0.75
+
+func _read_health(receiver: Node) -> float:
+	var value := receiver.get("health")
+	if value is float or value is int:
+		return maxf(0.0, float(value))
+	return -1.0
+
+func _notify_damage_dealt(receiver: Node, amount: float, killed: bool, critical: bool) -> void:
+	if not is_instance_valid(weapon_controller):
+		return
+	if weapon_controller.has_method("on_projectile_damage_dealt"):
+		weapon_controller.on_projectile_damage_dealt(receiver, amount, killed, critical, _absorption_ratio, _absorption_cap, _devour)
 
 func _apply_status(receiver: Node) -> void:
 	if status_id == StringName() or status_stacks <= 0:
@@ -120,6 +218,8 @@ func _explode(base_damage: float) -> void:
 		if distance > explosion_radius:
 			continue
 		var falloff := 1.0 - clampf(distance / maxf(explosion_radius, 1.0), 0.0, 1.0)
+		if candidate.has_method("react_to_explosion"):
+			candidate.react_to_explosion(base_damage * falloff)
 		if candidate.has_method("take_damage"):
 			candidate.take_damage(base_damage * (0.35 + 0.65 * falloff), (candidate.global_position - global_position).normalized() * knockback_force * falloff)
 
