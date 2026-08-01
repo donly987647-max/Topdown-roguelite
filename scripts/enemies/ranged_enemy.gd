@@ -9,6 +9,8 @@ extends CharacterBody2D
 @export var telegraph_duration: float = 0.42
 @export var projectile_damage: float = 11.0
 @export var projectile_scene: PackedScene
+@export var biological: bool = true
+@export var mechanical: bool = false
 
 var health: float
 var _player: Player
@@ -16,6 +18,7 @@ var _fire_cooldown := 0.45
 var _telegraph_left := 0.0
 var _telegraph_direction := Vector2.ZERO
 var _dead := false
+var _status: StatusReceiver
 
 @onready var body_visual: Polygon2D = $BodyVisual
 @onready var muzzle: Marker2D = $Muzzle
@@ -27,6 +30,10 @@ func _ready() -> void:
 	health = max_health
 	health_bar.max_value = max_health
 	health_bar.value = health
+	_status = StatusReceiver.new()
+	_status.biological = biological
+	_status.mechanical = mechanical
+	add_child(_status)
 	telegraph_line.visible = false
 	call_deferred("_resolve_player")
 
@@ -40,10 +47,16 @@ func _physics_process(delta: float) -> void:
 		_resolve_player()
 		velocity = Vector2.ZERO
 		return
+	if _status != null and _status.is_frozen():
+		velocity = Vector2.ZERO
+		telegraph_line.visible = false
+		_telegraph_left = 0.0
+		return
 
+	var attack_mult := _status.attack_speed_multiplier() if _status != null else 1.0
 	if _telegraph_left > 0.0:
 		velocity = Vector2.ZERO
-		_telegraph_left -= delta
+		_telegraph_left -= delta * attack_mult
 		_update_telegraph_visual()
 		if _telegraph_left <= 0.0:
 			telegraph_line.visible = false
@@ -54,19 +67,19 @@ func _physics_process(delta: float) -> void:
 	var offset := _player.global_position - global_position
 	var distance := offset.length()
 	var direction := offset.normalized() if distance > 0.01 else Vector2.ZERO
-
+	if _status != null and _status.is_confused():
+		direction = -direction
+	var speed_mult := _status.move_speed_multiplier() if _status != null else 1.0
 	if distance > preferred_distance:
-		velocity = direction * move_speed
+		velocity = direction * move_speed * speed_mult
 	elif distance < retreat_distance:
-		velocity = -direction * move_speed
+		velocity = -direction * move_speed * speed_mult
 	else:
 		velocity = Vector2.ZERO
 	move_and_slide()
-
 	if direction != Vector2.ZERO:
 		rotation = direction.angle()
-
-	_fire_cooldown -= delta
+	_fire_cooldown -= delta * attack_mult
 	if _fire_cooldown <= 0.0 and distance <= preferred_distance * 1.25:
 		_begin_telegraph(direction)
 
@@ -94,10 +107,14 @@ func _fire(direction: Vector2) -> void:
 	projectile.global_position = muzzle.global_position
 	projectile.configure(direction, projectile_damage)
 
+func apply_status_by_id(status_id: StringName, stacks: int = 1) -> bool:
+	return _status != null and _status.apply_status(status_id, stacks)
+
 func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO) -> bool:
 	if _dead or amount <= 0.0:
 		return false
-	health = maxf(0.0, health - amount)
+	var multiplier := _status.damage_taken_multiplier() if _status != null else 1.0
+	health = maxf(0.0, health - amount * multiplier)
 	velocity += knockback
 	health_bar.value = health
 	body_visual.modulate = Color(1.0, 0.6, 0.6, 1.0)
