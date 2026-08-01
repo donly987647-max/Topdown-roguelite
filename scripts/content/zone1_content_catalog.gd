@@ -13,6 +13,7 @@ func enemy_profiles() -> Array[EnemySpawnProfile]:
 		_enemy(&"fork_drone", "Fork Drone", 3, ["ranged", "flying", "mechanical"], RANGED_SCENE, false, {"max_health":44.0,"move_speed":175.0,"preferred_distance":480.0,"retreat_distance":300.0,"fire_interval":0.92,"projectile_damage":9.0,"biological":false,"mechanical":true}),
 		_enemy(&"crusher_brute", "Crusher Brute", 4, ["melee", "heavy", "mechanical"], MELEE_SCENE, false, {"max_health":155.0,"move_speed":92.0,"contact_damage":22.0,"attack_cooldown":1.05,"biological":false,"mechanical":true}),
 		_enemy(&"elite_line_guard", "Elite Line Guard", 6, ["elite", "melee", "mechanical"], MELEE_SCENE, true, {"max_health":190.0,"move_speed":158.0,"contact_damage":20.0,"attack_cooldown":0.68,"biological":false,"mechanical":true}),
+		_enemy(&"gr01_proto", "GR-01 Prototype", 12, ["boss", "heavy", "mechanical"], MELEE_SCENE, true, {"max_health":520.0,"move_speed":82.0,"contact_damage":28.0,"attack_cooldown":0.72,"biological":false,"mechanical":true}),
 	]
 
 func room_templates() -> Array[RoomTemplateDefinition]:
@@ -27,6 +28,7 @@ func room_templates() -> Array[RoomTemplateDefinition]:
 		_room(&"z1_med_bay", &"medical", Vector2i(22,14), 0, 1, [], [], [Vector2i(10,4),Vector2i(10,9)], []),
 		_room(&"z1_rest_bay", &"rest", Vector2i(22,14), 0, 1, [], [], [Vector2i(7,6),Vector2i(14,6)], []),
 		_room(&"z1_event_scrapyard", &"event", Vector2i(26,16), 0, 1, [], [], [Vector2i(8,6),Vector2i(9,6),Vector2i(16,9),Vector2i(17,9)], [Vector2i(12,7),Vector2i(13,8)]),
+		_room(&"z1_boss_press", &"boss", Vector2i(34,22), 18, 1, [Vector2i(17,11)], ["boss"], [Vector2i(9,7),Vector2i(9,14),Vector2i(24,7),Vector2i(24,14)], [Vector2i(16,8),Vector2i(17,8),Vector2i(16,13),Vector2i(17,13)]),
 	]
 
 func register_into(registry: RoomTemplateRegistry, planner: ThreatBudgetPlanner, spawn_registry: EnemySpawnRegistry = null) -> void:
