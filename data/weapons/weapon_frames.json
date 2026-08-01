@@ -1,0 +1,14 @@
+{
+  "service_pistol": {"name":"서비스 피스톨","class":"semi_auto_pistol","role":"balanced","base_damage":18,"fire_interval":0.24,"magazine":10,"reload":1.15,"special":"perfect_reload_first_shot_guaranteed_crit"},
+  "burst_carbine": {"name":"버스트 카빈","class":"burst_rifle","role":"midrange_sustain","base_damage":11,"burst_count":3,"burst_interval":0.08,"burst_recovery":0.32,"magazine":24,"special":"stable_damage_and_high_part_compatibility"},
+  "chain_smg": {"name":"체인 SMG","class":"smg","role":"close_mid_auto","base_damage":7,"fire_interval":0.075,"magazine":36,"special":"fire_rate_ramps_on_consecutive_hits","drawback":"high_spread_and_ammo_use"},
+  "breach_shotgun": {"name":"브리치 샷건","class":"shotgun","role":"close_burst","pellets":8,"pellet_damage":7,"fire_interval":0.75,"magazine":5,"special":"strong_knockback_and_stagger","drawback":"low_range_and_projectile_speed"},
+  "rail_lancer": {"name":"레일 랜서","class":"charge_sniper","role":"pierce_single_target","min_damage":45,"max_damage":110,"max_charge_time":1.2,"magazine":4,"special":"pierce_count_scales_with_charge","drawback":"movement_slow_while_charging"},
+  "rotary_cannon": {"name":"로터리 캐논","class":"heavy_machine_gun","role":"sustained_high_firepower","base_damage":9,"max_rounds_per_second":14,"uses_heat":true,"special":"spin_rate_increases_while_firing","drawback":"high_weight_and_heat"},
+  "shrapnel_launcher": {"name":"파편 발사기","class":"grenade_launcher","role":"area_damage","direct_damage":20,"explosion_damage":45,"magazine":4,"special":"arcing_projectile_over_walls","drawback":"self_damage_at_close_range"},
+  "arc_projector": {"name":"아크 프로젝터","class":"electric_projector","role":"multi_target","tick_damage":8,"max_chains":3,"special":"chains_to_nearby_targets","drawback":"weak_single_boss_efficiency"},
+  "beam_cutter": {"name":"빔 커터","class":"continuous_laser","role":"precision_sustain","dps":72,"uses_heat":true,"special":"damage_ramps_while_staying_on_same_target","drawback":"requires_tracking_and_overheats_fast"},
+  "sawblade_caster": {"name":"톱날 캐스터","class":"ricochet_special","role":"terrain_ricochet","base_damage":24,"max_bounces":3,"special":"wall_ricochet","drawback":"weaker_in_open_spaces"},
+  "drone_controller": {"name":"드론 컨트롤러","class":"summon_weapon","role":"auto_attack_support","base_drones":2,"special":"focus_drones_toward_aim_direction","drawback":"low_direct_burst_damage"},
+  "compression_hammer": {"name":"압축 해머","class":"melee_impact","role":"bullet_reflect_close_combat","base_damage":65,"special":"reflect_enemy_projectiles_during_attack_window","drawback":"short_range_and_long_recovery"}
+}
