@@ -33,6 +33,7 @@ var _impact_multiplier := 1.0
 var _explosion_damage_multiplier := 1.0
 var _chain_count := 0
 var _chain_range := 240.0
+var _ignore_world_collision := false
 
 func _ready() -> void:
 	_remaining_pierces = max_pierces
@@ -66,6 +67,7 @@ func configure(new_direction: Vector2, new_damage: float, new_speed: float = -1.
 	_explosion_damage_multiplier = float(payload.get("explosion_damage_multiplier", 1.0))
 	_chain_count = int(payload.get("chain_count", 0))
 	_chain_range = float(payload.get("chain_range", 240.0))
+	_ignore_world_collision = bool(payload.get("ignore_world_collision", false))
 	knockback_force *= _impact_multiplier
 	_remaining_pierces = max_pierces
 	_remaining_ricochets = max_ricochets
@@ -105,6 +107,9 @@ func _sweep_motion(travel: Vector2) -> void:
 			if _alive:
 				global_position += direction * 3.0
 			return
+	if _ignore_world_collision:
+		global_position += travel
+		return
 	var normal: Vector2 = hit.get("normal", Vector2.ZERO)
 	if _remaining_ricochets > 0 and normal.length_squared() > 0.0:
 		_remaining_ricochets -= 1
