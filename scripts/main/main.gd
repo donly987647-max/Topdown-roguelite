@@ -9,13 +9,17 @@ extends Node2D
 @onready var status_label: Label = $HUD/Status
 @onready var room_label: Label = $HUD/RoomState
 
+var _base_status := "WASD Move | Mouse Aim/Fire | R Reload | Space Dash"
+
 func _ready() -> void:
 	print("LAST MAGAZINE: M1 combat lab booted")
 	weapon.ammo_changed.connect(_on_ammo_changed)
 	weapon.reload_started.connect(_on_reload_started)
 	weapon.reload_finished.connect(_on_reload_finished)
 	combat_room.room_started.connect(_on_room_started)
+	combat_room.wave_changed.connect(_on_wave_changed)
 	combat_room.room_cleared.connect(_on_room_cleared)
+	combat_room.reward_spawned.connect(_on_reward_spawned)
 	_on_ammo_changed(weapon.ammo, weapon.magazine_capacity)
 	reload_bar.visible = false
 
@@ -34,11 +38,23 @@ func _on_reload_started(_duration: float) -> void:
 	status_label.text = "RELOADING"
 
 func _on_reload_finished() -> void:
-	status_label.text = "WASD Move | Mouse Aim/Fire | R Reload | Space Dash"
+	status_label.text = _base_status
 
 func _on_room_started(enemy_count: int) -> void:
-	room_label.text = "HOSTILES %d" % enemy_count
+	room_label.text = "WAVE 1/2  |  HOSTILES %d" % enemy_count
+
+func _on_wave_changed(current_wave: int, total_waves: int, enemy_count: int) -> void:
+	room_label.text = "WAVE %d/%d  |  HOSTILES %d" % [current_wave, total_waves, enemy_count]
+	if current_wave > 1:
+		status_label.text = "INCOMING — RANGED HOSTILES"
 
 func _on_room_cleared() -> void:
 	room_label.text = "ROOM CLEAR"
-	status_label.text = "ROOM CLEAR — M1 combat loop checkpoint reached"
+	status_label.text = "ROOM CLEAR — collect the salvage reward"
+
+func _on_reward_spawned(reward: Node) -> void:
+	if reward.has_signal("collected"):
+		reward.collected.connect(_on_reward_collected)
+
+func _on_reward_collected() -> void:
+	status_label.text = "SALVAGE COLLECTED — combat room loop complete"
