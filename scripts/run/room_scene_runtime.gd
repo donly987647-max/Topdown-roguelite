@@ -45,7 +45,7 @@ func load_room(room_template: RoomTemplateDefinition, difficulty_multiplier: flo
 	if not encounter.configure(template, planner, difficulty_multiplier):
 		unload_room()
 		return false
-	_set_exits_locked(template.is_combat_room())
+	set_exits_locked(template.is_combat_room())
 	room_loaded.emit(template.id, room_root)
 	encounter.start()
 	return true
@@ -126,7 +126,7 @@ func _cell_to_world(cell: Vector2i) -> Vector2:
 		return (room_root as Node2D).to_global(local)
 	return local
 
-func _set_exits_locked(locked: bool) -> void:
+func set_exits_locked(locked: bool) -> void:
 	if room_root == null or template == null:
 		return
 	for node in get_tree().get_nodes_in_group(template.exit_group):
@@ -147,7 +147,7 @@ func _has_property(node: Object, property_name: StringName) -> bool:
 	return false
 
 func _on_encounter_cleared(template_id: StringName) -> void:
-	_set_exits_locked(false)
+	# Keep exits locked until reward/route resolution. The coordinator unlocks them.
 	room_scene_cleared.emit(template_id)
 
 func active_enemy_count() -> int:
