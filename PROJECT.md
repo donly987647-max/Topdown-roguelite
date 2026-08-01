@@ -28,7 +28,7 @@ Do not request the user's final gameplay feedback until the GDD is fully represe
 ## Current Development State
 **Last updated:** 2026-08-02
 
-**Current milestone:** GDD-wide production architecture expansion; weapon-part + backpack-network runtime pass.
+**Current milestone:** GDD-wide production architecture expansion; reward/run architecture pass.
 
 **Current build is NOT a GDD-complete feedback build.**
 
@@ -41,116 +41,65 @@ Do not request the user's final gameplay feedback until the GDD is fully represe
 - Player temporary-shield runtime exists for absorption effects.
 - Player exposes a damage event consumed by reactive magazine runtime.
 
-### GDD 11 projectile / collision runtime
-- Projectile payload carries damage, speed, lifetime, pierce, ricochet, homing, knockback, critical chance, status, explosion, owner/faction and advanced core/part fields.
-- Homing acquires enemy-group targets and piercing supports multiple enemy hits.
-- Projectile motion performs a swept ray query each physics frame to reduce high-speed tunneling.
-- World ricochet uses the collision surface normal instead of simple 180-degree reversal.
-- Explosion applies radial falloff damage and frame/core/barrel/magazine multipliers.
-- Critical-hit multiplier, status payload and chained-hit payload are supported.
-- Shrapnel Launcher projectiles can ignore world blockers as the current gameplay representation of arcing over obstacles.
-
-### Frame-special weapon runtime
-- **Service Pistol:** perfect reload arms exactly one guaranteed-critical first shot without permanently mutating build stats.
-- **Burst Carbine:** three-round burst, 0.08 s internal spacing and 0.32 s post-burst recovery.
-- **Chain SMG:** consecutive successful hits ramp fire rate; streak decays after a short miss/idle window.
-- **Breach Shotgun:** minimum eight-pellet spread behavior.
-- **Rail Lancer:** hold-to-charge and release-to-fire; damage interpolates toward 110/45 multiplier and pierce count scales with charge.
-- **Rotary Cannon:** hold-fire spin-up state drives fire rate toward 14 rounds/s and uses the heat system.
-- **Shrapnel Launcher:** large explosion payload, higher explosion damage multiplier and wall-blocker bypass foundation.
-- **Arc Projector:** Shock payload and up to three nearby chain hits with damage falloff.
-- **Beam Cutter:** continuous ray ticks, 72 DPS baseline, same-target damage ramp and heat/ammo consumption.
-- **Sawblade Caster:** minimum three collision-normal ricochets.
-- **Drone Controller:** two-offset projectile support-volley foundation exists; persistent summon/drone actors are still required for final GDD fidelity.
-- **Compression Hammer:** short forward melee cone and enemy-projectile reflection foundation.
-
-### Barrel runtime — GDD 16
-- Precision Barrel: spread reduction + projectile speed multiplier.
-- Spread Barrel: +2 projectiles, individual damage reduction and wider spread.
-- Piercing Barrel: +2 pierces with post-first-target damage decay.
-- Ricochet Barrel: +2 wall bounces, post-bounce damage increase and projectile-speed penalty.
-- Explosive Barrel: impact explosion with direct-damage penalty.
-- Long-range Barrel: longer lifetime/range, close-range penalty and distance-based damage bonus.
-- Cutting Barrel: enlarged projectile collision/visual scale foundation and removal of weak enemy projectiles.
-- Homing Barrel: homing correction, speed penalty and critical-chance penalty.
-- Split Barrel: two reduced-damage child projectiles on hit/expiry foundation.
-- Reverse-thrust Barrel: damage increase and player recoil.
-- Resonance Barrel: same-target hit stacks with reset on target change.
-- Unstable Barrel: per-shot 70–160% damage roll and irregular angular variance.
-- Remaining fidelity: exact cutting-barrel +25% ammo use and production-safe split projectile scene instancing/visual tuning require Godot validation.
-
-### Magazine runtime — GDD 17
-- Extended/Light magazines continue through part stat modifiers for capacity/reload behavior.
-- Explosive Magazine: final round large explosion.
-- Reverse-order Magazine: strongest opening round with 3% per-shot decay baseline.
-- Compressed Magazine: 1.7× damage, larger projectile and one extra ammo unit consumed through per-frame duplicate-cost locking.
-- Regenerative Magazine: kill-triggered low-probability round restoration.
-- Emergency Magazine: at ≤30% HP reload time is halved and perfect-reload window expands.
-- Magnetic Magazine: reload attempts nearby ammo collection; perfect reload absorbs nearby enemy projectiles and grants a small temporary shield representation.
-- Cross Magazine: odd rounds favor damage, even rounds add status stacks.
-- Reactive Magazine: damage event opens a short instant-reload window; current room-use reset infrastructure is not yet available, so one-use state currently persists for the attached runtime lifetime.
-- Gamble Magazine: 20% free-ammo reload roll; failure removes part of the loaded magazine.
-- Dual Magazine: at half reload, pressing fire loads roughly half a magazine, cancels reload and fires; full reload grants next-shot damage bonus.
-- Remaining fidelity: weapon-swap bonus, exact room reset, pickup contract integration and balance/UI feedback require later systems.
-
-### Weapon assembly / part runtime
-- `WeaponBuild` matches canonical `WeaponFrameDefinition` / `WeaponPartDefinition` fields and validates compatibility, power overload and weight overload.
-- `WeaponController.apply_build()` binds assembled frame + parts into live damage, interval, magazine, reload, projectile and heat behavior.
-- `WeaponEffectResolver` now resolves frame, barrel, magazine and core IDs into composable shot payloads.
-- `MagazineRuntime` is attached to Player and binds to the live WeaponController without creating a separate controller per magazine.
-- Pellet/scatter, pierce, ricochet, homing, explosive, elemental/status, range, recoil, resonance, split and per-round magazine effects compose through the generic projectile path.
-- Power-overloaded weapons have a tunable firing-failure chance in addition to their other penalties.
-- Perfect reload provides a next-shot damage hook.
-
-### Core runtime
-- Fire, Cold, Shock, Corrosion and Bleed status cores feed the shared status payload system.
-- Void core payload supports a low probability percentage-health bonus on normal enemies and fixed bonus damage behavior for boss-group targets.
-- Impact core increases projectile knockback; wall-collision bonus damage remains a fidelity gap.
-- Absorption core converts a portion of dealt damage into capped temporary player shield.
-- Photon core effect mapping supports increased critical chance; full speed/damage tradeoff still depends on part stat data.
-- Replication core can spawn a reduced-damage duplicate projectile; proc chance is normalized downward on rapid-fire weapons.
-- Devour core grants a next-attack damage multiplier after a kill; elite-kill room-persistent behavior is not yet implemented.
-- Inverse Phase core turns the projectile back toward its owner after an enemy pass/hit and refunds one round on successful return.
-
-### Status runtime
-- `StatusReceiver` implements Burn, Cold, Shock, Corrosion, Bleed, Confusion and Vulnerable.
-- Burn/Corrosion/Bleed provide periodic damage.
-- Cold reduces movement/attack rate and freezes non-boss targets at maximum stacks.
-- Strong hits shatter a frozen normal enemy for bonus damage and consume Cold.
-- Explosions against burning targets trigger bonus reaction damage.
-- Mechanical targets receive additional Shock accumulation and amplified Shock tick damage.
-- Shock periodically chains to a nearby enemy; Arc Projector also has direct multi-chain logic.
-- Corrosion increases damage taken and scales more strongly on armored/shielded targets.
-- Bleed rejects non-biological targets and deals higher tick damage while moving.
-- Confusion reverses Chaser/Ranged movement intent as a first implementation; boss-specific accuracy/tracking downgrade remains for boss framework.
-- Vulnerable increases incoming damage with single-stack short-duration behavior.
+### Weapon / status runtime
+- 12 weapon-frame identities have live firing behavior foundations.
+- 12 barrel identities and 12 magazine identities have data-driven projectile/reload runtime foundations.
+- 12 core identities feed generic projectile/status hooks; remaining fidelity gaps are tracked separately.
+- Burn/Cold/Shock/Corrosion/Bleed/Confusion/Vulnerable runtime exists with several cross-status reactions.
+- Swept projectile collision and collision-normal ricochet are implemented.
 
 ### GDD 20/24 backpack architecture
-- `BackpackGrid` supports 6×5 placement, occupancy, rotation, removal, up to three expansion cells, definition-backed `place_item()`, `items()` and `are_adjacent()` APIs.
-- A previous resolver/grid contract bug was fixed: `BackpackSynergyResolver` no longer calls nonexistent Grid APIs.
+- `BackpackGrid` supports 6×5 placement, occupancy, rotation, removal and up to three expansion cells.
+- `BackpackState` adds definition registration, unique item-instance IDs, automatic placement, serialization and restore.
 - Connector geometry resolves connector cell + facing direction into world ports after rotation.
 - Connector channels support `power`, `signal`, `ammo`, `cooling` plus directional `_in` / `_out` pairs.
-- `BackpackItemDefinition` now carries power supply/draw and ammo/cooling/signal supply metadata.
 - Resolver builds per-network power graphs, computes supply/draw/overload, allocates powered items, collects adjacency effect IDs and calculates tag tiers.
-- UI drag/drop, automatic placement, serialization, item-instance IDs and production synergy catalog execution remain incomplete.
+- `BackpackSynergyExecutor` provides a data-driven execution layer for explicit adjacency and tag-tier synergies.
+- UI drag/drop and full production synergy catalog remain incomplete.
+
+### Passive module runtime — GDD 21 foundation
+- Added `PassiveModuleDefinition` as a backpack-compatible passive item definition.
+- Added data-driven stat modifiers, stack limits and trigger effect IDs.
+- Added `PassiveModuleRuntime` for module aggregation, duplicate-stack limiting, additive/multiplicative stat composition and event-trigger dispatch.
+- Exact 60-module content catalog and per-effect combat implementations remain incomplete.
+
+### Active equipment runtime — GDD 22 foundation
+- Added `ActiveEquipmentDefinition` with cooldown, charges, effect IDs and arbitrary activation payload.
+- Added `ActiveEquipmentRuntime` with equip, cooldown ticking, charge consumption/refill, reset and activation dispatch.
+- Exact 20-equipment content catalog, input/UI binding and concrete effect implementations remain incomplete.
+
+### Reward selection — GDD 39 foundation
+- Added `RewardOffer` model with category, rarity, payload and selection weight.
+- Added `RewardSelector` with default three-choice generation, duplicate-ID prevention, recent-offer suppression, repeated-claim weight reduction and rarity weighting.
+- Reward claim history can be serialized/restored.
+- Existing room-clear pickup still needs to be replaced by UI-driven three-choice presentation and inventory/economy application.
+
+### Run graph / room-route foundation — GDD 26–27
+- Added `RoomNodeDefinition` with room type, difficulty, reward tags and metadata.
+- Added `RunGraph` directed graph model with node/edge management, next-room lookup, reachability and serialization.
+- Added `RunGraphGenerator` producing branching seeded routes from Start to Boss.
+- Current generated room categories include combat, elite, shop, event and rest plus start/boss endpoints.
+- Added structural validation for missing endpoints, unreachable boss and non-boss dead ends.
+- Zone-specific generation, secret routes, room templates, threat budgeting and actual scene loading remain incomplete.
 
 ### Validation tooling/status
-- Added `tools/gdd_runtime_smoke.gd` to exercise legacy placement, directional power links and representative weapon payload resolution under Godot headless execution.
-- The GitHub connector currently reports no workflow runs/status checks associated with the latest main commits.
-- This environment has **not executed Godot 4.7.1**, so parser/runtime behavior, duplicate-node split projectile behavior, signal contracts, combat feel, collision masks, device input, save integrity and performance remain unvalidated.
-- All new systems remain `PARTIAL` in `docs/GDD_COVERAGE.md` until actual headless/gameplay QA succeeds.
+- `tools/gdd_runtime_smoke.gd` covers representative weapon/backpack contracts.
+- `tools/run_system_smoke.gd` covers run-graph reachability, three-choice uniqueness and passive aggregation contracts.
+- GitHub currently exposes no successful CI/runtime execution associated with these new scripts.
+- This environment has **not executed Godot 4.7.1**; parser/runtime/gameplay validation therefore remains pending.
+- New systems remain `PARTIAL` until real headless/gameplay QA succeeds.
 
 ### Major gaps
-See `docs/GDD_COVERAGE.md`. Weapon-runtime fidelity gaps include persistent drone summons, Rail Lancer movement slowdown while charging, Shrapnel Launcher self-damage, Impact wall-collision bonus damage, Devour elite/room persistence, conductive/water terrain reactions, boss-specific Confusion behavior, exact Cutting Barrel ammo tax, and room-scoped magazine state. Backpack gaps include UI, drag/drop, item-instance IDs, save/restore, automatic placement and complete 50-synergy content execution. Beyond these, passive/active catalogs, characters, run graph/maps, zones, bosses, economy, curses, meta/hub, tutorial, UI/accessibility, production art/audio, save/stat/achievement/daily, Steam, endings/modes, content quantities, optimization and QA remain incomplete.
+See `docs/GDD_COVERAGE.md`. Immediate architectural gaps now concentrate on reward UI/application, room lifecycle/state, room template selection, threat budgets, persistent drone behavior, environment/status interactions, exact content catalogs, characters, zones/bosses, economy, curses, meta/hub, tutorial, production UI/art/audio, full save/stat/achievement/daily support, Steam integration, optimization and QA.
 
 ## Next Work — GDD coverage driven
-1. Run/repair the new headless runtime smoke path and fix any parse/runtime failures once an executable Godot validation environment is available.
-2. Close remaining frame/core/barrel/magazine fidelity gaps that depend on room/player/environment contracts.
-3. Build backpack item-instance identity, serialization, auto-placement and concrete explicit/tag synergy execution.
-4. Add passive module and active equipment definitions/execution architecture.
-5. Replace single reward pickup with three-choice GDD reward flow and repetition control.
-6. Build run graph/map generator and room-type framework; this also supplies room lifecycle hooks needed by Reactive/Devour effects.
-7. Continue coverage until all mandatory GDD rows are IMPLEMENTED then VALIDATED.
+1. Bind the generated run graph to a run-state controller with current node, visited nodes, room-enter/clear events and save/restore.
+2. Replace the single room-clear pickup with a three-choice reward flow that applies weapon part/passive/active/economy rewards.
+3. Build room-template selection and threat-budget spawning on top of room-node metadata.
+4. Add concrete starter passive/active catalogs and effect executor implementations without prematurely claiming the final target quantities.
+5. Use room lifecycle hooks to finish Reactive Magazine per-room reset and Devour elite room persistence.
+6. Continue toward zones, bosses, economy and complete-run loop.
+7. Execute headless smoke tests once a runnable Godot environment is available and fix parse/runtime failures before upgrading coverage statuses.
 8. Only after final omission audit + runtime/device QA, produce feedback build/APK.
 
 ## Design Decisions
@@ -161,15 +110,16 @@ See `docs/GDD_COVERAGE.md`. Weapon-runtime fidelity gaps include persistent dron
 - 2026-08-01: `docs/GDD_COVERAGE.md` is mandatory.
 - 2026-08-01: Godot 4.7.1 is canonical.
 - 2026-08-02: Weapon assembly and backpack synergies use data-driven runtime resolvers rather than per-item hardcoding.
-- 2026-08-02: GDD projectile/status requirements are implemented as generic payload/receiver systems so weapon parts can compose effects without bespoke projectile classes for every item.
-- 2026-08-02: Frame identity is resolved by canonical frame ID; common projectile/core behavior remains composable instead of creating twelve disconnected weapon controllers.
-- 2026-08-02: Stateful magazine rules use one MagazineRuntime attached to Player and bind to WeaponController signals instead of branching the controller into twelve copies.
-- 2026-08-02: Backpack terminals are positional and directional; matching type alone is insufficient unless ports physically face each other across adjacent cells.
+- 2026-08-02: GDD projectile/status requirements are implemented as generic payload/receiver systems.
+- 2026-08-02: Frame identity is resolved by canonical frame ID; common projectile/core behavior remains composable.
+- 2026-08-02: Stateful magazine rules use one MagazineRuntime attached to Player and bind to WeaponController signals.
+- 2026-08-02: Backpack terminals are positional and directional; matching type alone is insufficient unless ports physically face each other.
+- 2026-08-02: Passive/active/reward/run systems use data-driven definitions and generic runtime dispatch rather than hardcoding content before the final catalogs are authored.
 
 ## Continuation Protocol
 1. Read PROJECT.md.
 2. Read docs/GDD_COVERAGE.md.
-3. Read canonical GDD for the section being implemented.
+3. Read canonical GDD for the section being implemented when available.
 4. Inspect repository state.
 5. Continue highest-priority incomplete GDD coverage.
 6. Never restore discarded prototype.
@@ -195,24 +145,16 @@ Suggested continuation prompt:
 - Added backpack adjacency/connector/power/tag synergy resolver foundation.
 
 ### 2026-08-02 — Live weapon-effect and status integration
-- Fixed WeaponBuild field compatibility with canonical data definitions.
-- Expanded player projectiles to carry pierce/ricochet/homing/critical/explosion/status payloads.
-- Bound assembled weapon stats/effects into live WeaponController firing.
-- Added multi-pellet spread and power-overload firing-failure behavior.
-- Added GDD status runtime receiver and wired Chaser/Ranged enemies to it.
+- Expanded player projectiles and bound assembled weapon effects into live firing.
+- Added GDD status runtime and enemy integration.
 
-### 2026-08-02 — Frame-special firing / advanced core batch
-- Added burst, hit-ramping SMG, charge, spin-up, beam, launcher, chain-projector, saw ricochet, support-volley and melee/reflection frame behaviors.
-- Added swept projectile collision and surface-normal ricochet.
-- Added Void, Absorption, Replication, Devour and Inverse Phase runtime payload hooks.
-- Added player temporary shield support for Absorption core.
-- Added Burn+Explosion and Frozen+Strong-Hit reactions plus stronger mechanical Shock accumulation.
+### 2026-08-02 — Frame / part / network expansion
+- Added frame-special firing, advanced core runtime, barrel/magazine execution and directional backpack networks.
+- Added backpack instance identity, serialization, auto-placement and synergy execution.
 
-### 2026-08-02 — Barrel / magazine / backpack-network batch
-- Added core runtime paths for all twelve GDD barrel identities.
-- Added projectile/runtime support for the stateful magazine catalog, including emergency, magnetic, reactive, gamble and dual reload behavior.
-- Added Player damage signal used by reactive magazine timing.
-- Fixed BackpackGrid/BackpackSynergyResolver API mismatch.
-- Added definition-backed backpack placement and positional rotated terminals.
-- Added power/signal/ammo/cooling network resolution, power allocation, adjacency effects and tag tiers.
-- Added a Godot headless smoke script for representative weapon/backpack contracts; execution is still pending.
+### 2026-08-02 — Passive / active / reward / run batch
+- Added passive module definition/runtime aggregation and event dispatch.
+- Added active equipment cooldown/charge activation runtime.
+- Added weighted three-choice reward selector with repetition suppression/history.
+- Added room-node/run-graph models, seeded branching generation and validation.
+- Added run-system smoke coverage; execution remains pending.
