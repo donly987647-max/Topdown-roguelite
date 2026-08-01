@@ -28,7 +28,7 @@ Do not request the user's final gameplay feedback until the GDD is fully represe
 ## Current Development State
 **Last updated:** 2026-08-02
 
-**Current milestone:** GDD-wide production architecture expansion.
+**Current milestone:** GDD-wide production architecture expansion; weapon runtime coverage pass.
 
 **Current build is NOT a GDD-complete feedback build.**
 
@@ -38,31 +38,61 @@ Do not request the user's final gameplay feedback until the GDD is fully represe
 - Chaser + Ranged enemy prototypes and ranged wind-up.
 - Two-wave combat room, doors and room-clear reward prototype.
 - Android dual-stick/dash/reload foundation.
+- Player temporary-shield runtime exists for absorption effects.
 
-### GDD 11–19 live combat integration
-- Projectile runtime now carries GDD-style payload fields: damage, speed, lifetime, pierce count, ricochet count, homing strength, knockback, critical chance, status payload, explosion radius, owner and faction.
-- Homing acquires enemy-group targets.
-- Piercing supports multiple enemy hits.
-- Ricochet foundation reflects on world collision and consumes ricochet budget; accurate surface-normal reflection remains a later refinement.
-- Explosion applies radial falloff damage to nearby enemies.
-- Critical-hit damage multiplier is supported in projectile payload.
-- `WeaponBuild` was corrected to match canonical `WeaponFrameDefinition` / `WeaponPartDefinition` fields and now validates compatibility, power overload and weight overload.
-- `WeaponEffectResolver` converts build modifiers/effect IDs into live pellet/pierce/ricochet/homing/explosion/critical/status payloads.
-- `WeaponController.apply_build()` now binds assembled frame + parts into live damage, interval, magazine, reload and heat behavior.
-- Shotgun/scatter-style builds can emit multi-projectile pellet spreads.
-- Power-overloaded weapons now have a low firing-failure chance in addition to reload/heat penalties.
-- Perfect reload provides a next-shot damage hook and Service Pistol first-shot critical hook.
+### GDD 11 projectile / collision runtime
+- Projectile payload carries damage, speed, lifetime, pierce, ricochet, homing, knockback, critical chance, status, explosion, owner/faction and advanced core fields.
+- Homing acquires enemy-group targets and piercing supports multiple enemy hits.
+- Projectile motion now performs a swept ray query each physics frame to reduce high-speed tunneling.
+- World ricochet uses the collision surface normal instead of simple 180-degree reversal.
+- Explosion applies radial falloff damage and frame/core multipliers.
+- Critical-hit multiplier, status payload and chained-hit payload are supported.
+- Shrapnel Launcher projectiles can ignore world blockers as the current gameplay representation of arcing over obstacles.
+
+### Frame-special weapon runtime
+- **Service Pistol:** perfect reload arms exactly one guaranteed-critical first shot without permanently mutating build stats.
+- **Burst Carbine:** three-round burst, 0.08 s internal spacing and 0.32 s post-burst recovery.
+- **Chain SMG:** consecutive successful hits ramp fire rate; streak decays after a short miss/idle window.
+- **Breach Shotgun:** minimum eight-pellet spread behavior.
+- **Rail Lancer:** hold-to-charge and release-to-fire; damage interpolates toward 110/45 multiplier and pierce count scales with charge.
+- **Rotary Cannon:** hold-fire spin-up state drives fire rate toward 14 rounds/s and uses the heat system.
+- **Shrapnel Launcher:** large explosion payload, higher explosion damage multiplier and wall-blocker bypass foundation.
+- **Arc Projector:** Shock payload and up to three nearby chain hits with damage falloff.
+- **Beam Cutter:** continuous ray ticks, 72 DPS baseline, same-target damage ramp and heat/ammo consumption.
+- **Sawblade Caster:** minimum three collision-normal ricochets.
+- **Drone Controller:** two-offset projectile support-volley foundation exists; persistent summon/drone actors are still required for final GDD fidelity.
+- **Compression Hammer:** short forward melee cone and enemy-projectile reflection foundation.
+
+### Weapon assembly / part runtime
+- `WeaponBuild` matches canonical `WeaponFrameDefinition` / `WeaponPartDefinition` fields and validates compatibility, power overload and weight overload.
+- `WeaponController.apply_build()` binds assembled frame + parts into live damage, interval, magazine, reload, projectile and heat behavior.
+- `WeaponEffectResolver` converts build modifiers/effect IDs into composable projectile/core payloads.
+- Pellet/scatter, pierce, ricochet, homing, explosive and elemental/status effects compose through the generic payload path.
+- Power-overloaded weapons have a tunable firing-failure chance in addition to their other penalties.
+- Perfect reload provides a next-shot damage hook.
+
+### Core runtime
+- Fire, Cold, Shock, Corrosion and Bleed status cores feed the shared status payload system.
+- Void core payload supports a low probability percentage-health bonus on normal enemies and fixed bonus damage behavior for boss-group targets.
+- Impact core increases projectile knockback; wall-collision bonus damage remains a fidelity gap.
+- Absorption core converts a portion of dealt damage into capped temporary player shield.
+- Photon core effect mapping supports increased critical chance; full speed/damage tradeoff still depends on part stat data.
+- Replication core can spawn a reduced-damage duplicate projectile; proc chance is normalized downward on rapid-fire weapons.
+- Devour core grants a next-attack damage multiplier after a kill; elite-kill room-persistent behavior is not yet implemented.
+- Inverse Phase core turns the projectile back toward its owner after an enemy pass/hit and refunds one round on successful return.
 
 ### Status runtime
-- `StatusReceiver` implements GDD-oriented Burn, Cold, Shock, Corrosion, Bleed, Confusion and Vulnerable runtime states.
+- `StatusReceiver` implements Burn, Cold, Shock, Corrosion, Bleed, Confusion and Vulnerable.
 - Burn/Corrosion/Bleed provide periodic damage.
-- Cold reduces move/attack rate and freezes non-boss targets at maximum stacks.
-- Shock periodically damages and chains to a nearby enemy; mechanical targets take amplified shock tick damage.
-- Corrosion increases damage taken, with stronger scaling on armored targets.
+- Cold reduces movement/attack rate and freezes non-boss targets at maximum stacks.
+- Strong hits shatter a frozen normal enemy for bonus damage and consume Cold.
+- Explosions against burning targets trigger bonus reaction damage.
+- Mechanical targets receive additional Shock accumulation and amplified Shock tick damage.
+- Shock periodically chains to a nearby enemy; Arc Projector also has direct multi-chain logic.
+- Corrosion increases damage taken and scales more strongly on armored/shielded targets.
 - Bleed rejects non-biological targets and deals higher tick damage while moving.
 - Confusion reverses Chaser/Ranged movement intent as a first implementation; boss-specific accuracy/tracking downgrade remains for boss framework.
 - Vulnerable increases incoming damage with single-stack short-duration behavior.
-- Chaser and Ranged enemies now expose `apply_status_by_id()` so projectile status payloads affect live AI/combat.
 
 ### GDD 12–13 weapon runtime
 - Magazine + reserve ammunition.
@@ -77,7 +107,7 @@ Do not request the user's final gameplay feedback until the GDD is fully represe
 - `WeaponBuild` runtime assembly resource combines frame + barrel + magazine + core.
 - Runtime stat recomputation supports additive/multiplicative part modifiers.
 - Power/weight overload ratios are computed; exact penalties remain balance-tunable.
-- Part effect IDs aggregate into a runtime effect list.
+- Part effect IDs aggregate into runtime effect payloads.
 
 ### GDD 20/24 backpack architecture
 - 6×5 `BackpackGrid` placement, rotation, occupancy and adjacency.
@@ -86,21 +116,22 @@ Do not request the user's final gameplay feedback until the GDD is fully represe
 - Connector conventions include matching connectors plus power_in/power_out and signal_in/signal_out pairs.
 
 ### Validation status
-This environment has not run Godot. Runtime parsing, feel, device input, save integrity and performance are not validated.
+- The GitHub connector reports no commit status/check results for the latest main commits.
+- This environment has **not executed Godot 4.7.1**, so parser/runtime behavior, combat feel, collision masks, device input, save integrity and performance remain unvalidated.
+- All new weapon/core items stay `PARTIAL` in `docs/GDD_COVERAGE.md` until an actual headless boot/gameplay QA pass succeeds.
 
 ### Major gaps
-See `docs/GDD_COVERAGE.md`. Beam/charge-specific firing behavior, accurate wall-normal ricochet, tunneling-safe continuous collision, full core-specific behaviors (chain rules, void, absorption shield, clone, devour, phase return), burn+explosive interaction, cold shatter, terrain/water interactions, final backpack UI/power routing, passive/active catalogs, characters, procedural map, zones, bosses, economy, curses, meta/hub, tutorial, UI/accessibility, production art/audio, save/stat/achievement/daily, Steam, endings/modes, content quantities, optimization and QA remain incomplete.
+See `docs/GDD_COVERAGE.md`. Weapon-runtime fidelity gaps include persistent drone summons, Rail Lancer movement slowdown while charging, Shrapnel Launcher self-damage, Impact wall-collision bonus damage, Devour elite/room persistence, conductive/water terrain reactions, boss-specific Confusion behavior, and complete part-specific barrel/magazine rules. Beyond weapons, final backpack UI/power routing, passive/active catalogs, characters, procedural map, zones, bosses, economy, curses, meta/hub, tutorial, UI/accessibility, production art/audio, save/stat/achievement/daily, Steam, endings/modes, content quantities, optimization and QA remain incomplete.
 
 ## Next Work — GDD coverage driven
-1. Implement frame-special firing behaviors: burst, spin-up, charge, beam, launcher, saw/caster and heat-focused variants.
-2. Implement remaining core-specific effects and cross-status reactions from GDD 18–19.
-3. Improve ricochet with collision normal and add continuous/tunneling-safe projectile collision strategy.
-4. Complete backpack connector geometry, ammo/cooling/signal terminals, power budgets and explicit/tag synergies.
-5. Add passive module and active equipment definitions/execution architecture.
-6. Replace single reward pickup with three-choice GDD reward flow and repetition control.
-7. Build run graph/map generator and room-type framework.
-8. Continue coverage until all mandatory GDD rows are IMPLEMENTED then VALIDATED.
-9. Only after final omission audit + runtime/device QA, produce feedback build/APK.
+1. Close the remaining frame/core fidelity gaps and run an actual Godot parse/headless combat validation pass.
+2. Implement the 12 barrel and 12 magazine unique runtime rules through the same data-driven effect path.
+3. Complete backpack connector geometry, ammo/cooling/signal terminals, power budgets and explicit/tag synergies.
+4. Add passive module and active equipment definitions/execution architecture.
+5. Replace single reward pickup with three-choice GDD reward flow and repetition control.
+6. Build run graph/map generator and room-type framework.
+7. Continue coverage until all mandatory GDD rows are IMPLEMENTED then VALIDATED.
+8. Only after final omission audit + runtime/device QA, produce feedback build/APK.
 
 ## Design Decisions
 - 2026-08-01: Legacy prototype discarded; clean restart.
@@ -111,6 +142,7 @@ See `docs/GDD_COVERAGE.md`. Beam/charge-specific firing behavior, accurate wall-
 - 2026-08-01: Godot 4.7.1 is canonical.
 - 2026-08-02: Weapon assembly and backpack synergies use data-driven runtime resolvers rather than per-item hardcoding.
 - 2026-08-02: GDD projectile/status requirements are implemented as generic payload/receiver systems so weapon parts can compose effects without bespoke projectile classes for every item.
+- 2026-08-02: Frame identity is resolved by canonical frame ID; common projectile/core behavior remains composable instead of creating twelve disconnected weapon controllers.
 
 ## Continuation Protocol
 1. Read PROJECT.md.
@@ -146,4 +178,11 @@ Suggested continuation prompt:
 - Bound assembled weapon stats/effects into live WeaponController firing.
 - Added multi-pellet spread and power-overload firing-failure behavior.
 - Added GDD status runtime receiver and wired Chaser/Ranged enemies to it.
-- Next: frame-special firing logic and remaining core/status interactions.
+
+### 2026-08-02 — Frame-special firing / advanced core batch
+- Added burst, hit-ramping SMG, charge, spin-up, beam, launcher, chain-projector, saw ricochet, support-volley and melee/reflection frame behaviors.
+- Added swept projectile collision and surface-normal ricochet.
+- Added Void, Absorption, Replication, Devour and Inverse Phase runtime payload hooks.
+- Added player temporary shield support for Absorption core.
+- Added Burn+Explosion and Frozen+Strong-Hit reactions plus stronger mechanical Shock accumulation.
+- Remaining frame fidelity and actual Godot execution validation are explicitly tracked as incomplete rather than marked finished.
