@@ -8,7 +8,7 @@ radius = 22.0
 [sub_resource type="CircleShape2D" id="Circle_attack"]
 radius = 34.0
 
-[node name="ChaserEnemy" type="CharacterBody2D"]
+[node name="ChaserEnemy" type="CharacterBody2D" groups=["enemy"]]
 script = ExtResource("1_chaser")
 collision_layer = 16
 collision_mask = 3
