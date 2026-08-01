@@ -17,11 +17,15 @@ func _ready() -> void:
 	weapon.ammo_changed.connect(_on_ammo_changed)
 	weapon.reload_started.connect(_on_reload_started)
 	weapon.reload_finished.connect(_on_reload_finished)
+	weapon.reload_cancelled.connect(_on_reload_cancelled)
+	weapon.perfect_reload.connect(_on_perfect_reload)
+	weapon.overheated.connect(_on_overheated)
+	weapon.overheat_recovered.connect(_on_overheat_recovered)
 	combat_room.room_started.connect(_on_room_started)
 	combat_room.wave_changed.connect(_on_wave_changed)
 	combat_room.room_cleared.connect(_on_room_cleared)
 	combat_room.reward_spawned.connect(_on_reward_spawned)
-	_on_ammo_changed(weapon.ammo, weapon.magazine_capacity)
+	_on_ammo_changed(weapon.ammo, weapon.magazine_capacity, -1 if weapon.infinite_reserve_ammo else weapon.reserve_ammo)
 	reload_bar.visible = false
 
 func _process(_delta: float) -> void:
@@ -35,22 +39,38 @@ func _process(_delta: float) -> void:
 
 func _update_debug_overlay() -> void:
 	var enemy_count := get_tree().get_nodes_in_group("enemy").size()
-	debug_label.text = "FPS %d\nENEMIES %d\nSPEED %.0f\nDASH CD %.2f\nI-FRAME %.2f\nINPUT %s" % [
+	debug_label.text = "FPS %d\nENEMIES %d\nSPEED %.0f\nDASH CD %.2f\nI-FRAME %.2f\nINPUT %s\nHEAT %.0f/%.0f%s" % [
 		Engine.get_frames_per_second(),
 		enemy_count,
 		player.velocity.length(),
 		player.dash_cooldown_remaining(),
 		player.invulnerability_remaining(),
-		"MOBILE" if player.mobile_input_active() else "DESKTOP"
+		"MOBILE" if player.mobile_input_active() else "DESKTOP",
+		weapon.heat,
+		weapon.max_heat,
+		" OVERHEAT" if weapon.is_overheated() else ""
 	]
 
-func _on_ammo_changed(current: int, capacity: int) -> void:
-	ammo_label.text = "AMMO  %02d / %02d" % [current, capacity]
+func _on_ammo_changed(current: int, capacity: int, reserve: int) -> void:
+	var reserve_text := "∞" if reserve < 0 else str(reserve)
+	ammo_label.text = "AMMO  %02d / %02d  |  %s" % [current, capacity, reserve_text]
 
 func _on_reload_started(_duration: float) -> void:
-	status_label.text = "RELOADING"
+	status_label.text = "RELOADING — press R in the timing window for PERFECT RELOAD"
 
 func _on_reload_finished() -> void:
+	status_label.text = _base_status
+
+func _on_reload_cancelled() -> void:
+	status_label.text = "RELOAD CANCELLED BY DASH"
+
+func _on_perfect_reload() -> void:
+	status_label.text = "PERFECT RELOAD"
+
+func _on_overheated(_duration: float) -> void:
+	status_label.text = "WEAPON OVERHEATED"
+
+func _on_overheat_recovered() -> void:
 	status_label.text = _base_status
 
 func _on_room_started(enemy_count: int) -> void:
