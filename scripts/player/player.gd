@@ -2,6 +2,7 @@ class_name Player
 extends CharacterBody2D
 
 signal temporary_shield_changed(current: float, maximum: float)
+signal damaged(amount: float)
 
 @export_category("Movement")
 @export var max_speed: float = 360.0
@@ -39,6 +40,7 @@ var _mobile_aim_active := false
 func _ready() -> void:
 	health = max_health
 	temporary_shield_changed.emit(temporary_shield, max_temporary_shield)
+	MagazineRuntime.attach_to_player(self)
 
 func _physics_process(delta: float) -> void:
 	_update_timers(delta)
@@ -127,6 +129,7 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO) -> bool:
 		health = maxf(0.0, health - remaining)
 	velocity += knockback
 	_invulnerability_left = 0.35
+	damaged.emit(amount)
 	body_visual.modulate = Color(1.0, 0.35, 0.35, 1.0)
 	get_tree().create_timer(0.09).timeout.connect(_restore_visual)
 	if health <= 0.0:
