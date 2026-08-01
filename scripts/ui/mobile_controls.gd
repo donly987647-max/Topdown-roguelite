@@ -17,10 +17,15 @@ var _player: Player
 @onready var move_knob: Control = $MoveBase/Knob
 @onready var aim_base: Control = $AimBase
 @onready var aim_knob: Control = $AimBase/Knob
+@onready var dash_button: Button = $DashButton
+@onready var reload_button: Button = $ReloadButton
 
 func _ready() -> void:
 	visible = OS.has_feature("mobile") or OS.has_feature("android")
 	set_process_input(visible)
+	if visible:
+		dash_button.button_down.connect(_press_dash)
+		reload_button.button_down.connect(_press_reload)
 	call_deferred("_resolve_player")
 
 func _resolve_player() -> void:
@@ -81,5 +86,17 @@ func _handle_drag(event: InputEventScreenDrag) -> void:
 		else:
 			Input.action_release("fire")
 
+func _press_dash() -> void:
+	Input.action_press("dash")
+	await get_tree().process_frame
+	Input.action_release("dash")
+
+func _press_reload() -> void:
+	Input.action_press("reload")
+	await get_tree().process_frame
+	Input.action_release("reload")
+
 func _exit_tree() -> void:
 	Input.action_release("fire")
+	Input.action_release("dash")
+	Input.action_release("reload")
