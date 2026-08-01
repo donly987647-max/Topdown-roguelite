@@ -1,0 +1,14 @@
+{
+  "fire_core":{"name":"화염 코어","effects":{"status":"burn","burn_kill_small_explosion":true,"reduced_vs_machine":true}},
+  "cooling_core":{"name":"냉각 코어","effects":{"status":"chill","freeze_normal_at_max":true,"boss_action_speed_slow_only":true}},
+  "electric_core":{"name":"전기 코어","effects":{"status":"shock","chain_nearby":true,"conductive_terrain_bonus":true}},
+  "corrosion_core":{"name":"부식 코어","effects":{"status":"corrosion","armor_reduction":true,"damage_over_time":true,"strong_vs_armored":true}},
+  "bleed_core":{"name":"출혈 코어","effects":{"status":"bleed","moving_target_dot_bonus":true,"not_vs_machine":true,"strong_vs_biological":true}},
+  "void_core":{"name":"공허 코어","effects":{"percent_health_delete_chance":true,"boss_fixed_bonus_damage":true,"high_power_cost":true}},
+  "impact_core":{"name":"충격 코어","effects":{"knockback_increase":true,"stagger_increase":true,"wall_collision_bonus_damage":true}},
+  "absorption_core":{"name":"흡수 코어","effects":{"temporary_shield_from_damage_dealt":true,"shield_gain_cap":true}},
+  "photon_core":{"name":"광자 코어","effects":{"projectile_speed_increase":true,"crit_chance_increase":true,"damage_small_reduction":true}},
+  "replication_core":{"name":"복제 코어","effects":{"projectile_duplicate_chance":true,"duplicate_damage_reduction":true,"rapid_fire_proc_normalization":true}},
+  "devour_core":{"name":"포식 코어","effects":{"kill_empowers_next_attack":true,"elite_kill_persists_until_room_end":true}},
+  "inverse_phase_core":{"name":"역상 코어","effects":{"projectile_returns_after_passing_enemy":true,"return_only_damages_enemies":true,"successful_return_refunds_ammo":true}}
+}
