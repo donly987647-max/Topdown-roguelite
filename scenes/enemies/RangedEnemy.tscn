@@ -19,6 +19,11 @@ shape = SubResource("Circle_body")
 polygon = PackedVector2Array(-24, -18, 14, -22, 26, 0, 14, 22, -24, 18, -14, 0)
 color = Color(0.68, 0.16, 0.72, 1)
 
+[node name="TelegraphLine" type="Line2D" parent="."]
+visible = false
+width = 5.0
+default_color = Color(1, 0.45, 0.2, 0.8)
+
 [node name="Muzzle" type="Marker2D" parent="."]
 position = Vector2(30, 0)
 
