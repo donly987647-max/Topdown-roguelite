@@ -3,10 +3,12 @@ extends RefCounted
 
 var main_depth := 8
 var branch_chance := 0.45
-var shop_chance := 0.16
-var event_chance := 0.18
+var shop_chance := 0.14
+var event_chance := 0.16
 var elite_chance := 0.14
-var rest_chance := 0.12
+var rest_chance := 0.08
+var crafting_chance := 0.08
+var medical_chance := 0.08
 
 func generate(seed_value: int = 0) -> RunGraph:
 	var rng := RandomNumberGenerator.new()
@@ -63,14 +65,17 @@ func _make_node(id: StringName, room_type: StringName, difficulty: int, route_ri
 	node.difficulty = difficulty
 	node.metadata = {
 		"route_risk": route_risk,
+		"zone_id": "zone_1",
+		"recommended_threat": difficulty + 4,
 		"reward_rarity_bonus": 0.18 if route_risk == &"risky" else -0.08 if route_risk == &"safe" else 0.0,
 		"environment_hazard_multiplier": 1.25 if route_risk == &"risky" else 0.85 if route_risk == &"safe" else 1.0,
 	}
 	match room_type:
 		&"combat", &"elite": node.reward_tags = PackedStringArray(["combat_reward"])
 		&"shop": node.reward_tags = PackedStringArray(["shop"])
+		&"crafting": node.reward_tags = PackedStringArray(["crafting"])
+		&"medical", &"rest": node.reward_tags = PackedStringArray(["recovery"])
 		&"event": node.reward_tags = PackedStringArray(["event"])
-		&"rest": node.reward_tags = PackedStringArray(["recovery"])
 		&"boss": node.reward_tags = PackedStringArray(["boss_reward"])
 	return node
 
@@ -86,25 +91,31 @@ func _roll_room_type(rng: RandomNumberGenerator, depth: int, route_risk: StringN
 	var shop_weight := shop_chance
 	var event_weight := event_chance
 	var rest_weight := rest_chance
+	var craft_weight := crafting_chance
+	var medical_weight := medical_chance
 	if route_risk == &"safe":
 		elite_weight *= 0.45
-		shop_weight *= 1.45
+		shop_weight *= 1.35
 		rest_weight *= 1.20
+		craft_weight *= 1.30
+		medical_weight *= 1.35
 	elif route_risk == &"risky":
 		elite_weight *= 1.80
 		event_weight *= 1.20
 		shop_weight *= 0.70
-		rest_weight *= 0.65
+		rest_weight *= 0.60
+		craft_weight *= 0.75
+		medical_weight *= 0.55
 	var roll := rng.randf()
-	if roll < elite_weight:
-		return &"elite"
+	if roll < elite_weight: return &"elite"
 	roll -= elite_weight
-	if roll < shop_weight:
-		return &"shop"
+	if roll < shop_weight: return &"shop"
 	roll -= shop_weight
-	if roll < event_weight:
-		return &"event"
+	if roll < craft_weight: return &"crafting"
+	roll -= craft_weight
+	if roll < medical_weight: return &"medical"
+	roll -= medical_weight
+	if roll < event_weight: return &"event"
 	roll -= event_weight
-	if roll < rest_weight:
-		return &"rest"
+	if roll < rest_weight: return &"rest"
 	return &"combat"
