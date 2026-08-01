@@ -30,6 +30,9 @@ var _absorption_ratio := 0.0
 var _absorption_cap := 30.0
 var _devour := false
 var _impact_multiplier := 1.0
+var _explosion_damage_multiplier := 1.0
+var _chain_count := 0
+var _chain_range := 240.0
 
 func _ready() -> void:
 	_remaining_pierces = max_pierces
@@ -60,6 +63,9 @@ func configure(new_direction: Vector2, new_damage: float, new_speed: float = -1.
 	_absorption_cap = float(payload.get("absorption_cap", 30.0))
 	_devour = bool(payload.get("devour", false))
 	_impact_multiplier = float(payload.get("impact_multiplier", 1.0))
+	_explosion_damage_multiplier = float(payload.get("explosion_damage_multiplier", 1.0))
+	_chain_count = int(payload.get("chain_count", 0))
+	_chain_range = float(payload.get("chain_range", 240.0))
 	knockback_force *= _impact_multiplier
 	_remaining_pierces = max_pierces
 	_remaining_ricochets = max_ricochets
@@ -156,6 +162,8 @@ func _try_hit(target: Node) -> void:
 		return
 	_already_hit[receiver.get_instance_id()] = true
 	var final_damage := damage
+	if status_id == &"burn" and bool(receiver.get("mechanical")):
+		final_damage *= 0.85
 	var critical := randf() < critical_chance
 	if critical:
 		final_damage *= critical_multiplier
@@ -171,7 +179,9 @@ func _try_hit(target: Node) -> void:
 	var killed := health_before > 0.0 and health_after == 0.0
 	_apply_status(receiver)
 	if explosion_radius > 0.0:
-		_explode(final_damage)
+		_explode(final_damage * _explosion_damage_multiplier)
+	if _chain_count > 0:
+		_chain_damage(receiver, final_damage)
 	_notify_damage_dealt(receiver, dealt, killed, critical)
 	if _inverse_phase and not _returning:
 		_returning = true
@@ -222,6 +232,31 @@ func _explode(base_damage: float) -> void:
 			candidate.react_to_explosion(base_damage * falloff)
 		if candidate.has_method("take_damage"):
 			candidate.take_damage(base_damage * (0.35 + 0.65 * falloff), (candidate.global_position - global_position).normalized() * knockback_force * falloff)
+
+func _chain_damage(primary: Node, base_damage: float) -> void:
+	var origin := global_position
+	var excluded: Dictionary = {primary.get_instance_id(): true}
+	var previous_damage := base_damage * 0.72
+	for _index in range(_chain_count):
+		var best: Node2D
+		var best_distance := _chain_range * _chain_range
+		for candidate in get_tree().get_nodes_in_group("enemy"):
+			if not (candidate is Node2D) or not is_instance_valid(candidate):
+				continue
+			if excluded.has(candidate.get_instance_id()):
+				continue
+			var distance := origin.distance_squared_to(candidate.global_position)
+			if distance < best_distance:
+				best = candidate
+				best_distance = distance
+		if best == null:
+			break
+		excluded[best.get_instance_id()] = true
+		best.take_damage(previous_damage, Vector2.ZERO)
+		if status_id == &"shock" and best.has_method("apply_status_by_id"):
+			best.apply_status_by_id(&"shock", 1)
+		origin = best.global_position
+		previous_damage *= 0.72
 
 func _consume_enemy_hit() -> void:
 	if _remaining_pierces > 0:
