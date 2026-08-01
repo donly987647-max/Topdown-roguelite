@@ -10,6 +10,7 @@ var direction := Vector2.RIGHT
 var _active := true
 
 func _ready() -> void:
+	add_to_group("enemy_projectile")
 	body_entered.connect(_on_body_entered)
 	area_entered.connect(_on_area_entered)
 
