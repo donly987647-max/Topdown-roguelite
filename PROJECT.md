@@ -28,7 +28,7 @@ Do not request the user's final gameplay feedback until the GDD is fully represe
 ## Current Development State
 **Last updated:** 2026-08-02
 
-**Current milestone:** GDD-wide production architecture expansion; reward/run architecture pass.
+**Current milestone:** GDD-wide production architecture expansion; P2 one-zone run-loop architecture pass.
 
 **Current build is NOT a GDD-complete feedback build.**
 
@@ -57,50 +57,68 @@ Do not request the user's final gameplay feedback until the GDD is fully represe
 - `BackpackSynergyExecutor` provides a data-driven execution layer for explicit adjacency and tag-tier synergies.
 - UI drag/drop and full production synergy catalog remain incomplete.
 
-### Passive module runtime — GDD 21 foundation
-- Added `PassiveModuleDefinition` as a backpack-compatible passive item definition.
-- Added data-driven stat modifiers, stack limits and trigger effect IDs.
-- Added `PassiveModuleRuntime` for module aggregation, duplicate-stack limiting, additive/multiplicative stat composition and event-trigger dispatch.
-- Exact 60-module content catalog and per-effect combat implementations remain incomplete.
+### Passive / active equipment runtime — GDD 21–22
+- `PassiveModuleDefinition` and `PassiveModuleRuntime` provide data-driven stat modifiers, stack limits and event-trigger dispatch.
+- `ActiveEquipmentDefinition` and `ActiveEquipmentRuntime` provide cooldown, charges, activation payload and generic execution dispatch.
+- Final 60 passive / 20 active catalogs, concrete effect libraries, input binding and production UI remain incomplete.
 
-### Active equipment runtime — GDD 22 foundation
-- Added `ActiveEquipmentDefinition` with cooldown, charges, effect IDs and arbitrary activation payload.
-- Added `ActiveEquipmentRuntime` with equip, cooldown ticking, charge consumption/refill, reset and activation dispatch.
-- Exact 20-equipment content catalog, input/UI binding and concrete effect implementations remain incomplete.
+### Reward system — GDD 39
+- `RewardOffer` models category, rarity, payload and selection weight.
+- `RewardSelector` now supports the GDD major-combat composition: current-build-related option, general random option and new-direction option.
+- Same-ID duplication inside one offer is prevented; recent offers are suppressed and repeated claims reduce weight.
+- A lightweight pity adjustment increases related-item weight after a prolonged dry streak without converting the system into fully personalized loot.
+- `RewardGrantResolver` applies scrap, ammo, heal, temporary shield, backpack expansion and item/equipment rewards through generic run-context contracts.
+- Reward history serializes/restores through the selector.
+- Production reward UI and final inventory/economy contracts remain incomplete.
 
-### Reward selection — GDD 39 foundation
-- Added `RewardOffer` model with category, rarity, payload and selection weight.
-- Added `RewardSelector` with default three-choice generation, duplicate-ID prevention, recent-offer suppression, repeated-claim weight reduction and rarity weighting.
-- Reward claim history can be serialized/restored.
-- Existing room-clear pickup still needs to be replaced by UI-driven three-choice presentation and inventory/economy application.
+### Run state / room lifecycle — GDD 5–6 / P2
+- `RunStateController` connects Start → room enter → room clear → reward choice → reward grant → route choice → Boss success/failure.
+- Current room, visited rooms, cleared rooms, build tags, reward history and finished state serialize/restore.
+- Route validation prevents entering nodes that are not connected from the current node.
+- Boss clear produces run success; explicit failure path exists.
+- Scene transitions, result screen, character selection, hub return and disk-level mid-run save integration remain incomplete.
 
-### Run graph / room-route foundation — GDD 26–27
-- Added `RoomNodeDefinition` with room type, difficulty, reward tags and metadata.
-- Added `RunGraph` directed graph model with node/edge management, next-room lookup, reachability and serialization.
-- Added `RunGraphGenerator` producing branching seeded routes from Start to Boss.
-- Current generated room categories include combat, elite, shop, event and rest plus start/boss endpoints.
-- Added structural validation for missing endpoints, unreachable boss and non-boss dead ends.
-- Zone-specific generation, secret routes, room templates, threat budgeting and actual scene loading remain incomplete.
+### Handcrafted room templates — GDD 26–27
+- `RoomTemplateDefinition` follows the GDD handcrafted-template model rather than procedural room geometry.
+- Template data includes zone, size class/tile dimensions, entrances/exits, obstacles, hazard cells, enemy spawn cells, 1–3 wave count, recommended threat, allowed enemy IDs/tags, camera bounds and secret-connection eligibility.
+- `RoomTemplateRegistry` selects templates by zone, room type, recommended threat proximity and prior usage count to limit repetitive layouts.
+- `RoomEncounterRuntime` provides encounter start, wave-ready, enemy-removal, wave-clear and encounter-clear lifecycle signals.
+- Non-combat templates complete immediately at this architecture layer; shop/event/rest/crafting/medical interaction controllers remain future work.
+
+### Safe / risky route generation — GDD 26.4
+- `RunGraphGenerator` remains seed-driven and guarantees a Start→Boss route with dead-end validation.
+- Two-lane branches assign safe/risky metadata.
+- Safe lanes reduce elite likelihood and increase shop/rest tendency.
+- Risky lanes increase elite/event tendency, environmental-hazard multiplier and reward-rarity metadata.
+- Full four-zone progression, secret routes and authored route rules remain incomplete.
+
+### Threat-budget encounter planning — GDD 28 foundation
+- `ThreatBudgetPlanner` registers enemies with threat cost and tags.
+- It converts a room template's recommended threat into an encounter budget with difficulty and elite multipliers.
+- Budget is distributed across the template's configured 1–3 waves.
+- Enemy selection respects explicit allowed-enemy IDs or allowed tags.
+- Exact GDD-wide enemy cost table, spawn timing, formation rules, elite affixes and gameplay balancing remain incomplete.
 
 ### Validation tooling/status
 - `tools/gdd_runtime_smoke.gd` covers representative weapon/backpack contracts.
 - `tools/run_system_smoke.gd` covers run-graph reachability, three-choice uniqueness and passive aggregation contracts.
+- `tools/run_lifecycle_smoke.gd` covers room-template validation, threat-wave construction, run start/clear/reward/route progression and run-state restore contracts.
 - GitHub currently exposes no successful CI/runtime execution associated with these new scripts.
 - This environment has **not executed Godot 4.7.1**; parser/runtime/gameplay validation therefore remains pending.
 - New systems remain `PARTIAL` until real headless/gameplay QA succeeds.
 
 ### Major gaps
-See `docs/GDD_COVERAGE.md`. Immediate architectural gaps now concentrate on reward UI/application, room lifecycle/state, room template selection, threat budgets, persistent drone behavior, environment/status interactions, exact content catalogs, characters, zones/bosses, economy, curses, meta/hub, tutorial, production UI/art/audio, full save/stat/achievement/daily support, Steam integration, optimization and QA.
+See `docs/GDD_COVERAGE.md`. Immediate gaps now concentrate on actual scene loading/spawning, P2 menu/character/result flow, disk mid-run save integration, reward/map UI, shop/crafting/medical/event controllers, room-scoped magazine/core hooks, persistent drone behavior, environment/status interactions, exact content catalogs, zone/boss content, curses, meta/hub, tutorial, production UI/art/audio, Steam integration, optimization and QA.
 
 ## Next Work — GDD coverage driven
-1. Bind the generated run graph to a run-state controller with current node, visited nodes, room-enter/clear events and save/restore.
-2. Replace the single room-clear pickup with a three-choice reward flow that applies weapon part/passive/active/economy rewards.
-3. Build room-template selection and threat-budget spawning on top of room-node metadata.
-4. Add concrete starter passive/active catalogs and effect executor implementations without prematurely claiming the final target quantities.
-5. Use room lifecycle hooks to finish Reactive Magazine per-room reset and Devour elite room persistence.
-6. Continue toward zones, bosses, economy and complete-run loop.
-7. Execute headless smoke tests once a runnable Godot environment is available and fix parse/runtime failures before upgrading coverage statuses.
-8. Only after final omission audit + runtime/device QA, produce feedback build/APK.
+1. Bind `RunStateController`, `RoomTemplateRegistry` and `RoomEncounterRuntime` to actual Godot room scenes and enemy spawning.
+2. Add a room-session coordinator that locks exits during combat, advances waves with <=1 s pacing and unlocks route/reward flow on clear.
+3. Connect room lifecycle signals to Reactive Magazine per-room reset and Devour elite room persistence.
+4. Build the first production P2 UI path: run start/character selection → map route choice → three-choice reward → result screen.
+5. Add run-level wallet/economy plus first shop/crafting/medical interaction controllers.
+6. Add one-zone authored room template set and starter enemy threat-cost table before scaling content quantities.
+7. Integrate disk-level mid-run save/continue and then execute headless smoke tests in a runnable Godot 4.7.1 environment.
+8. Continue coverage until mandatory GDD rows are IMPLEMENTED then VALIDATED; only after final omission audit + runtime/device QA produce feedback build/APK.
 
 ## Design Decisions
 - 2026-08-01: Legacy prototype discarded; clean restart.
@@ -110,11 +128,13 @@ See `docs/GDD_COVERAGE.md`. Immediate architectural gaps now concentrate on rewa
 - 2026-08-01: `docs/GDD_COVERAGE.md` is mandatory.
 - 2026-08-01: Godot 4.7.1 is canonical.
 - 2026-08-02: Weapon assembly and backpack synergies use data-driven runtime resolvers rather than per-item hardcoding.
-- 2026-08-02: GDD projectile/status requirements are implemented as generic payload/receiver systems.
+- 2026-08-02: GDD projectile/status requirements are implemented as generic projectile/status payload systems.
 - 2026-08-02: Frame identity is resolved by canonical frame ID; common projectile/core behavior remains composable.
 - 2026-08-02: Stateful magazine rules use one MagazineRuntime attached to Player and bind to WeaponController signals.
 - 2026-08-02: Backpack terminals are positional and directional; matching type alone is insufficient unless ports physically face each other.
-- 2026-08-02: Passive/active/reward/run systems use data-driven definitions and generic runtime dispatch rather than hardcoding content before the final catalogs are authored.
+- 2026-08-02: Passive/active/reward/run systems use data-driven definitions and generic runtime dispatch rather than hardcoding content before final catalogs are authored.
+- 2026-08-02: Room geometry stays handcrafted; runtime procedural generation composes authored room templates into route graphs, matching GDD 26.1.
+- 2026-08-02: Major combat reward selection explicitly preserves three roles — build-related, general random and new-direction — rather than returning three identically weighted random items.
 
 ## Continuation Protocol
 1. Read PROJECT.md.
@@ -158,3 +178,12 @@ Suggested continuation prompt:
 - Added weighted three-choice reward selector with repetition suppression/history.
 - Added room-node/run-graph models, seeded branching generation and validation.
 - Added run-system smoke coverage; execution remains pending.
+
+### 2026-08-02 — Run lifecycle / room template / threat batch
+- Added `RunStateController` with room progression, reward grant, route selection and run-state serialization.
+- Expanded major rewards to GDD build-related/random/new-direction composition with dry-streak mitigation.
+- Added generic `RewardGrantResolver`.
+- Added handcrafted `RoomTemplateDefinition` + selection registry.
+- Added `RoomEncounterRuntime` and `ThreatBudgetPlanner` for 1–3-wave threat-budget encounters.
+- Added safe/risky route metadata and route-biased room generation.
+- Added `tools/run_lifecycle_smoke.gd`; actual Godot execution remains pending.
