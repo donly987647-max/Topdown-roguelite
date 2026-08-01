@@ -8,7 +8,7 @@ radius = 24.0
 [node name="TargetDummy" type="CharacterBody2D"]
 script = ExtResource("1_dummy")
 collision_layer = 16
-collision_mask = 1 | 2
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("Circle_dummy")
