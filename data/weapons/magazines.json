@@ -1,0 +1,14 @@
+{
+  "extended_mag":{"name":"대용량 탄창","effects":{"magazine_mult":1.60,"reload_time_mult":1.25}},
+  "light_mag":{"name":"경량 탄창","effects":{"magazine_mult":0.75,"reload_time_mult":0.65,"weapon_swap_speed_bonus":true}},
+  "explosive_mag":{"name":"폭발 탄창","effects":{"last_round_large_explosion":true,"magazine_reduction":true}},
+  "reverse_order_mag":{"name":"역순 탄창","effects":{"first_round_strongest":true,"damage_decay_per_round":0.03,"reset_on_reload":true}},
+  "compressed_mag":{"name":"압축 탄창","effects":{"ammo_use_mult":2.0,"damage_mult":1.70,"projectile_size_increase":true}},
+  "regenerative_mag":{"name":"재생 탄창","effects":{"kill_ammo_restore_chance":true,"max_magazine_reduction":true}},
+  "emergency_mag":{"name":"비상 탄창","effects":{"low_hp_threshold":0.30,"low_hp_reload_time_mult":0.50,"perfect_reload_window_increase":true}},
+  "magnetic_mag":{"name":"자기 탄창","effects":{"reload_collect_nearby_ammo":true,"perfect_reload_absorb_enemy_projectiles":true}},
+  "cross_mag":{"name":"교차 탄창","effects":{"odd_round_damage_bonus":true,"even_round_status_bonus":true}},
+  "reactive_mag":{"name":"반응 탄창","effects":{"post_hit_reload_instant":true,"uses_per_room":1}},
+  "gamble_mag":{"name":"도박 탄창","effects":{"reload_free_ammo_chance":0.20,"failure_partial_mag_loss":true}},
+  "dual_mag":{"name":"이중 탄창","effects":{"two_stage_reload":true,"half_reload_can_fire":true,"full_reload_damage_bonus":true}}
+}
