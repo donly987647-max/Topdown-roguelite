@@ -7,9 +7,11 @@ extends Resource
 @export var tags: PackedStringArray = []
 @export var scene_path: String = ""
 @export var elite: bool = false
+@export var stat_overrides: Dictionary = {}
 
 func validate_definition() -> Array[String]:
 	var errors: Array[String] = []
 	if id == &"": errors.append("enemy id is empty")
 	if threat_cost <= 0: errors.append("threat cost must be positive")
+	if scene_path.is_empty(): errors.append("scene path is empty")
 	return errors
