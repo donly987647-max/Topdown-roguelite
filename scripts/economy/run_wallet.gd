@@ -12,6 +12,14 @@ func add(amount: int) -> int:
 	scrap_changed.emit(scrap)
 	return scrap
 
+func add_currency(currency_id: StringName, amount: int) -> int:
+	if currency_id != &"scrap":
+		return 0
+	return add(amount)
+
+func get_currency(currency_id: StringName) -> int:
+	return scrap if currency_id == &"scrap" else 0
+
 func can_afford(cost: int) -> bool:
 	return cost >= 0 and scrap >= cost
 
@@ -21,6 +29,9 @@ func spend(cost: int) -> bool:
 	scrap -= cost
 	scrap_changed.emit(scrap)
 	return true
+
+func spend_currency(currency_id: StringName, cost: int) -> bool:
+	return currency_id == &"scrap" and spend(cost)
 
 func serialize() -> Dictionary:
 	return {"scrap": scrap}
