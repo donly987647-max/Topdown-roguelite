@@ -51,17 +51,15 @@ func load_room(room_template: RoomTemplateDefinition, difficulty_multiplier: flo
 	return true
 
 func unload_room() -> void:
-	for enemy in _active_enemies.values():
-		if is_instance_valid(enemy):
-			enemy.queue_free()
+	var previous_id := _room_template_id
 	_active_enemies.clear()
 	if room_root != null and is_instance_valid(room_root):
 		room_root.queue_free()
 	room_root = null
-	if _room_template_id != &"":
-		room_unloaded.emit(_room_template_id)
 	_room_template_id = &""
 	template = null
+	if previous_id != &"":
+		room_unloaded.emit(previous_id)
 
 func _instantiate_room_root(room_template: RoomTemplateDefinition) -> Node:
 	if room_template.has_scene():
@@ -94,11 +92,7 @@ func _register_enemy(enemy: Node, enemy_id: StringName, wave_index: int) -> void
 	_active_enemies[instance_id] = enemy
 	enemy.set_meta("room_wave_index", wave_index)
 	enemy_spawned.emit(enemy, enemy_id, wave_index)
-	if enemy.has_signal("died"):
-		var callback := func(_arg = null): _on_enemy_removed(instance_id)
-		enemy.connect("died", callback, CONNECT_ONE_SHOT)
-	else:
-		enemy.tree_exiting.connect(func(): _on_enemy_removed(instance_id), CONNECT_ONE_SHOT)
+	enemy.tree_exiting.connect(func(): _on_enemy_removed(instance_id), CONNECT_ONE_SHOT)
 
 func _on_enemy_removed(instance_id: int) -> void:
 	if not _active_enemies.has(instance_id):
@@ -140,11 +134,17 @@ func _set_exits_locked(locked: bool) -> void:
 			continue
 		if node.has_method("set_locked"):
 			node.call("set_locked", locked)
-		elif "disabled" in node:
+		elif _has_property(node, &"disabled"):
 			node.set("disabled", locked)
 		else:
 			node.set_meta("locked", locked)
 	exits_locked.emit(locked)
+
+func _has_property(node: Object, property_name: StringName) -> bool:
+	for property in node.get_property_list():
+		if StringName(property.get("name", "")) == property_name:
+			return true
+	return false
 
 func _on_encounter_cleared(template_id: StringName) -> void:
 	_set_exits_locked(false)
