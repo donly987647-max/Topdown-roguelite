@@ -31,6 +31,14 @@ func bind_node_template(node_id: StringName, template_id: StringName) -> void:
 	if node_id != &"" and template_id != &"":
 		node_to_template[node_id] = template_id
 
+func restore_registered_templates(registry: RoomTemplateRegistry) -> void:
+	if registry == null:
+		return
+	for template_id in node_to_template.values():
+		var template := registry.get_template(StringName(template_id))
+		if template != null:
+			register_room_template(template)
+
 func start_run(new_graph: RunGraph, seed: int = 0, context: Dictionary = {}) -> bool:
 	if new_graph == null or new_graph.start_id == &"" or not new_graph.nodes.has(new_graph.start_id):
 		return false
@@ -40,6 +48,7 @@ func start_run(new_graph: RunGraph, seed: int = 0, context: Dictionary = {}) -> 
 	current_room_id = graph.start_id
 	visited_rooms = [current_room_id]
 	cleared_rooms.clear()
+	node_to_template.clear()
 	active_reward_choices.clear()
 	finished = false
 	run_started.emit(seed_value, current_room_id)
@@ -126,11 +135,15 @@ func serialize() -> Dictionary:
 	var cleared: Array[String] = []
 	for id in cleared_rooms.keys():
 		cleared.append(String(id))
+	var bindings: Dictionary = {}
+	for node_id in node_to_template.keys():
+		bindings[String(node_id)] = String(node_to_template[node_id])
 	return {
 		"seed": seed_value,
 		"current_room_id": String(current_room_id),
 		"visited_rooms": visited,
 		"cleared_rooms": cleared,
+		"node_to_template": bindings,
 		"reward_history": reward_selector.serialize_history(),
 		"build_tags": Array(build_tags),
 		"finished": finished,
@@ -152,6 +165,9 @@ func restore(data: Dictionary, restored_graph: RunGraph, context: Dictionary = {
 	cleared_rooms.clear()
 	for raw in data.get("cleared_rooms", []):
 		cleared_rooms[StringName(raw)] = true
+	node_to_template.clear()
+	for raw_node_id in data.get("node_to_template", {}).keys():
+		node_to_template[StringName(raw_node_id)] = StringName(data["node_to_template"][raw_node_id])
 	reward_selector.restore_history(data.get("reward_history", {}))
 	build_tags = PackedStringArray(data.get("build_tags", []))
 	finished = bool(data.get("finished", false))
