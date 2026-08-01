@@ -69,6 +69,7 @@ func _select_and_bind_template(room_id: StringName, room_type: StringName) -> Ro
 func _on_room_scene_cleared(_template_id: StringName) -> void:
 	if run_state == null:
 		return
+	room_runtime.set_exits_locked(true)
 	_broadcast_room_cleared(run_state.current_room_id)
 	var node := run_state.current_node()
 	var major_reward := node != null and node.room_type in [&"combat", &"elite", &"boss"]
@@ -92,11 +93,34 @@ func choose_route(room_id: StringName) -> bool:
 	return result
 
 func _on_reward_choices_ready(choices: Array[RewardOffer]) -> void:
+	room_runtime.set_exits_locked(true)
 	reward_panel_requested.emit(choices)
 
 func _on_route_choices_ready(room_ids: Array[StringName]) -> void:
+	_bind_exit_targets(room_ids)
+	room_runtime.set_exits_locked(room_ids.is_empty())
 	route_panel_requested.emit(room_ids)
 	_emit_map_state()
+
+func _bind_exit_targets(room_ids: Array[StringName]) -> void:
+	if room_runtime.room_root == null or room_runtime.template == null:
+		return
+	var exits: Array[Node] = []
+	for node in get_tree().get_nodes_in_group(room_runtime.template.exit_group):
+		if room_runtime.room_root.is_ancestor_of(node):
+			exits.append(node)
+	for index in range(exits.size()):
+		var gate := exits[index]
+		if index < room_ids.size() and gate.has_method("set_target_room"):
+			gate.call("set_target_room", room_ids[index])
+		if gate.has_signal("exit_requested"):
+			var callable := Callable(self, "_on_exit_requested")
+			if not gate.is_connected("exit_requested", callable):
+				gate.connect("exit_requested", callable)
+
+func _on_exit_requested(target_room_id: StringName) -> void:
+	if target_room_id != &"":
+		choose_route(target_room_id)
 
 func _broadcast_room_entered(room_id: StringName, room_type: StringName) -> void:
 	get_tree().call_group(&"room_lifecycle_listener", &"on_room_entered", room_id, room_type)
