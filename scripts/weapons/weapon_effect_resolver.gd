@@ -25,11 +25,35 @@ static func shot_payload(build: WeaponBuild, stats: Dictionary) -> Dictionary:
 		"chain_count": int(stats.get("chain_count", 0)),
 		"chain_range": float(stats.get("chain_range", 240.0)),
 		"ignore_world_collision": bool(stats.get("ignore_world_collision", false)),
+		"damage_multiplier": 1.0,
+		"speed_multiplier": 1.0,
+		"lifetime_multiplier": 1.0,
+		"pierce_damage_decay": 0.0,
+		"ricochet_damage_multiplier": 1.0,
+		"distance_damage_bonus": 0.0,
+		"close_damage_multiplier": 1.0,
+		"clear_enemy_projectiles": false,
+		"projectile_scale": 1.0,
+		"split_count": 0,
+		"split_damage_multiplier": 0.30,
+		"player_recoil": 0.0,
+		"resonance": false,
+		"unstable_damage_min": 1.0,
+		"unstable_damage_max": 1.0,
+		"unstable_spread_degrees": 0.0,
+		"last_round_explosion": false,
+		"last_round_explosion_radius": 190.0,
+		"reverse_order_mag": false,
+		"compressed_mag": false,
+		"regenerative_mag": false,
+		"cross_mag": false,
 	}
 	if build == null:
 		return payload
 	for effect_id in build.effect_ids():
 		_apply_effect(effect_id, payload)
+	_apply_barrel_defaults(barrel_id(build), payload)
+	_apply_magazine_defaults(magazine_id(build), payload)
 	_apply_frame_defaults(frame_id(build), payload)
 	return payload
 
@@ -37,6 +61,8 @@ static func pellet_count(build: WeaponBuild, stats: Dictionary) -> int:
 	var count := maxi(1, int(stats.get("pellet_count", 1)))
 	if frame_id(build) == &"breach_shotgun":
 		count = maxi(count, 8)
+	if barrel_id(build) == &"spread_barrel":
+		count += 2
 	if build == null:
 		return count
 	for effect_id in build.effect_ids():
@@ -51,12 +77,88 @@ static func pellet_spread_degrees(build: WeaponBuild, stats: Dictionary, fallbac
 		spread = maxf(spread, float(stats.get("pellet_spread", 16.0)))
 	if frame_id(build) == &"breach_shotgun":
 		spread = maxf(spread, 18.0)
+	match barrel_id(build):
+		&"precision_barrel":
+			spread *= 0.65
+		&"spread_barrel":
+			spread = maxf(spread, 22.0)
 	return spread
 
 static func frame_id(build: WeaponBuild) -> StringName:
 	if build == null or build.frame == null:
 		return StringName()
 	return build.frame.id
+
+static func barrel_id(build: WeaponBuild) -> StringName:
+	if build == null or build.barrel == null:
+		return StringName()
+	return build.barrel.id
+
+static func magazine_id(build: WeaponBuild) -> StringName:
+	if build == null or build.magazine == null:
+		return StringName()
+	return build.magazine.id
+
+static func core_id(build: WeaponBuild) -> StringName:
+	if build == null or build.core == null:
+		return StringName()
+	return build.core.id
+
+static func _apply_barrel_defaults(id: StringName, payload: Dictionary) -> void:
+	match id:
+		&"precision_barrel":
+			payload["speed_multiplier"] = float(payload["speed_multiplier"]) * 1.15
+		&"spread_barrel":
+			payload["damage_multiplier"] = float(payload["damage_multiplier"]) * 0.75
+		&"piercing_barrel":
+			payload["pierce"] = int(payload["pierce"]) + 2
+			payload["pierce_damage_decay"] = 0.15
+		&"ricochet_barrel":
+			payload["ricochet"] = int(payload["ricochet"]) + 2
+			payload["ricochet_damage_multiplier"] = 1.20
+			payload["speed_multiplier"] = float(payload["speed_multiplier"]) * 0.90
+		&"explosive_barrel":
+			payload["explosion_radius"] = maxf(float(payload["explosion_radius"]), 105.0)
+			payload["damage_multiplier"] = float(payload["damage_multiplier"]) * 0.80
+		&"long_range_barrel":
+			payload["lifetime_multiplier"] = float(payload["lifetime_multiplier"]) * 1.40
+			payload["distance_damage_bonus"] = 0.35
+			payload["close_damage_multiplier"] = 0.85
+		&"cutting_barrel":
+			payload["clear_enemy_projectiles"] = true
+			payload["projectile_scale"] = maxf(float(payload["projectile_scale"]), 1.35)
+		&"homing_barrel":
+			payload["homing"] = maxf(float(payload["homing"]), 2.5)
+			payload["speed_multiplier"] = float(payload["speed_multiplier"]) * 0.90
+			payload["critical_chance"] = maxf(0.0, float(payload["critical_chance"]) - 0.05)
+		&"split_barrel":
+			payload["split_count"] = maxi(int(payload["split_count"]), 2)
+			payload["split_damage_multiplier"] = 0.30
+		&"reverse_thrust_barrel":
+			payload["damage_multiplier"] = float(payload["damage_multiplier"]) * 1.20
+			payload["player_recoil"] = 150.0
+		&"resonance_barrel":
+			payload["resonance"] = true
+		&"unstable_barrel":
+			payload["unstable_damage_min"] = 0.70
+			payload["unstable_damage_max"] = 1.60
+			payload["unstable_spread_degrees"] = 7.0
+
+static func _apply_magazine_defaults(id: StringName, payload: Dictionary) -> void:
+	match id:
+		&"explosive_mag":
+			payload["last_round_explosion"] = true
+			payload["last_round_explosion_radius"] = 190.0
+		&"reverse_order_mag":
+			payload["reverse_order_mag"] = true
+		&"compressed_mag":
+			payload["compressed_mag"] = true
+			payload["damage_multiplier"] = float(payload["damage_multiplier"]) * 1.70
+			payload["projectile_scale"] = maxf(float(payload["projectile_scale"]), 1.35)
+		&"regenerative_mag":
+			payload["regenerative_mag"] = true
+		&"cross_mag":
+			payload["cross_mag"] = true
 
 static func _apply_frame_defaults(id: StringName, payload: Dictionary) -> void:
 	match id:
