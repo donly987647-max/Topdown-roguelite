@@ -34,13 +34,14 @@ func _resolve_player() -> void:
 func _input(event: InputEvent) -> void:
 	if not visible:
 		return
-
 	if event is InputEventScreenTouch:
 		_handle_touch(event)
 	elif event is InputEventScreenDrag:
 		_handle_drag(event)
 
 func _handle_touch(event: InputEventScreenTouch) -> void:
+	if _is_action_button_position(event.position):
+		return
 	var viewport_size := get_viewport_rect().size
 	if event.pressed:
 		if event.position.x < viewport_size.x * 0.5 and _move_touch == -1:
@@ -55,20 +56,9 @@ func _handle_touch(event: InputEventScreenTouch) -> void:
 			aim_base.visible = true
 	else:
 		if event.index == _move_touch:
-			_move_touch = -1
-			_move_value = Vector2.ZERO
-			move_knob.position = (move_base.size - move_knob.size) * 0.5
-			move_base.visible = false
-			if _player != null:
-				_player.set_mobile_move(Vector2.ZERO)
+			_release_move()
 		elif event.index == _aim_touch:
-			_aim_touch = -1
-			_aim_value = Vector2.ZERO
-			aim_knob.position = (aim_base.size - aim_knob.size) * 0.5
-			aim_base.visible = false
-			Input.action_release("fire")
-			if _player != null:
-				_player.clear_mobile_aim()
+			_release_aim()
 
 func _handle_drag(event: InputEventScreenDrag) -> void:
 	if event.index == _move_touch:
@@ -85,6 +75,26 @@ func _handle_drag(event: InputEventScreenDrag) -> void:
 			Input.action_press("fire")
 		else:
 			Input.action_release("fire")
+
+func _is_action_button_position(position: Vector2) -> bool:
+	return dash_button.get_global_rect().has_point(position) or reload_button.get_global_rect().has_point(position)
+
+func _release_move() -> void:
+	_move_touch = -1
+	_move_value = Vector2.ZERO
+	move_knob.position = (move_base.size - move_knob.size) * 0.5
+	move_base.visible = false
+	if _player != null:
+		_player.set_mobile_move(Vector2.ZERO)
+
+func _release_aim() -> void:
+	_aim_touch = -1
+	_aim_value = Vector2.ZERO
+	aim_knob.position = (aim_base.size - aim_knob.size) * 0.5
+	aim_base.visible = false
+	Input.action_release("fire")
+	if _player != null:
+		_player.clear_mobile_aim()
 
 func _press_dash() -> void:
 	Input.action_press("dash")
