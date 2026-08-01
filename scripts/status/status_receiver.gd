@@ -18,9 +18,12 @@ func apply_status(status_id: StringName, stacks: int = 1) -> bool:
 		return false
 	if status_id == &"bleed" and not biological:
 		return false
+	var applied_stacks := maxi(1, stacks)
+	if status_id == &"shock" and mechanical:
+		applied_stacks += 1
 	var max_stacks := int(rule.get("max_stacks", 1))
 	var state: Dictionary = _states.get(status_id, {"stacks": 0, "remaining": 0.0, "tick": 0.0})
-	state["stacks"] = mini(max_stacks, int(state["stacks"]) + maxi(1, stacks))
+	state["stacks"] = mini(max_stacks, int(state["stacks"]) + applied_stacks)
 	state["remaining"] = maxf(float(state["remaining"]), float(rule.get("duration", 1.0)))
 	state["tick"] = minf(float(state["tick"]), float(rule.get("tick_interval", 0.5))) if float(state["tick"]) > 0.0 else float(rule.get("tick_interval", 0.5))
 	_states[status_id] = state
@@ -50,7 +53,12 @@ func damage_taken_multiplier() -> float:
 		mult *= 1.25
 	if _states.has(&"corrosion"):
 		var stacks := int((_states[&"corrosion"] as Dictionary)["stacks"])
-		mult *= 1.0 + stacks * (0.08 if not armored else 0.12)
+		var per_stack := 0.08
+		if armored:
+			per_stack = 0.12
+		elif shielded:
+			per_stack = 0.10
+		mult *= 1.0 + stacks * per_stack
 	return mult
 
 func move_speed_multiplier() -> float:
@@ -71,12 +79,35 @@ func is_confused() -> bool:
 func has_status(id: StringName) -> bool:
 	return _states.has(id)
 
+func stacks(id: StringName) -> int:
+	if not _states.has(id):
+		return 0
+	return int((_states[id] as Dictionary)["stacks"])
+
+func react_to_explosion(base_damage: float) -> float:
+	if base_damage <= 0.0 or not _states.has(&"burn"):
+		return 0.0
+	var burn_stacks := stacks(&"burn")
+	var bonus := base_damage * (0.12 + 0.04 * burn_stacks)
+	var host := get_parent()
+	if host != null and host.has_method("take_damage"):
+		host.take_damage(bonus, Vector2.ZERO)
+	return bonus
+
+func react_to_strong_hit(base_damage: float) -> float:
+	if base_damage <= 0.0 or not is_frozen():
+		return 0.0
+	var shatter := maxf(8.0, base_damage * 0.35)
+	_states.erase(&"cold")
+	status_expired.emit(&"cold")
+	return shatter
+
 func _tick_status(id: StringName, state: Dictionary, rule: Dictionary) -> void:
 	var host := get_parent()
 	if host == null or not host.has_method("take_damage"):
 		return
-	var stacks := int(state["stacks"])
-	var tick_damage := float(rule.get("tick_damage", 0.0)) * stacks
+	var stacks_count := int(state["stacks"])
+	var tick_damage := float(rule.get("tick_damage", 0.0)) * stacks_count
 	if id == &"shock" and mechanical:
 		tick_damage *= 1.35
 	if id == &"bleed":
