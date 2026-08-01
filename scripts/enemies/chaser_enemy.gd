@@ -23,6 +23,7 @@ var _status: StatusReceiver
 @onready var health_bar: ProgressBar = $HealthBar
 
 func _ready() -> void:
+	add_to_group("enemy")
 	health = max_health
 	health_bar.max_value = max_health
 	health_bar.value = health
@@ -72,6 +73,14 @@ func _try_contact_attack() -> void:
 
 func apply_status_by_id(status_id: StringName, stacks: int = 1) -> bool:
 	return _status != null and _status.apply_status(status_id, stacks)
+
+func react_to_projectile_hit(base_damage: float, _explosive: bool = false) -> float:
+	if _status == null or base_damage < 24.0:
+		return 0.0
+	return _status.react_to_strong_hit(base_damage)
+
+func react_to_explosion(base_damage: float) -> float:
+	return _status.react_to_explosion(base_damage) if _status != null else 0.0
 
 func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO) -> bool:
 	if _dead or amount <= 0.0:
