@@ -15,6 +15,13 @@ func register(template: RoomTemplateDefinition) -> bool:
 func get_template(id: StringName) -> RoomTemplateDefinition:
 	return templates.get(id)
 
+func select(zone_id: StringName, room_type: StringName, target_threat: int, rng: RandomNumberGenerator = null) -> RoomTemplateDefinition:
+	var probe := RoomNodeDefinition.new()
+	probe.id = &"__selection_probe__"
+	probe.room_type = room_type
+	probe.difficulty = target_threat
+	return choose_for_node(probe, zone_id, rng)
+
 func choose_for_node(node: RoomNodeDefinition, zone_id: StringName, rng: RandomNumberGenerator = null) -> RoomTemplateDefinition:
 	if node == null:
 		return null
