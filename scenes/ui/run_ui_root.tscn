@@ -1,0 +1,16 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/run_ui_binder.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/ui/run_map_panel.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/ui/reward_choice_panel.tscn" id="3"]
+
+[node name="RunUIRoot" type="CanvasLayer"]
+
+[node name="Binder" type="Node" parent="."]
+script = ExtResource("1")
+map_panel_path = NodePath("../RunMapPanel")
+reward_panel_path = NodePath("../RewardChoicePanel")
+
+[node name="RunMapPanel" parent="." instance=ExtResource("2")]
+
+[node name="RewardChoicePanel" parent="." instance=ExtResource("3")]
