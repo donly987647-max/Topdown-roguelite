@@ -13,7 +13,7 @@ signal defeated
 @export var max_health := 1800.0
 @export var projectile_scene: PackedScene
 @export var minion_scene: PackedScene
-@export var arena_radius := 620.0
+@export var arena_radius := 480.0
 @export var projectile_damage := 16.0
 
 var health := 1800.0
@@ -25,10 +25,14 @@ var _core_timer := 0.0
 var _safe_zone_index := 0
 var _dead := false
 
+@onready var health_bar: ProgressBar = get_node_or_null("HealthBar") as ProgressBar
+@onready var core_visual: CanvasItem = get_node_or_null("Core") as CanvasItem
+
 func _ready() -> void:
 	add_to_group(&"enemy")
 	add_to_group(&"boss")
 	health = max_health
+	_update_health_bar()
 	health_changed.emit(health, max_health)
 
 func _physics_process(delta: float) -> void:
@@ -47,11 +51,17 @@ func take_damage(amount: float, _knockback: Vector2 = Vector2.ZERO) -> bool:
 		return false
 	var multiplier := 1.75 if phase == 3 and core_exposed else 1.0
 	health = maxf(0.0, health - amount * multiplier)
+	_update_health_bar()
 	health_changed.emit(health, max_health)
 	_update_phase()
 	if health <= 0.0:
 		_die()
 	return true
+
+func _update_health_bar() -> void:
+	if health_bar != null:
+		health_bar.max_value = max_health
+		health_bar.value = health
 
 func _update_phase() -> void:
 	var ratio := health / maxf(1.0, max_health)
@@ -106,7 +116,7 @@ func _change_conveyor() -> void:
 func _warn_falling_blocks(count: int) -> void:
 	for i in range(count):
 		var angle := TAU * float(i) / float(maxi(1, count)) + randf_range(-0.35, 0.35)
-		var pos := global_position + Vector2.RIGHT.rotated(angle) * randf_range(180.0, arena_radius * 0.75)
+		var pos := global_position + Vector2.RIGHT.rotated(angle) * randf_range(120.0, arena_radius * 0.75)
 		falling_block_warning.emit(pos, 0.75 + i * 0.12)
 
 func _activate_center_press() -> void:
@@ -119,16 +129,16 @@ func _fire_metal_shards(count: int, arc_fraction: float, speed: float) -> void:
 	for i in range(count):
 		var t := 0.5 if count <= 1 else float(i) / float(count - 1)
 		var angle := lerpf(-PI * arc_fraction, PI * arc_fraction, t)
-		_spawn_projectile(base.rotated(angle), speed, projectile_damage)
+		_spawn_projectile(base.rotated(angle), speed, projectile_damage, false)
 
 func _fire_tracking_saws(count: int) -> void:
 	var player := get_tree().get_first_node_in_group(&"player") as Node2D
 	var base := global_position.direction_to(player.global_position) if player != null else Vector2.RIGHT
 	for i in range(count):
 		var angle := deg_to_rad((float(i) - float(count - 1) * 0.5) * 8.0)
-		_spawn_projectile(base.rotated(angle), 430.0, projectile_damage * 1.15)
+		_spawn_projectile(base.rotated(angle), 430.0, projectile_damage * 1.15, true)
 
-func _spawn_projectile(direction: Vector2, speed: float, damage: float) -> void:
+func _spawn_projectile(direction: Vector2, speed: float, damage: float, homing: bool) -> void:
 	if projectile_scene == null:
 		return
 	var projectile := projectile_scene.instantiate()
@@ -139,6 +149,8 @@ func _spawn_projectile(direction: Vector2, speed: float, damage: float) -> void:
 		(projectile as Node2D).global_position = global_position
 	if projectile.has_method("configure"):
 		projectile.call("configure", direction.normalized(), damage, speed)
+	if homing:
+		projectile.set("homing_strength", 2.2)
 
 func _spawn_minions(count: int) -> void:
 	if minion_scene == null:
@@ -149,11 +161,13 @@ func _spawn_minions(count: int) -> void:
 			continue
 		get_parent().add_child(minion)
 		if minion is Node2D:
-			(minion as Node2D).global_position = global_position + Vector2.RIGHT.rotated(TAU * i / maxf(1.0, count)) * 190.0
+			(minion as Node2D).global_position = global_position + Vector2.RIGHT.rotated(TAU * i / maxf(1.0, count)) * 150.0
 
 func _set_core_exposed(value: bool, duration: float = 0.0) -> void:
 	core_exposed = value
 	_core_timer = duration if value else 0.0
+	if core_visual != null:
+		core_visual.modulate = Color(1.0,0.95,0.35,1.0) if value else Color.WHITE
 	core_exposure_changed.emit(value)
 
 func _die() -> void:
