@@ -4,6 +4,7 @@ extends RefCounted
 const ZONE_ID := &"zone_1"
 const MELEE_SCENE := "res://scenes/enemies/zone1_melee.tscn"
 const RANGED_SCENE := "res://scenes/enemies/zone1_ranged.tscn"
+const BOSS_SCENE := "res://scenes/bosses/gr01_boss.tscn"
 
 func enemy_profiles() -> Array[EnemySpawnProfile]:
 	return [
@@ -13,7 +14,7 @@ func enemy_profiles() -> Array[EnemySpawnProfile]:
 		_enemy(&"fork_drone", "Fork Drone", 3, ["ranged", "flying", "mechanical"], RANGED_SCENE, false, {"max_health":44.0,"move_speed":175.0,"preferred_distance":480.0,"retreat_distance":300.0,"fire_interval":0.92,"projectile_damage":9.0,"biological":false,"mechanical":true}),
 		_enemy(&"crusher_brute", "Crusher Brute", 4, ["melee", "heavy", "mechanical"], MELEE_SCENE, false, {"max_health":155.0,"move_speed":92.0,"contact_damage":22.0,"attack_cooldown":1.05,"biological":false,"mechanical":true}),
 		_enemy(&"elite_line_guard", "Elite Line Guard", 6, ["elite", "melee", "mechanical"], MELEE_SCENE, true, {"max_health":190.0,"move_speed":158.0,"contact_damage":20.0,"attack_cooldown":0.68,"biological":false,"mechanical":true}),
-		_enemy(&"gr01_proto", "GR-01 Prototype", 12, ["boss", "heavy", "mechanical"], MELEE_SCENE, false, {"max_health":520.0,"move_speed":82.0,"contact_damage":28.0,"attack_cooldown":0.72,"biological":false,"mechanical":true}),
+		_enemy(&"gr01_proto", "폐기물 압축기 GR-01", 18, ["boss", "heavy", "mechanical"], BOSS_SCENE, false, {"max_health":1800.0,"projectile_damage":16.0}),
 	]
 
 func room_templates() -> Array[RoomTemplateDefinition]:
@@ -31,12 +32,21 @@ func room_templates() -> Array[RoomTemplateDefinition]:
 		_room(&"z1_boss_press", &"boss", Vector2i(34,22), 18, 1, [Vector2i(17,11)], ["boss"], [Vector2i(9,7),Vector2i(9,14),Vector2i(24,7),Vector2i(24,14)], [Vector2i(16,8),Vector2i(17,8),Vector2i(16,13),Vector2i(17,13)]),
 	]
 
+func template_by_id(id: StringName) -> RoomTemplateDefinition:
+	for template in room_templates():
+		if template.id == id:
+			return template
+	return null
+
 func register_into(registry: RoomTemplateRegistry, planner: ThreatBudgetPlanner, spawn_registry: EnemySpawnRegistry = null) -> void:
 	if registry != null:
-		for room in room_templates(): registry.register(room)
+		for room in room_templates():
+			registry.register(room)
 	for profile in enemy_profiles():
-		if planner != null: planner.register_enemy(profile.id, profile.threat_cost, profile.tags)
-		if spawn_registry != null: spawn_registry.register_profile(profile)
+		if planner != null:
+			planner.register_enemy(profile.id, profile.threat_cost, profile.tags)
+		if spawn_registry != null:
+			spawn_registry.register_profile(profile)
 
 func _enemy(id: StringName, title: String, cost: int, tags: Array, scene_path: String, elite: bool, overrides: Dictionary) -> EnemySpawnProfile:
 	var p := EnemySpawnProfile.new()
@@ -50,4 +60,10 @@ func _room(id: StringName, type: StringName, size: Vector2i, threat: int, waves:
 	r.enemy_spawn_cells=spawns; r.recommended_threat=threat; r.wave_count=waves; r.allowed_enemy_tags=PackedStringArray(tags)
 	r.obstacle_cells=obstacles; r.hazard_cells=hazards
 	r.environment_tags=PackedStringArray(["assembly_line"])
+	r.scene_path = _scene_path_for(id)
 	return r
+
+func _scene_path_for(id: StringName) -> String:
+	if id == &"z1_boss_press":
+		return "res://scenes/rooms/zone1/z1_boss_press.tscn"
+	return "res://scenes/rooms/zone1/%s.tscn" % String(id)
