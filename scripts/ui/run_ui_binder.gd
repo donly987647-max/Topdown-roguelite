@@ -34,6 +34,7 @@ func configure(run_coordinator: RunSceneCoordinator, run_bootstrap: Zone1RunBoot
 	coordinator.map_state_changed.connect(_on_map_state_changed)
 	map_panel.route_selected.connect(_on_route_selected)
 	reward_panel.reward_selected.connect(_on_reward_selected)
+	reward_panel.reward_focus_changed.connect(_on_reward_focus_changed)
 	if bootstrap != null:
 		if combat_hud != null: combat_hud.configure(bootstrap)
 		if facility_panel != null:
@@ -75,6 +76,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _on_reward_choices(choices: Array[RewardOffer]) -> void:
 	reward_panel.present(choices)
+	_on_reward_focus_changed(reward_panel.focused_index())
 	_refresh_gameplay_input()
 
 func _on_route_choices(room_ids: Array[StringName]) -> void:
@@ -89,6 +91,10 @@ func _on_reward_selected(index: int) -> void:
 	if coordinator.choose_reward(index):
 		reward_panel.clear()
 	_refresh_gameplay_input()
+
+func _on_reward_focus_changed(index: int) -> void:
+	if bootstrap != null and bootstrap.abilities != null:
+		bootstrap.abilities.set_rex_reward_index(index)
 
 func _on_route_selected(room_id: StringName) -> void:
 	if coordinator.choose_route(room_id):
