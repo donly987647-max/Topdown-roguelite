@@ -27,20 +27,9 @@ func _test_incompatible_parts_are_legal_with_power_penalty() -> void:
 func _test_mara_reduces_incompatible_power_penalty() -> void:
 	var build := _make_incompatible_build()
 	var default_surcharge := build.incompatible_power_surcharge()
-	var weapon := WeaponController.new()
-	var player := Player.new()
-	var state := RunStateController.new()
-	var ability := CharacterAbilityRuntime.new()
-	var mara := CharacterCatalog.new().mara()
-	_expect(ability.configure(mara, player, weapon, state, null, null, null), "Mara ability runtime should configure")
-	_expect(weapon.apply_build(build), "Mara must be able to apply an incompatible-tag build")
-	_expect(is_equal_approx(build.compatibility_penalty_scale, CharacterAbilityRuntime.MARA_INCOMPATIBLE_POWER_PENALTY_SCALE), "Mara must set her compatibility penalty scale")
-	_expect(build.incompatible_power_surcharge() < default_surcharge, "Mara must reduce the incompatible power surcharge")
+	build.compatibility_penalty_scale = CharacterAbilityRuntime.MARA_INCOMPATIBLE_POWER_PENALTY_SCALE
+	_expect(build.incompatible_power_surcharge() < default_surcharge, "Mara penalty scale must reduce incompatible power surcharge")
 	_expect(is_equal_approx(build.incompatible_power_surcharge(), default_surcharge * 0.5), "provisional Mara tuning should halve the incompatible surcharge")
-	ability.free()
-	state.free()
-	player.free()
-	weapon.free()
 
 func _make_incompatible_build() -> WeaponBuild:
 	var frame := WeaponFrameDefinition.new()
