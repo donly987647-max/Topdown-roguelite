@@ -2,6 +2,16 @@ extends SceneTree
 
 var failures: Array[String] = []
 
+class EquipmentStateStub:
+	extends RefCounted
+	var restored: Dictionary = {}
+
+	func serialize() -> Dictionary:
+		return {"active_instance_id":"repair_injector#1", "equipment_states":{"repair_injector#1":{"cooldown_remaining":7.5,"charges_remaining":0}}}
+
+	func restore(data: Dictionary) -> void:
+		restored = data.duplicate(true)
+
 func _init() -> void:
 	call_deferred("_run_tests")
 
@@ -85,22 +95,29 @@ func _test_save_roundtrip() -> void:
 	build.magazine = parts.get_for_category(&"extended_mag", &"magazine")
 	build.core = parts.get_for_category(&"fire_core", &"core")
 	weapon.weapon_build = build
-	_expect(state.start_run(graph, 12345, {"wallet":wallet, "owned_rewards":[], "weapon_controller":weapon}), "Run state failed to start")
+	var equipment_stub := EquipmentStateStub.new()
+	_expect(state.start_run(graph, 12345, {"wallet":wallet, "owned_rewards":[], "weapon_controller":weapon, "equipment_runtime":equipment_stub}), "Run state failed to start")
 	var service := RunSaveService.new()
 	var path := "user://p2_integration_smoke.json"
 	_expect(service.save_run(state, wallet, null, null, path), "Run save failed")
 	var payload := service.load_payload(path)
-	_expect(int(payload.get("version", 0)) == 5, "Run save should use schema v5")
+	_expect(int(payload.get("version", 0)) == 6, "Run save should use schema v6")
 	var weapon_state: Dictionary = payload.get("weapon_state", {})
 	_expect(StringName(weapon_state.get("barrel_id", "")) == &"precision_barrel", "Run save should capture equipped barrel")
 	_expect(StringName(weapon_state.get("magazine_id", "")) == &"extended_mag", "Run save should capture equipped magazine")
 	_expect(StringName(weapon_state.get("core_id", "")) == &"fire_core", "Run save should capture equipped core")
+	var equipment_state: Dictionary = payload.get("equipment_state", {})
+	_expect(String(equipment_state.get("active_instance_id", "")) == "repair_injector#1", "Run save v6 should capture active equipment identity")
 	var restored_state := RunStateController.new()
 	restored_state.reward_selector.set_pool(Zone1RewardCatalog.new().offers())
 	var restored_wallet := RunWallet.new()
-	_expect(service.restore_run(restored_state, restored_wallet, null, null, {"wallet":restored_wallet, "owned_rewards":[]}, path), "Run restore failed")
+	var restored_equipment_stub := EquipmentStateStub.new()
+	var restored_context := {"wallet":restored_wallet, "owned_rewards":[], "equipment_runtime":restored_equipment_stub}
+	_expect(service.restore_run(restored_state, restored_wallet, null, null, restored_context, path), "Run restore failed")
+	service.apply_runtime_state(restored_state.run_context)
 	_expect(restored_state.current_room_id == state.current_room_id, "Restored room mismatch")
 	_expect(restored_wallet.scrap == 37, "Restored wallet mismatch")
+	_expect(String(restored_equipment_stub.restored.get("active_instance_id", "")) == "repair_injector#1", "Run save v6 should restore active equipment cooldown state")
 	service.delete_save(path)
 	weapon.free()
 

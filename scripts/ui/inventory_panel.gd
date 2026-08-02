@@ -25,6 +25,7 @@ var _auto_sort_confirmation := false
 @onready var quick_move_button: Button = $Dim/Panel/Margin/Root/Content/Right/Actions/QuickMove
 @onready var auto_sort_button: Button = $Dim/Panel/Margin/Root/Content/Right/Actions/AutoSort
 @onready var undo_button: Button = $Dim/Panel/Margin/Root/Content/Right/Actions/Undo
+@onready var equip_active_button: Button = $Dim/Panel/Margin/Root/Content/Right/Actions/EquipActive
 @onready var close_button: Button = $Dim/Panel/Margin/Root/Header/Close
 
 func _ready() -> void:
@@ -33,6 +34,7 @@ func _ready() -> void:
 	stash.item_selected.connect(_on_stash_selected)
 	stash.item_activated.connect(_on_stash_activated)
 	stash.item_clicked.connect(_on_stash_clicked)
+	stash.set_drag_forwarding(_stash_get_drag_data, _stash_can_drop_data, _stash_drop_data)
 	frame_button.pressed.connect(_cycle_slot.bind(&"frame"))
 	barrel_button.pressed.connect(_cycle_slot.bind(&"barrel"))
 	magazine_button.pressed.connect(_cycle_slot.bind(&"magazine"))
@@ -41,6 +43,7 @@ func _ready() -> void:
 	quick_move_button.pressed.connect(_quick_move_selected)
 	auto_sort_button.pressed.connect(_request_auto_sort)
 	undo_button.pressed.connect(_undo)
+	equip_active_button.pressed.connect(_equip_selected_active)
 	close_button.pressed.connect(close)
 
 func configure(run_bootstrap: Zone1RunBootstrap) -> bool:
@@ -96,6 +99,7 @@ func _build_grid() -> void:
 			button.text = "·"
 			button.pressed.connect(_on_cell_pressed.bind(cell))
 			button.gui_input.connect(_on_cell_gui_input.bind(cell))
+			button.set_drag_forwarding(_grid_get_drag_data.bind(cell, button), _grid_can_drop_data.bind(cell), _grid_drop_data.bind(cell))
 			grid.add_child(button)
 			_cell_buttons[cell] = button
 
@@ -126,6 +130,8 @@ func _refresh() -> void:
 	undo_button.disabled = not runtime.can_undo()
 	rotate_button.disabled = not _selection_is_placed()
 	quick_move_button.disabled = not _has_selection()
+	equip_active_button.disabled = not _selection_is_placeable_active()
+	equip_active_button.text = "현재 액티브 장비" if _selection_is_equipped_active() else "액티브 장비로 지정"
 	auto_sort_button.text = "정렬 확정" if _auto_sort_confirmation else "자동 정렬"
 
 func _rebuild_stash() -> void:
@@ -174,6 +180,8 @@ func _refresh_details() -> void:
 	if definition != null:
 		detail_text += "\n\n전력 %.0f / 공급 %.0f · 냉각 %.0f · 탄약 %.0f · 신호 %.0f" % [definition.power_draw, definition.power_supply, definition.cooling_supply, definition.ammo_supply, definition.signal_strength]
 		detail_text += "\n상태: %s" % ["전력 연결 필요" if definition.requires_power else "수동/상시"]
+	if bool(record.get("active_equipped", false)):
+		detail_text += "\n\n[b]현재 Q / RB 액티브 장비[/b]"
 	if not tags.is_empty():
 		detail_text += "\n\n태그: %s" % ", ".join(tags)
 	details.text = detail_text
@@ -274,6 +282,83 @@ func _undo() -> void:
 		message.text = "직전 배치를 복원했습니다."
 	_refresh()
 
+func _equip_selected_active() -> void:
+	if not _selection_is_placeable_active():
+		return
+	if runtime.equip_active_record(_selected_record_index):
+		message.text = "선택한 장비를 Q / RB 액티브 슬롯에 지정했습니다."
+	_refresh()
+
+func _grid_get_drag_data(_at_position: Vector2, cell: Vector2i, source: Control) -> Variant:
+	if runtime == null:
+		return null
+	var instance_id := runtime.backpack.grid.item_at(cell)
+	if instance_id == &"":
+		return null
+	_select_instance(instance_id)
+	if not _has_selection():
+		return null
+	_set_drag_preview(source, _selected_record_index)
+	return {"kind":"inventory_record", "record_index":_selected_record_index}
+
+func _grid_can_drop_data(_at_position: Vector2, data: Variant, cell: Vector2i) -> bool:
+	var record_index := _record_index_from_drag_data(data)
+	return record_index >= 0 and runtime != null and runtime.can_place_record(record_index, cell)
+
+func _grid_drop_data(_at_position: Vector2, data: Variant, cell: Vector2i) -> void:
+	var record_index := _record_index_from_drag_data(data)
+	if record_index < 0 or runtime == null:
+		return
+	_selected_record_index = record_index
+	if runtime.place_record(record_index, cell):
+		message.text = "드래그한 모듈을 배치했습니다."
+	_refresh()
+
+func _stash_get_drag_data(at_position: Vector2) -> Variant:
+	var item_index := stash.get_item_at_position(at_position, true)
+	if item_index < 0 or stash.is_item_disabled(item_index):
+		return null
+	var metadata: Variant = stash.get_item_metadata(item_index)
+	if not (metadata is int):
+		return null
+	_selected_record_index = int(metadata)
+	_refresh()
+	_set_drag_preview(stash, _selected_record_index)
+	return {"kind":"inventory_record", "record_index":_selected_record_index}
+
+func _stash_can_drop_data(_at_position: Vector2, data: Variant) -> bool:
+	var record_index := _record_index_from_drag_data(data)
+	if record_index < 0 or runtime == null or record_index >= runtime.owned_rewards.size():
+		return false
+	var record: Variant = runtime.owned_rewards[record_index]
+	return record is Dictionary and StringName(record.get("backpack_instance_id", "")) != &""
+
+func _stash_drop_data(_at_position: Vector2, data: Variant) -> void:
+	var record_index := _record_index_from_drag_data(data)
+	if record_index < 0 or runtime == null:
+		return
+	_selected_record_index = record_index
+	if runtime.remove_record_to_stash(record_index):
+		message.text = "드래그한 모듈을 보관함으로 이동했습니다."
+	_refresh()
+
+func _set_drag_preview(source: Control, record_index: int) -> void:
+	if runtime == null or record_index < 0 or record_index >= runtime.owned_rewards.size():
+		return
+	var record: Dictionary = runtime.owned_rewards[record_index]
+	var data := runtime.display_data(StringName(record.get("id", "")))
+	var payload: Dictionary = data.get("payload", {})
+	var preview := Label.new()
+	preview.text = "  %s  " % String(payload.get("display_name", record.get("id", "MODULE")))
+	preview.add_theme_font_size_override("font_size", 18)
+	preview.modulate = Color(1.0, 0.86, 0.45)
+	source.set_drag_preview(preview)
+
+func _record_index_from_drag_data(data: Variant) -> int:
+	if not (data is Dictionary) or String(data.get("kind", "")) != "inventory_record":
+		return -1
+	return int(data.get("record_index", -1))
+
 func _on_build_changed(_build: WeaponBuild) -> void:
 	_refresh()
 
@@ -288,6 +373,18 @@ func _selection_is_placed() -> bool:
 		return false
 	var record: Dictionary = runtime.owned_rewards[_selected_record_index]
 	return StringName(record.get("backpack_instance_id", "")) != &""
+
+func _selection_is_placeable_active() -> bool:
+	if not _selection_is_placed():
+		return false
+	var record: Dictionary = runtime.owned_rewards[_selected_record_index]
+	return StringName(record.get("category", "")) == &"active"
+
+func _selection_is_equipped_active() -> bool:
+	if not _selection_is_placeable_active():
+		return false
+	var record: Dictionary = runtime.owned_rewards[_selected_record_index]
+	return bool(record.get("active_equipped", false))
 
 func _focus_first_control() -> void:
 	for cell in _cell_buttons.keys():

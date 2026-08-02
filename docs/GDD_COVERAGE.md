@@ -30,24 +30,24 @@
 | 4 | 세계관 | **NOT STARTED** | 서사/환경 전달 콘텐츠 미구현 |
 | 5 | 전체 게임 구조 | **PARTIAL** | 기본 실행 Scene이 Main Menu→Character Select→Zone1 Run→GR-01→Result 흐름으로 변경. 4구역/허브/메타 미완 |
 | 6 | 게임 루프 | **PARTIAL** | 실제 방 로딩, 위협도 wave, 3택 보상, 경로 선택, 시설, 보스 성공/실패 결과, room-entry checkpoint 기반 존재 |
-| 7 | 플레이어 조작 | **PARTIAL** | 키보드/마우스·Android 기초와 런타임 게임패드 이동/조준/사격/액션/메뉴 포커스, I/D-pad Up 인벤토리 기반. 키 재지정·실기기 QA 미완 |
+| 7 | 플레이어 조작 | **PARTIAL** | 키보드/마우스·Android 기초와 런타임 게임패드 이동/조준/사격/메뉴 포커스, Q/RB 장비 액티브, F/Y 캐릭터 액티브, I/D-pad Up 인벤토리 기반. 키 재지정·실기기 QA 미완 |
 | 8 | 플레이어 이동 | **PARTIAL** | 기본 260 px/s, 가감속을 GDD 0.08/0.06초 목표에 맞춘 기반. 무기별 이동 페널티 등 미완 |
 | 9 | 회피 구르기 | **PARTIAL** | 대시/i-frame 기반 존재; 정밀 회피/낙하 방지/QA 미완 |
 | 10 | 생명력과 방어 | **PARTIAL** | HP/가드/임시 보호막 순서, 사망→런 실패, HUD 표시와 저장/복원 기반. 피격 후 연출·반복 QA 미완 |
 | 11 | 조준과 사격 | **PARTIAL** | projectile payload, 관통/도탄/유도/치명타/폭발/연쇄/swept collision 기반. QA/피드백 미완 |
 | 12 | 재장전 시스템 | **PARTIAL** | 예비탄/완벽 재장전/취소/상태형 탄창, Reactive 방 리셋 존재. UI/QA 미완 |
 | 13 | 과열 시스템 | **PARTIAL** | heat/cool/overheat와 Rotary/Beam 연동. 밸런스/QA 미완 |
-| 14 | 무기 시스템 | **PARTIAL** | InventoryPanel 4슬롯에서 보유 frame/barrel/magazine/core를 실제 WeaponBuild에 적용하고 v5로 전체 슬롯 저장/복원. 12×4 전 조합·과부하 UX·밸런스/QA 미완 |
+| 14 | 무기 시스템 | **PARTIAL** | InventoryPanel 4슬롯의 실제 WeaponBuild와 배치 모듈의 비누적 live modifier 재계산, v6 슬롯 저장/복원 기반. 12×4 전 조합·과부하 UX·밸런스/QA 미완 |
 | 15 | 무기 프레임 | **PARTIAL** | 12종 데이터와 발사 런타임 기반. 영구 드론/레일 감속/런처 자폭 등 fidelity 미완 |
 | 16 | 총열 부품 | **PARTIAL** | 12종 핵심 projectile runtime 기반. 자원 규칙/밸런스/QA 미완 |
 | 17 | 탄창 부품 | **PARTIAL** | 12종 stat/projectile/MagazineRuntime 기반. 일부 세부 규칙/UI/QA 미완 |
 | 18 | 코어 부품 | **PARTIAL** | 12종 기반 + Devour elite room persistence. Impact 벽 보너스/전도 지형 등 미완 |
 | 19 | 상태 이상 | **PARTIAL** | 7종 및 일부 조합 반응. 보스/환경 변환/QA 미완 |
-| 20 | 장비 격자 시스템 | **PARTIAL** | 실제 6×5 UI, 보관함, 배치/회전/자동배치/자동정렬 확인/되돌리기, 단자·전력망 요약, 직렬화와 전투 중 편집 잠금 연결. 포인터 drag/drop·정식 아이템 아트·전체 실효과 미완 |
-| 21 | 패시브 모듈 | **PARTIAL** | 보상→보유→6×5 형태/회전/단자 배치 UI와 정의/런타임 집계/트리거 기반. 60종 실효과와 전투 적용 미완 |
-| 22 | 액티브 장비 | **PARTIAL** | 보상→보유→6×5 배치 UI 및 쿨다운/충전/활성 payload 기반. 20종 실제 효과/전투 입력 미완 |
+| 20 | 장비 격자 시스템 | **PARTIAL** | 실제 6×5 UI, stash↔grid/grid↔grid drag/drop, 배치/회전/자동배치/자동정렬 확인/되돌리기, 방향 단자·전력망, 직렬화와 전투 중 편집 잠금 연결. 정식 아이템 아트·전체 인접 규칙·수동 QA 미완 |
+| 21 | 패시브 모듈 | **PARTIAL** | 배치/전력 상태가 실제 탄창·냉각·분산·넉백·치명타·폭발 반경에 반영되는 Zone1 6종 subset과 제거/회전 회귀 테스트. GDD 60종·조건부 트리거·밸런스/QA 미완 |
+| 22 | 액티브 장비 | **PARTIAL** | 선택 active 1개, Q/RB 입력, 전력/쿨다운 HUD, 피격 취소 수리와 종료 과열 오버클럭 2종 및 v6 상태 저장/복원 구현. GDD 20종·연출·밸런스/수동 QA 미완 |
 | 23 | 등급과 희귀도 | **PARTIAL** | 보상 rarity weighting/표시/경로 보너스 기반. 전체 드랍표·아트 규칙 미완 |
-| 24 | 시너지 시스템 | **PARTIAL** | 방향성 네트워크 + explicit/tag-tier 실행 기반. 50종 실전 시너지 미완 |
+| 24 | 시너지 시스템 | **PARTIAL** | 방향성 네트워크가 실제 powered passive/active 실행을 차단·허용하고 회전 링크 회귀 테스트 통과. explicit/tag-tier 50종 실전 시너지 미완 |
 | 25 | 캐릭터 | **PARTIAL** | Mara/Kane/Nova/Rex의 시작 능력치·무기와 패시브/액티브 런타임, 선택 UI, 잠금 Shell-07 카탈로그 기반. 일부 세부 fidelity·해금·밸런스 QA 미완 |
 | 26 | 방과 맵 생성 | **PARTIAL** | 수작업 템플릿, 그래프 조합, 32px 타일, 실제 Zone1 `.tscn` 11종, 맵 UI/분기/반복 억제. 120개/비밀길 미완 |
 | 27 | 방 종류 | **PARTIAL** | combat/elite/shop/crafting/medical/event/rest/start/boss 기반과 출구 lifecycle 존재. 비밀방/세부 상호작용 미완 |
@@ -70,8 +70,8 @@
 | 44 | 허브 | **NOT STARTED** | GDD 기준 미구현 |
 | 45 | 난도 시스템 | **PARTIAL** | threat multiplier/route risk 기반. 정식 단계·보상·적 변화 규칙 미완 |
 | 46 | 튜토리얼 | **NOT STARTED** | GDD 기준 미구현 |
-| 47 | UI 구조 | **PARTIAL** | MainMenu/CharacterSelect/RunMap/Reward/Facility/CombatHUD/Inventory/Result Control scenes와 패드 포커스 기반. 설정·최종 시각 체계 미완 |
-| 48 | 인벤토리 UI | **PARTIAL** | 좌측 6×5 격자/보관함, 우측 4개 무기 슬롯/3단 설명/네트워크 상태, 우클릭·R 회전, 더블클릭 자동배치, Shift 빠른 이동, 확인형 자동정렬, 취소/되돌리기와 전투 잠금 구현. pointer drag/drop·전체 아이템 정보/아트·수동 QA 미완 |
+| 47 | UI 구조 | **PARTIAL** | MainMenu/CharacterSelect/RunMap/Reward/Facility/CombatHUD/Inventory/Result와 캐릭터/장비 별도 active HUD, 패드 포커스 기반. 설정·최종 시각 체계 미완 |
+| 48 | 인벤토리 UI | **PARTIAL** | 좌측 6×5/보관함과 pointer drag/drop, 우측 4 무기 슬롯/장비 active 지정/상세/네트워크, 회전·자동배치·빠른 이동·확인형 정렬·되돌리기·전투 잠금 구현. 전체 아이템 아트·수동 포인터/패드 QA 미완 |
 | 49 | 지도 UI | **PARTIAL** | graph/visited/cleared/current/safe-risk route를 실제 클릭 UI로 표시. 패드/최종 아트 미완 |
 | 50 | 접근성 | **NOT STARTED** | GDD 기준 미구현 |
 | 51 | 그래픽 방향 | **PARTIAL** | 기능용 polygon/floor/room prototype 존재; 정식 픽셀아트/배경/연출은 미완 |
@@ -80,13 +80,13 @@
 | 54 | 사운드 | **NOT STARTED** | GDD 기준 미구현 |
 | 55 | 대사와 텍스트 | **PARTIAL** | 캐릭터/메뉴/결과 기초 텍스트 존재. 서사/대사 콘텐츠 미완 |
 | 56 | 로컬라이징 | **NOT STARTED** | GDD 기준 미구현 |
-| 57 | 저장 시스템 | **PARTIAL** | RunSaveService v5: graph/run/character/wallet·debt/backpack/template/pending reward + HP/guard/shield + frame/barrel/magazine/core + ammo/heat/character ability atomic 저장·재조립. 마이그레이션 fixture/손상복구/Steam Cloud 미완 |
+| 57 | 저장 시스템 | **PARTIAL** | RunSaveService v6: 기존 전체 런/무기/가방 상태 + 선택 active item, instance별 cooldown/charge, 진행 중 장비 효과 atomic 저장·복원 회귀. 마이그레이션 fixture/손상복구/Steam Cloud 미완 |
 | 58 | 통계와 도감 | **NOT STARTED** | GDD 기준 미구현 |
 | 59 | 업적 | **NOT STARTED** | GDD 기준 미구현 |
 | 60 | 일일 시드와 도전 | **PARTIAL** | seed 기반 RunGraph 지원. daily 규칙/리더보드 미완 |
 | 61 | 밸런스 기준 | **PARTIAL** | threat/reward/path/GR-01 조절점 존재. 실제 반복 플레이 데이터 미검증 |
 | 62 | 무작위성 원칙 | **PARTIAL** | seeded route + weighted/build-aware rewards + template reuse suppression. RNG stream 완전 분리 미완 |
-| 63 | 기술 구조 | **PARTIAL** | data/runtime/scene/run/save/frontend/inventory 계층 + strict Godot 4.7.1 CI workflow. 로컬 및 Actions #95~#97 전체 headless 검증 성공; 나머지 출시 시스템 미완 |
+| 63 | 기술 구조 | **PARTIAL** | data/runtime/scene/run/save/frontend/inventory/equipment 계층 + strict Godot 4.7.1 workflow. 신규 batch 로컬 전체 headless 성공, 원격은 Actions #95~#97까지 관측; 나머지 출시 시스템 미완 |
 | 64 | 성능 목표 | **NOT STARTED** | 프로파일링/목표 검증 미실시 |
 | 65 | 화면 비율과 디스플레이 | **PARTIAL** | 1920×1080 viewport/1280×720 window/canvas stretch. 비율/UI scale QA 미완 |
 | 66 | Steam 출시 기능 | **NOT STARTED** | GDD 기준 미구현 |
@@ -98,7 +98,7 @@
 | 72 | 개발 단계 | **PARTIAL** | P2 one-zone 구조는 frontend→run/inventory→boss→result까지 연결되고 로컬/Actions Godot 4.7.1 headless 실행 성공. P2 완료 판정에는 3회 완주·저장 재실행·기기 QA가 남음 |
 | 73 | 권장 팀 구성 | **NOT STARTED** | 구현 대상이 아닌 제작 계획 문서 항목 |
 | 74 | 최소 출시 범위와 확장 범위 | **PARTIAL** | 필수 시스템 일부 존재하나 4구역/캐릭터 실효과/패드/설정/Steam 등 미충족 |
-| 75 | QA 계획 | **PARTIAL** | import + entry-scene + 6개 strict headless smoke를 로컬 및 Actions #95~#97에서 통과; inventory 6×5/배치 undo/live parts/v5 save 계약도 원격 자동검증. 수동 플레이·조합/성능/기기 QA 미실시 |
+| 75 | QA 계획 | **PARTIAL** | import + entry scene + 6 strict smoke 로컬 통과; powered/unpowered/rotation/passive removal/repair/overclock/v6 save 회귀 포함. 원격은 Actions #95~#97까지 관측, 수동 플레이·drag/drop·조합/성능/기기 QA 미실시 |
 | 76 | 주요 위험 요소 | **PARTIAL** | 시스템 과밀/조합폭발/콘텐츠량/가독성/운 의존 위험은 추적 중. 실제 안정성 검증 전 |
 | 77 | 핵심 성공 기준 | **NOT STARTED** | 첫 5분 재미/피격 이해/보스 학습/빌드 재미 플레이 검증 미실시 |
 | 78 | 최종 제품 정의 | **NOT STARTED** | 출시 정의 미충족 |
@@ -156,6 +156,7 @@
 - Failed Actions run #91 exposed parser failures and a hanging/false-positive smoke structure; it was cancelled at the 20-minute job timeout.
 - The workflow now rejects Godot error logs, timeouts and missing success markers instead of trusting exit code alone.
 - Local Godot `4.7.1.stable.official.a13da4feb` and **GitHub Actions #95 / run 30734404717**, docs follow-up **#96 / run 30734459891**, and inventory/assembly **#97 / run 30735341560** pass project import, default entry-scene execution and all six scripted smoke suites.
+- The live-equipment/drag/save-v6 head additionally passes local import, entry-scene and all six strict suites; remote Actions observation is pending publication.
 - Device input, repeated full-run and manual QA are still pending; therefore rows that include those requirements remain `PARTIAL` rather than being promoted solely from headless CI.
 
 ## Update Rule

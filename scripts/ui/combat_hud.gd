@@ -6,6 +6,7 @@ var player: Player
 var weapon: WeaponController
 var wallet: RunWallet
 var abilities: CharacterAbilityRuntime
+var equipment: RunEquipmentRuntime
 var _reload_duration := 0.0
 var _reload_left := 0.0
 
@@ -21,6 +22,8 @@ var _reload_left := 0.0
 @onready var curse_label: Label = $TopRight/Curse
 @onready var active_label: Label = $BottomLeft/Active
 @onready var active_bar: ProgressBar = $BottomLeft/ActiveBar
+@onready var equipment_label: Label = $BottomLeft/Equipment
+@onready var equipment_bar: ProgressBar = $BottomLeft/EquipmentBar
 @onready var unique_label: Label = $BottomLeft/Unique
 @onready var weapon_label: Label = $BottomRight/Weapon
 @onready var ammo_label: Label = $BottomRight/Ammo
@@ -36,6 +39,7 @@ func configure(run_bootstrap: Zone1RunBootstrap) -> bool:
 	weapon = bootstrap.get_weapon_controller()
 	wallet = bootstrap.wallet
 	abilities = bootstrap.abilities
+	equipment = bootstrap.equipment
 	_bind_signals()
 	_refresh_all()
 	return true
@@ -67,6 +71,8 @@ func _bind_signals() -> void:
 		if not wallet.debt_changed.is_connected(_on_debt_changed): wallet.debt_changed.connect(_on_debt_changed)
 	if abilities != null and not abilities.active_state_changed.is_connected(_on_active_state):
 		abilities.active_state_changed.connect(_on_active_state)
+	if equipment != null and not equipment.active_state_changed.is_connected(_on_equipment_state):
+		equipment.active_state_changed.connect(_on_equipment_state)
 	if bootstrap.run_state != null and not bootstrap.run_state.room_entered.is_connected(_on_room_entered):
 		bootstrap.run_state.room_entered.connect(_on_room_entered)
 
@@ -90,6 +96,9 @@ func _refresh_all() -> void:
 	if abilities != null:
 		var data := abilities.active_progress()
 		_on_active_state(bool(data.get("ready", false)), float(data.get("current", 0.0)), float(data.get("maximum", 1.0)), String(data.get("label", "")))
+	if equipment != null:
+		var equipment_data := equipment.active_progress()
+		_on_equipment_state(StringName(equipment_data.get("id", "")), String(equipment_data.get("title", "장비 없음")), bool(equipment_data.get("ready", false)), float(equipment_data.get("current", 0.0)), float(equipment_data.get("maximum", 1.0)), bool(equipment_data.get("powered", false)))
 	status_label.text = "상태 —"
 	key_label.text = "KEY 0"
 	curse_label.text = "CURSE 0"
@@ -141,9 +150,15 @@ func _on_debt_changed(current: int, limit: int) -> void:
 		scrap_label.text += "  빚 %d/%d" % [current, limit]
 
 func _on_active_state(ready: bool, current: float, maximum: float, label: String) -> void:
-	active_label.text = "%s  [Q / Y] %s" % [label, "READY" if ready else ""]
+	active_label.text = "%s  [F / Y] %s" % [label, "READY" if ready else ""]
 	active_bar.max_value = maxf(1.0, maximum)
 	active_bar.value = current
+
+func _on_equipment_state(_equipment_id: StringName, title: String, ready: bool, current: float, maximum: float, powered: bool) -> void:
+	var state := "READY" if ready else ("충전 중" if powered else "전력 없음")
+	equipment_label.text = "%s  [Q / RB] %s" % [title, state]
+	equipment_bar.max_value = maxf(1.0, maximum)
+	equipment_bar.value = current
 
 func _on_room_entered(room_id: StringName, room_type: StringName) -> void:
 	room_label.text = "%s · %s" % [String(room_id), String(room_type).capitalize()]

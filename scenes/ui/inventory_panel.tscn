@@ -183,3 +183,8 @@ text = "자동 정렬"
 layout_mode = 2
 focus_mode = 2
 text = "직전 배치 복원"
+
+[node name="EquipActive" type="Button" parent="Dim/Panel/Margin/Root/Content/Right/Actions"]
+layout_mode = 2
+focus_mode = 2
+text = "액티브 장비로 지정"

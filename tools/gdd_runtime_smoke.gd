@@ -8,6 +8,7 @@ func _initialize() -> void:
 	_test_duplicate_backpack_instances()
 	_test_weapon_payload_contract()
 	_test_run_inventory_contract()
+	_test_live_equipment_contract()
 	if _failures.is_empty():
 		print("GDD runtime smoke: PASS")
 		quit(0)
@@ -116,6 +117,82 @@ func _test_run_inventory_contract() -> void:
 	restored_weapon.free()
 	runtime.free()
 	weapon.free()
+
+func _test_live_equipment_contract() -> void:
+	var offers := Zone1RewardCatalog.new().offers()
+	var backpack := BackpackState.new()
+	var weapon := WeaponController.new()
+	_assert(StarterWeaponRuntime.new().apply(weapon, &"service_pistol"), "equipment test needs a starter weapon")
+	var base_capacity := weapon.magazine_capacity
+	var owned: Array = []
+	var inventory := RunInventoryRuntime.new()
+	_assert(inventory.configure(backpack, weapon, owned, offers, &"service_pistol"), "equipment inventory should configure")
+	var player := Player.new()
+	player.health = 50.0
+	var equipment := RunEquipmentRuntime.new()
+	root.add_child(equipment)
+	_assert(equipment.configure(inventory, player, weapon), "live equipment runtime should configure")
+
+	_assert(inventory.add_reward_offer(_find_offer(offers, &"feed_ramp")), "feed ramp reward should be grantable")
+	_assert(weapon.magazine_capacity > base_capacity, "placed passive module should modify the live weapon capacity")
+	var feed_index := _record_index_for(inventory, &"feed_ramp")
+	_assert(feed_index >= 0 and inventory.remove_record_to_stash(feed_index), "feed ramp should move to stash")
+	_assert(weapon.magazine_capacity == base_capacity, "stashed passive module must stop affecting the weapon")
+
+	_assert(inventory.add_reward_offer(_find_offer(offers, &"crit_lens")), "crit lens reward should be grantable")
+	var crit_index := _record_index_for(inventory, &"crit_lens")
+	_assert(not weapon._equipment_modifiers.has("critical_chance_add"), "unpowered crit lens must remain inactive")
+	_assert(inventory.add_reward_offer(_find_offer(offers, &"shock_bus")), "shock bus reward should be grantable")
+	var shock_index := _record_index_for(inventory, &"shock_bus")
+	_assert(inventory.remove_record_to_stash(crit_index), "crit lens should be movable before power-link test")
+	_assert(inventory.remove_record_to_stash(shock_index), "shock bus should be movable before power-link test")
+	_assert(inventory.place_record(crit_index, Vector2i(0, 0)), "crit lens should place at the power-link target")
+	_assert(inventory.place_record(shock_index, Vector2i(2, 0)), "shock bus should face the crit lens power input")
+	_assert(is_equal_approx(float(weapon._equipment_modifiers.get("critical_chance_add", 0.0)), 0.08), "powered crit lens should add 8% live critical chance")
+
+	_assert(inventory.remove_record_to_stash(crit_index), "crit lens should leave room for active equipment")
+	_assert(inventory.remove_record_to_stash(shock_index), "shock bus should move to the active power link")
+	_assert(inventory.add_reward_offer(_find_offer(offers, &"repair_injector")), "repair injector reward should be grantable")
+	var repair_index := _record_index_for(inventory, &"repair_injector")
+	_assert(inventory.remove_record_to_stash(repair_index), "repair injector should be movable before active test")
+	_assert(inventory.place_record(repair_index, Vector2i(0, 2)), "repair injector should place beside the power source")
+	_assert(inventory.place_record(shock_index, Vector2i(1, 2)), "shock bus should power the repair injector")
+	_assert(bool(equipment.active_progress().get("powered", false)), "equipped active item should report its live power state")
+	_assert(equipment.try_activate(), "powered repair injector should activate")
+	equipment._process(1.0)
+	_assert(player.health > 50.0, "repair injector should heal over time after activation")
+	var saved := equipment.serialize()
+	var states: Dictionary = saved.get("equipment_states", {})
+	_assert(not states.is_empty(), "active equipment cooldown state should serialize for save v6")
+
+	_assert(inventory.remove_record_to_stash(repair_index), "repair injector should return to stash before overclock test")
+	_assert(inventory.remove_record_to_stash(shock_index), "shock bus should rotate for overclock power input")
+	_assert(inventory.add_reward_offer(_find_offer(offers, &"overclock_key")), "overclock key reward should be grantable")
+	var overclock_index := _record_index_for(inventory, &"overclock_key")
+	_assert(inventory.remove_record_to_stash(overclock_index), "overclock key should be movable before active test")
+	_assert(inventory.place_record(shock_index, Vector2i(0, 0)), "shock bus should place before rotation")
+	_assert(inventory.rotate_record(shock_index) and inventory.rotate_record(shock_index), "shock bus should rotate its power output toward the overclock key")
+	_assert(inventory.place_record(overclock_index, Vector2i(3, 0)), "overclock key should place beside the rotated power output")
+	_assert(inventory.equip_active_record(overclock_index), "overclock key should become the selected active equipment")
+	_assert(bool(equipment.active_progress().get("powered", false)), "rotated connector link should power the overclock key")
+	var base_damage := weapon.damage
+	var base_fire_rate := weapon.rounds_per_second
+	_assert(equipment.try_activate(), "powered overclock key should activate")
+	_assert(weapon.damage > base_damage and weapon.rounds_per_second > base_fire_rate, "overclock should increase live damage and fire rate")
+	equipment._process(4.1)
+	_assert(is_equal_approx(weapon.damage, base_damage) and is_equal_approx(weapon.rounds_per_second, base_fire_rate), "overclock expiry should restore base weapon stats")
+	_assert(weapon.is_overheated(), "overclock expiry should force the weapon into overheat lock")
+
+	equipment.free()
+	inventory.free()
+	weapon.free()
+	player.free()
+
+func _record_index_for(runtime: RunInventoryRuntime, id: StringName) -> int:
+	for entry in runtime.entries():
+		if StringName(entry.get("definition_id", "")) == id:
+			return int(entry.get("record_index", -1))
+	return -1
 
 func _find_offer(offers: Array[RewardOffer], id: StringName) -> RewardOffer:
 	for offer in offers:

@@ -39,6 +39,9 @@ var _dead := false
 var _mobile_move := Vector2.ZERO
 var _mobile_aim := Vector2.ZERO
 var _mobile_aim_active := false
+var _equipment_move_speed_multiplier := 1.0
+var _equipment_knockback_multiplier := 1.0
+var _equipment_damage_taken_multiplier := 1.0
 
 @onready var body_visual: Polygon2D = $BodyVisual
 @onready var aim_pivot: Node2D = $AimPivot
@@ -67,9 +70,9 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("dash"):
 		_try_start_dash(input_direction)
 	if _dash_time_left > 0.0:
-		velocity = _dash_direction * dash_speed
+		velocity = _dash_direction * dash_speed * _equipment_move_speed_multiplier
 	else:
-		var target_velocity := input_direction * max_speed
+		var target_velocity := input_direction * max_speed * _equipment_move_speed_multiplier
 		var rate := acceleration if input_direction.length_squared() > 0.0 else deceleration
 		velocity = velocity.move_toward(target_velocity, rate * delta)
 	move_and_slide()
@@ -104,6 +107,11 @@ func set_mobile_aim(value: Vector2, active: bool = true) -> void:
 func clear_mobile_aim() -> void:
 	_mobile_aim = Vector2.ZERO
 	_mobile_aim_active = false
+
+func set_equipment_modifiers(modifiers: Dictionary) -> void:
+	_equipment_move_speed_multiplier = maxf(0.10, float(modifiers.get("player_move_speed_mult", 1.0)))
+	_equipment_knockback_multiplier = maxf(0.0, float(modifiers.get("player_knockback_mult", 1.0)))
+	_equipment_damage_taken_multiplier = maxf(0.0, float(modifiers.get("player_damage_taken_mult", 1.0)))
 
 func set_guard(value: int) -> void:
 	guard = clampi(value, 0, max_guard)
@@ -161,7 +169,8 @@ func add_temporary_shield(amount: float) -> float:
 func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO) -> bool:
 	if _dead or _invulnerability_left > 0.0 or amount <= 0.0:
 		return false
-	var remaining := amount
+	var applied_amount := amount * _equipment_damage_taken_multiplier
+	var remaining := applied_amount
 	if temporary_shield > 0.0:
 		var absorbed := minf(temporary_shield, remaining)
 		temporary_shield -= absorbed
@@ -174,9 +183,9 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO) -> bool:
 	if remaining > 0.0:
 		health = maxf(0.0, health - remaining)
 		health_changed.emit(health, max_health)
-	velocity += knockback
+	velocity += knockback * _equipment_knockback_multiplier
 	_invulnerability_left = 0.35
-	damaged.emit(amount)
+	damaged.emit(applied_amount)
 	body_visual.modulate = Color(1.0, 0.35, 0.35, 1.0)
 	get_tree().create_timer(0.09).timeout.connect(_restore_visual)
 	if health <= 0.0:

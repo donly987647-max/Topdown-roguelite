@@ -19,6 +19,7 @@ var part_catalog := WeaponPartCatalog.new()
 var starter_runtime := StarterWeaponRuntime.new()
 var _undo_backpack: Dictionary = {}
 var _undo_instances: Array[String] = []
+var _undo_active_flags: Array[bool] = []
 
 func configure(backpack_state: BackpackState, weapon_controller: WeaponController, reward_records: Array, catalog_offers: Array[RewardOffer], initial_frame_id: StringName = &"") -> bool:
 	backpack = backpack_state
@@ -36,6 +37,7 @@ func configure(backpack_state: BackpackState, weapon_controller: WeaponControlle
 	if starting_frame_id != &"":
 		_add_owned_id(&"frame", starting_frame_id)
 	_sync_record_instances()
+	_sync_active_equipment_selection()
 	inventory_changed.emit()
 	return backpack != null
 
@@ -44,6 +46,7 @@ func add_reward_offer(offer: RewardOffer) -> bool:
 		return false
 	var record := offer.to_dictionary()
 	record["backpack_instance_id"] = ""
+	record["active_equipped"] = false
 	owned_rewards.append(record)
 	_add_owned_id(offer.category, offer.id)
 	if offer.category in EQUIPMENT_CATEGORIES:
@@ -53,6 +56,7 @@ func add_reward_offer(offer: RewardOffer) -> bool:
 			record["backpack_instance_id"] = String(instance_id)
 	elif offer.category in WEAPON_CATEGORIES:
 		_equip_if_slot_empty(offer.id, offer.category)
+	_sync_active_equipment_selection()
 	inventory_changed.emit()
 	return true
 
@@ -73,6 +77,7 @@ func entries() -> Array[Dictionary]:
 			"category": category,
 			"rarity": StringName(record.get("rarity", "common")),
 			"payload": record.get("payload", {}),
+			"active_equipped": bool(record.get("active_equipped", false)),
 		})
 	return result
 
@@ -119,8 +124,25 @@ func place_record(record_index: int, origin: Vector2i) -> bool:
 		action_failed.emit("해당 위치에 배치할 수 없습니다.")
 		return false
 	record["backpack_instance_id"] = String(placed)
+	_sync_active_equipment_selection()
 	inventory_changed.emit()
 	return true
+
+func can_place_record(record_index: int, origin: Vector2i) -> bool:
+	if not _valid_equipment_record(record_index):
+		return false
+	var record := owned_rewards[record_index] as Dictionary
+	var definition := definition_for(StringName(record.get("id", "")))
+	if definition == null:
+		return false
+	var instance_id := StringName(record.get("backpack_instance_id", ""))
+	var rotation := 0
+	if instance_id != &"" and backpack.grid.placements.has(instance_id):
+		rotation = int(backpack.grid.placement(instance_id).get("rotation", 0))
+	else:
+		instance_id = &"__drag_probe__"
+	var cells := backpack._rotated_cells(definition, rotation)
+	return backpack.grid.can_place(instance_id, cells, origin)
 
 func auto_place_record(record_index: int) -> bool:
 	if not _valid_equipment_record(record_index):
@@ -136,6 +158,7 @@ func auto_place_record(record_index: int) -> bool:
 		action_failed.emit("가방에 빈 공간이 없습니다.")
 		return false
 	record["backpack_instance_id"] = String(instance_id)
+	_sync_active_equipment_selection()
 	inventory_changed.emit()
 	return true
 
@@ -151,6 +174,7 @@ func remove_record_to_stash(record_index: int) -> bool:
 		_restore_undo_snapshot(false)
 		return false
 	record["backpack_instance_id"] = ""
+	_sync_active_equipment_selection()
 	inventory_changed.emit()
 	return true
 
@@ -255,6 +279,7 @@ func remove_owned_record(index: int) -> bool:
 	owned_rewards.remove_at(index)
 	_clear_undo()
 	_rebuild_owned_index()
+	_sync_active_equipment_selection()
 	inventory_changed.emit()
 	return true
 
@@ -329,6 +354,29 @@ func restore_equipment(data: Dictionary) -> void:
 		if id != &"" and id in available_ids(category):
 			equip(id, category)
 
+func active_equipment_entry() -> Dictionary:
+	for entry in entries():
+		if StringName(entry.get("category", "")) != &"active":
+			continue
+		if StringName(entry.get("instance_id", "")) == &"":
+			continue
+		if bool(entry.get("active_equipped", false)):
+			return entry
+	return {}
+
+func equip_active_record(record_index: int) -> bool:
+	if not _valid_equipment_record(record_index):
+		return false
+	var selected := owned_rewards[record_index] as Dictionary
+	if StringName(selected.get("category", "")) != &"active" or StringName(selected.get("backpack_instance_id", "")) == &"":
+		return false
+	for raw in owned_rewards:
+		if raw is Dictionary and StringName(raw.get("category", "")) == &"active":
+			raw["active_equipped"] = false
+	selected["active_equipped"] = true
+	inventory_changed.emit()
+	return true
+
 func synergy_summary() -> Dictionary:
 	if backpack == null:
 		return {}
@@ -359,6 +407,23 @@ func _register_backpack_definition(offer: RewardOffer) -> void:
 	definition.cooling_supply = float(payload.get("cooling_supply", 0.0))
 	definition.signal_strength = float(payload.get("signal_strength", 0.0))
 	definition.requires_power = bool(payload.get("requires_power", false))
+	var adjacency_effects: Variant = payload.get("adjacency_effect_ids", [])
+	definition.adjacency_effect_ids = PackedStringArray(adjacency_effects if adjacency_effects is Array or adjacency_effects is PackedStringArray else [])
+	var effect_ids: Variant = payload.get("effect_ids", [])
+	definition.effect_ids = PackedStringArray(effect_ids if effect_ids is Array or effect_ids is PackedStringArray else [])
+	if definition is PassiveModuleDefinition:
+		var passive := definition as PassiveModuleDefinition
+		var stat_modifiers: Variant = payload.get("stat_modifiers", {})
+		passive.stat_modifiers = stat_modifiers if stat_modifiers is Dictionary else {}
+		var trigger_effects: Variant = payload.get("trigger_effect_ids", [])
+		passive.trigger_effect_ids = PackedStringArray(trigger_effects if trigger_effects is Array or trigger_effects is PackedStringArray else [])
+		passive.max_stacks = maxi(1, int(payload.get("max_stacks", 1)))
+	elif definition is ActiveEquipmentDefinition:
+		var active := definition as ActiveEquipmentDefinition
+		active.cooldown = maxf(0.0, float(payload.get("cooldown", 8.0)))
+		active.charges = maxi(0, int(payload.get("charges", 0)))
+		var activation_payload: Variant = payload.get("activation_payload", {})
+		active.activation_payload = activation_payload if activation_payload is Dictionary else {}
 	backpack.register_definition(definition)
 
 func _cells_from_payload(value: Variant) -> PackedVector2Array:
@@ -414,6 +479,30 @@ func _sync_record_instances() -> void:
 				claimed[instance_id] = true
 				break
 
+func _sync_active_equipment_selection() -> void:
+	if owned_rewards == null:
+		return
+	var selected_index := -1
+	var fallback_index := -1
+	for index in range(owned_rewards.size()):
+		var raw: Variant = owned_rewards[index]
+		if not (raw is Dictionary):
+			continue
+		var record := raw as Dictionary
+		if StringName(record.get("category", "")) != &"active":
+			continue
+		var placed := StringName(record.get("backpack_instance_id", "")) != &""
+		if placed and fallback_index < 0:
+			fallback_index = index
+		if placed and bool(record.get("active_equipped", false)) and selected_index < 0:
+			selected_index = index
+		else:
+			record["active_equipped"] = false
+	if selected_index < 0:
+		selected_index = fallback_index
+	if selected_index >= 0 and owned_rewards[selected_index] is Dictionary:
+		owned_rewards[selected_index]["active_equipped"] = true
+
 func _valid_equipment_record(index: int) -> bool:
 	if backpack == null or owned_rewards == null or index < 0 or index >= owned_rewards.size():
 		return false
@@ -423,11 +512,14 @@ func _valid_equipment_record(index: int) -> bool:
 func _snapshot_for_undo() -> void:
 	_undo_backpack = backpack.serialize().duplicate(true)
 	_undo_instances.clear()
+	_undo_active_flags.clear()
 	for raw in owned_rewards:
 		if raw is Dictionary:
 			_undo_instances.append(String(raw.get("backpack_instance_id", "")))
+			_undo_active_flags.append(bool(raw.get("active_equipped", false)))
 		else:
 			_undo_instances.append("")
+			_undo_active_flags.append(false)
 
 func _restore_undo_snapshot(clear_after: bool) -> bool:
 	if backpack == null or _undo_backpack.is_empty() or not backpack.restore(_undo_backpack):
@@ -435,9 +527,13 @@ func _restore_undo_snapshot(clear_after: bool) -> bool:
 	for index in range(mini(owned_rewards.size(), _undo_instances.size())):
 		if owned_rewards[index] is Dictionary:
 			owned_rewards[index]["backpack_instance_id"] = _undo_instances[index]
+			if index < _undo_active_flags.size():
+				owned_rewards[index]["active_equipped"] = _undo_active_flags[index]
+	_sync_active_equipment_selection()
 	if clear_after:
 		_undo_backpack.clear()
 		_undo_instances.clear()
+		_undo_active_flags.clear()
 	inventory_changed.emit()
 	return true
 
@@ -469,3 +565,4 @@ func _owned_record_count(id: StringName, category: StringName) -> int:
 func _clear_undo() -> void:
 	_undo_backpack.clear()
 	_undo_instances.clear()
+	_undo_active_flags.clear()

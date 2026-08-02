@@ -50,7 +50,7 @@ func _test_frontend_resources() -> void:
 
 func _test_gamepad_actions() -> void:
 	GameInputSetup.configure()
-	for action in [&"aim_left", &"aim_right", &"aim_up", &"aim_down", &"character_active", &"toggle_map", &"toggle_inventory", &"ui_accept", &"ui_cancel"]:
+	for action in [&"aim_left", &"aim_right", &"aim_up", &"aim_down", &"character_active", &"equipment_active", &"toggle_map", &"toggle_inventory", &"ui_accept", &"ui_cancel"]:
 		_expect(InputMap.has_action(action), "Missing gamepad/UI input action: %s" % String(action))
 	var has_joy_fire := false
 	for event in InputMap.action_get_events(&"fire"):

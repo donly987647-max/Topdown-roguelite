@@ -1,7 +1,7 @@
 class_name RunSaveService
 extends RefCounted
 
-const SAVE_VERSION := 5
+const SAVE_VERSION := 6
 const DEFAULT_PATH := "user://last_magazine_run.json"
 
 func save_run(state: RunStateController, wallet: RunWallet, backpack: BackpackState = null, registry: RoomTemplateRegistry = null, path: String = DEFAULT_PATH) -> bool:
@@ -18,6 +18,7 @@ func save_run(state: RunStateController, wallet: RunWallet, backpack: BackpackSt
 		"player_state": _capture_player(state.run_context.get("player")),
 		"weapon_state": _capture_weapon(state.run_context.get("weapon_controller")),
 		"character_ability_state": _capture_character_ability(state.run_context.get("character_ability_runtime")),
+		"equipment_state": _capture_equipment(state.run_context.get("equipment_runtime")),
 	}
 	return _write_atomic(path, JSON.stringify(payload))
 
@@ -65,6 +66,7 @@ func restore_run(state: RunStateController, wallet: RunWallet, backpack: Backpac
 	context["_restored_player_state"] = payload.get("player_state", {})
 	context["_restored_weapon_state"] = payload.get("weapon_state", {})
 	context["_restored_character_ability_state"] = payload.get("character_ability_state", {})
+	context["_restored_equipment_state"] = payload.get("equipment_state", {})
 	if not state.restore(payload.get("run_state", {}), graph, context):
 		return false
 	if wallet != null and not wallet.restore(payload.get("wallet", {})):
@@ -81,9 +83,11 @@ func apply_runtime_state(context: Dictionary) -> void:
 	_apply_player(context.get("player"), context.get("_restored_player_state", {}))
 	_apply_weapon(context.get("weapon_controller"), context.get("_restored_weapon_state", {}))
 	_apply_character_ability(context.get("character_ability_runtime"), context.get("_restored_character_ability_state", {}))
+	_apply_equipment(context.get("equipment_runtime"), context.get("_restored_equipment_state", {}))
 	context.erase("_restored_player_state")
 	context.erase("_restored_weapon_state")
 	context.erase("_restored_character_ability_state")
+	context.erase("_restored_equipment_state")
 
 func _capture_player(player: Variant) -> Dictionary:
 	if player == null:
@@ -129,6 +133,12 @@ func _capture_character_ability(runtime: Variant) -> Dictionary:
 		"kane_free_shots": int(runtime.get("_kane_free_shots")),
 	}
 
+func _capture_equipment(runtime: Variant) -> Dictionary:
+	if runtime == null or not runtime.has_method("serialize"):
+		return {}
+	var data: Variant = runtime.call("serialize")
+	return data if data is Dictionary else {}
+
 func _apply_player(player: Variant, data: Dictionary) -> void:
 	if player == null or data.is_empty():
 		return
@@ -165,6 +175,11 @@ func _apply_character_ability(runtime: Variant, data: Dictionary) -> void:
 	runtime.set("_kane_free_shots", maxi(0, int(data.get("kane_free_shots", 0))))
 	if runtime.has_method("_emit_active_state"):
 		runtime.call("_emit_active_state")
+
+func _apply_equipment(runtime: Variant, data: Dictionary) -> void:
+	if runtime == null or data.is_empty() or not runtime.has_method("restore"):
+		return
+	runtime.call("restore", data)
 
 func _restore_owned_rewards(context: Dictionary, raw_rewards: Variant) -> void:
 	var owned = context.get("owned_rewards")

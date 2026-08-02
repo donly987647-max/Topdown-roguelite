@@ -41,7 +41,8 @@ Current flow:
 ### Gamepad / input — GDD 7 and UI completion foundation
 - Added `GameInputSetup` to register runtime gamepad bindings without discarding existing keyboard/mouse bindings.
 - Left stick: movement. Right stick: aim. Right trigger: fire.
-- Face buttons cover dash/reload/interact/character active; Back toggles map; D-pad Up opens the inventory during eligible gameplay; D-pad and accept/cancel drive Control focus navigation once a modal is open.
+- Face buttons cover dash/reload/interact/character active; RB activates the equipped grid item; Back toggles map; D-pad Up opens the inventory during eligible gameplay; D-pad and accept/cancel drive Control focus navigation once a modal is open.
+- GDD Q/RB is reserved for active equipment. Character-specific actives remain separately accessible on F/Y so both systems can coexist without double activation.
 - Main menu, character select, result, run map, reward choice and facility UI now explicitly grab focus for controller navigation.
 - Touch/mobile controls remain shared from the existing mobile path; full device QA is still pending.
 
@@ -52,7 +53,7 @@ Current flow:
 - Added `CombatHud` + `combat_hud.tscn`:
   - top-left: character, HP, guard, temporary shield, status slot;
   - bottom-right: weapon, magazine/reserve ammo, heat, reload progress, perfect-reload window;
-  - bottom-left: character active/charge and passive description;
+  - bottom-left: separate character-active and equipped-item cooldown bars plus passive description;
   - top-right: room/run context, scrap/debt, key/curse placeholders.
 - Key/curse/status layers are placeholders until those systems exist; therefore HUD remains PARTIAL rather than production-complete.
 
@@ -91,11 +92,13 @@ Shell-07 remains a locked secret catalog entry.
 - Seven primary status runtimes and multiple reactions exist.
 - `RunInventoryRuntime` now turns frame/barrel/magazine/core/passive/active rewards into live owned equipment instead of generic records only.
 - Added a GDD-layout `InventoryPanel`: 6×5 grid and stash on the left; four weapon slots, three-level item details and network totals on the right.
-- Implemented click placement, right-click/R rotation, stash double-click auto-placement, Shift quick move, two-step auto-sort confirmation and one-step undo. Editing opens only after the current room is cleared; forced route-map state is restored on close.
+- Implemented pointer drag-and-drop between stash and grid/grid cells, click placement, right-click/R rotation, stash double-click auto-placement, Shift quick move, two-step auto-sort confirmation and one-step undo. Editing opens only after the current room is cleared; forced route-map state is restored on close.
 - Directional power/ammo/cooling/signal connectors are visible through live network totals. Sell/dismantle now removes the matching grid instance and refuses equipped or protected progression items.
+- `RunEquipmentRuntime` filters placed modules by their actual network power state and reapplies live modifiers whenever placement, rotation or weapon assembly changes. The Zone 1 subset now includes working magazine capacity, heat dissipation, spread/knockback, critical chance and explosion-radius modules plus a functional power/signal source.
+- One placed active item can be selected for Q/RB. Repair Injector heals over time and cancels on damage; Overclock Key temporarily raises damage/fire rate and forces an overheat lock when it expires. HUD power/readiness state, per-instance cooldowns and interrupted/temporary effect state are connected to the run.
 - Zone 1 reward/shop catalogs now include a playable subset of frames and real JSON-backed barrels/magazines/cores. Completing the three part slots applies a `WeaponBuild` to the live `WeaponController`; the equipped parts alter computed stats and projectile payloads.
 - Remaining weapon fidelity still includes persistent drones, Rail Lancer charge slowdown, launcher self-damage, Impact wall-collision bonus, terrain conductivity and full balance/QA.
-- Remaining inventory fidelity includes pointer drag-and-drop, production item art, full passive/active effect execution and the GDD 60/20 content counts.
+- Remaining inventory fidelity includes production item art, manual pointer/controller QA, broader adjacency rules and the GDD 60 passive / 20 active content counts.
 
 ### Facilities — GDD 27 / 41
 - `RunFacilityCoordinator` now exposes real transaction methods rather than state only.
@@ -126,9 +129,9 @@ Shell-07 remains a locked secret catalog entry.
 - Final art/VFX/audio, animation, accessibility telegraphs and repeated-play balance QA are still open.
 
 ### Checkpoint save / continue
-- `RunSaveService` is now **SAVE_VERSION = 5** and continues to accept older schema versions.
+- `RunSaveService` is now **SAVE_VERSION = 6** and continues to accept older schema versions.
 - Atomic temp-file replacement remains in place.
-- Save set includes graph/run state, current/pending reward choices, selected character, room/template bindings, wallet including Rex debt, backpack, acquired rewards, HP, guard, temporary shield, active frame plus barrel/magazine/core IDs, ammo/reserve/heat, and character active/focus state.
+- Save set includes graph/run state, current/pending reward choices, selected character, room/template bindings, wallet including Rex debt, backpack, acquired rewards, HP, guard, temporary shield, active frame plus barrel/magazine/core IDs, ammo/reserve/heat, character active/focus state, selected active equipment, per-instance cooldown/charges and in-progress equipment effects.
 - Continue reconstructs the JSON-backed weapon parts and reapplies the assembled build before restoring ammo and heat.
 - Continue restores pending reward settlement directly instead of respawning an already-cleared combat/boss room.
 - Migration fixtures, corruption recovery UX and Steam Cloud policy remain incomplete.
@@ -143,13 +146,14 @@ Shell-07 remains a locked secret catalog entry.
 - **Godot 4.7.1 Validation #95 / run id 30734404717 succeeded**: import, default entry scene and all six scripted smokes passed through the strict wrapper. No GDD row is promoted solely from this headless result where manual, device, repeated-run or content-completeness requirements remain.
 - Documentation-only follow-up **#96 / run id 30734459891** also succeeded.
 - Inventory/assembly head **#97 / run id 30735341560** succeeded: the new 6×5 UI, reward-to-live-build path, duplicate-instance network handling and v5 part persistence pass the same canonical import, entry-scene and six-smoke gate remotely.
+- The equipment-effects/drag/save-v6 batch passes local 4.7.1 import, default entry scene and all six strict smoke suites. Remote Actions observation is pending publication of this batch.
 
 ## Immediate Gaps / Next Work
 1. Merge the green validation repair in PR #9, then keep Godot 4.7.1 strict validation mandatory for every integration batch.
-2. Execute placed passive/active equipment effects, add pointer drag-and-drop and build the GDD 60 passive / 20 active content sets.
+2. Expand the validated six-passive/two-active Zone 1 subset toward the GDD 60 passive / 20 active content sets; add the remaining adjacency/conditional triggers and production item presentation.
 3. Complete the remaining character fidelity edge cases, especially Mara incompatible-part power penalty and Rex reward-slot selection polish.
 4. Finish Zone 1 P4 content target: at least eight distinct enemies, production hazard behavior, art/animation/VFX/audio and encounter pacing.
-5. Perform three repeated GR-01 completion/save-resume/inventory persistence/balance passes and then device/input QA.
+5. Perform three repeated GR-01 completion/save-resume/inventory/equipment-effect persistence passes, manual drag/drop checks and then device/input QA.
 6. Only after the one-zone vertical slice is stable, expand Zones 2–4, secret zone, hub/meta, tutorial, accessibility, achievements/daily challenge and Steam integration.
 
 ## Design Decisions
@@ -170,6 +174,7 @@ Shell-07 remains a locked secret catalog entry.
 - 2026-08-02: Headless checks must fail on Godot error logs and require a per-suite success marker; process exit code alone is insufficient.
 - 2026-08-02: Godot 4.7.1 Actions #95 is the first observed green canonical headless baseline; manual/device/full-run QA remains separate.
 - 2026-08-02: Cleared-room inventory editing is the canonical run-time assembly surface; weapon slot changes and backpack placement persist in save v5.
+- 2026-08-02: Active equipment owns GDD Q/RB; character-specific actives use F/Y. Placed passive/active effects are gated by their resolved power network and persist in save v6.
 
 ## Continuation Protocol
 1. Read `PROJECT.md`.
@@ -216,3 +221,10 @@ Shell-07 remains a locked secret catalog entry.
 - Protected equipped/progression items from unsafe selling/dismantling and synchronized removable backpack records with facility transactions.
 - Upgraded checkpoint saves to v5 so all four weapon slot IDs restore with the backpack and reward records.
 - Extended the strict smoke suite for the exact 6×5 UI, reward-to-placement path, live part payload, one-step undo and assembled-part save/restore. Import, entry scene and all six suites pass locally and in GitHub Actions #97 on canonical Godot 4.7.1.
+
+### 2026-08-02 — Live equipment effects / drag-and-drop batch
+- Added stash↔grid and grid↔grid pointer drag-and-drop plus explicit active-equipment selection.
+- Added power-gated passive aggregation and live player/weapon modifier recomputation without stat compounding.
+- Implemented Repair Injector and Overclock Key combat effects with separate Q/RB input and HUD state; character actives moved to F/Y.
+- Upgraded checkpoint saves to v6 for active-item identity, cooldown/charges and temporary effect restoration.
+- Added strict regressions for unpowered/powered modules, rotation-sensitive connector links, passive removal, repair activation, overclock expiry and v6 save round-trip. Local Godot 4.7.1 import, entry scene and all six scripted suites pass; remote observation pending.

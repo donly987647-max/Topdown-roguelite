@@ -29,6 +29,7 @@ var facilities: RunFacilityCoordinator
 var devour_runtime: DevourRoomRuntime
 var abilities: CharacterAbilityRuntime
 var inventory: RunInventoryRuntime
+var equipment: RunEquipmentRuntime
 var ui_root: Node
 
 func _ready() -> void:
@@ -68,6 +69,10 @@ func _build_runtime() -> void:
 	add_child(inventory)
 	inventory.configure(backpack, weapon, owned_rewards, reward_catalog_offers)
 	inventory.build_changed.connect(_on_inventory_build_changed)
+	equipment = RunEquipmentRuntime.new()
+	equipment.name = "RunEquipmentRuntime"
+	add_child(equipment)
+	equipment.configure(inventory, player, weapon)
 	if player != null:
 		MagazineRuntime.attach_to_player(player)
 	if weapon != null:
@@ -98,6 +103,7 @@ func start_new_run(seed: int = 0, character_id: StringName = &"mara") -> bool:
 	context["backpack_state"] = backpack
 	context["character_ability_runtime"] = abilities
 	context["inventory"] = inventory
+	context["equipment_runtime"] = equipment
 	run_state.set_build_tags(_derive_build_tags(get_weapon_controller()))
 	var generator := RunGraphGenerator.new()
 	var graph := generator.generate(seed)
@@ -135,6 +141,7 @@ func continue_run() -> bool:
 	run_state.run_context["backpack_state"] = backpack
 	run_state.run_context["character_ability_runtime"] = abilities
 	run_state.run_context["inventory"] = inventory
+	run_state.run_context["equipment_runtime"] = equipment
 	save_service.apply_runtime_state(run_state.run_context)
 	run_state.set_build_tags(_derive_build_tags(weapon))
 	var node := run_state.current_node()
@@ -170,7 +177,7 @@ func get_weapon_controller() -> WeaponController:
 	return weapon
 
 func _build_run_context() -> Dictionary:
-	return {"wallet":wallet, "player":get_player(), "weapon_controller":get_weapon_controller(), "backpack_state":backpack, "owned_rewards":owned_rewards, "character_ability_runtime":abilities, "inventory":inventory}
+	return {"wallet":wallet, "player":get_player(), "weapon_controller":get_weapon_controller(), "backpack_state":backpack, "owned_rewards":owned_rewards, "character_ability_runtime":abilities, "inventory":inventory, "equipment_runtime":equipment}
 
 func _configure_character_abilities(character: CharacterDefinition) -> bool:
 	if abilities != null and is_instance_valid(abilities):

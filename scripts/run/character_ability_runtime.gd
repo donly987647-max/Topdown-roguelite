@@ -112,8 +112,8 @@ func _reset_character_state() -> void:
 func _apply_static_character_effects() -> void:
 	if player != null:
 		player.set_guard(character.starting_guard)
-	if weapon != null and character.crit_bonus > 0.0:
-		weapon._build_stats["critical_chance"] = float(weapon._build_stats.get("critical_chance", 0.0)) + character.crit_bonus
+	if weapon != null:
+		weapon.set_character_modifiers({"critical_chance_add":character.crit_bonus} if character.crit_bonus > 0.0 else {})
 	if facilities != null:
 		facilities.shop_price_multiplier = character.shop_price_multiplier
 		facilities.crafting_cost_multiplier = 0.80 if character.id == &"mara" else 1.0

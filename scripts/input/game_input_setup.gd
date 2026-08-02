@@ -15,6 +15,7 @@ static func configure() -> void:
 	_ensure_action(&"dash", 0.20)
 	_ensure_action(&"interact", 0.20)
 	_ensure_action(&"character_active", 0.20)
+	_ensure_action(&"equipment_active", 0.20)
 	_ensure_action(&"toggle_map", 0.20)
 	_ensure_action(&"toggle_inventory", 0.20)
 	_ensure_action(&"ui_accept", 0.20)
@@ -38,6 +39,7 @@ static func configure() -> void:
 	_add_button(&"reload", 2)
 	_add_button(&"interact", 1)
 	_add_button(&"character_active", 3)
+	_add_button(&"equipment_active", 10)
 	_add_button(&"toggle_map", 4)
 	_add_button(&"toggle_inventory", 11)
 	_add_button(&"ui_accept", 0)
@@ -47,7 +49,8 @@ static func configure() -> void:
 	_add_button(&"ui_left", 13)
 	_add_button(&"ui_right", 14)
 
-	_add_key(&"character_active", KEY_Q)
+	_add_key(&"character_active", KEY_F)
+	_add_key(&"equipment_active", KEY_Q)
 	_add_key(&"toggle_map", KEY_TAB)
 	_add_key(&"toggle_inventory", KEY_I)
 
