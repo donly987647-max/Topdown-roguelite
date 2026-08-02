@@ -108,8 +108,16 @@ func continue_run() -> bool:
 		return false
 	if not character_runtime.apply(character, get_player(), wallet, run_state.run_context, false):
 		return false
-	if get_weapon_controller().weapon_build == null:
-		starter_weapon_runtime.apply(get_weapon_controller(), character.starting_frame_id)
+	var weapon := get_weapon_controller()
+	if weapon == null:
+		return false
+	if weapon.weapon_build == null:
+		var saved_weapon: Dictionary = run_state.run_context.get("_restored_weapon_state", {})
+		var saved_frame := StringName(saved_weapon.get("frame_id", String(character.starting_frame_id)))
+		if not starter_weapon_runtime.apply(weapon, saved_frame):
+			return false
+	save_service.apply_runtime_state(run_state.run_context)
+	run_state.set_build_tags(_derive_build_tags(weapon))
 	var node := run_state.current_node()
 	if node == null:
 		return false
