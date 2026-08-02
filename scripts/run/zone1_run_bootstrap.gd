@@ -92,6 +92,7 @@ func start_new_run(seed: int = 0, character_id: StringName = &"mara") -> bool:
 		return false
 	if not _configure_character_abilities(character):
 		return false
+	context["backpack_state"] = backpack
 	context["character_ability_runtime"] = abilities
 	run_state.set_build_tags(_derive_build_tags(get_weapon_controller()))
 	var generator := RunGraphGenerator.new()
@@ -122,10 +123,11 @@ func continue_run() -> bool:
 		var saved_frame := StringName(saved_weapon.get("frame_id", String(character.starting_frame_id)))
 		if not starter_weapon_runtime.apply(weapon, saved_frame):
 			return false
-	save_service.apply_runtime_state(run_state.run_context)
 	if not _configure_character_abilities(character):
 		return false
+	run_state.run_context["backpack_state"] = backpack
 	run_state.run_context["character_ability_runtime"] = abilities
+	save_service.apply_runtime_state(run_state.run_context)
 	run_state.set_build_tags(_derive_build_tags(weapon))
 	var node := run_state.current_node()
 	if node == null:
@@ -177,10 +179,20 @@ func _configure_character_abilities(character: CharacterDefinition) -> bool:
 func _bind_checkpoint_signals() -> void:
 	if not run_state.room_entered.is_connected(_on_checkpoint_room_entered):
 		run_state.room_entered.connect(_on_checkpoint_room_entered)
+	if not run_state.reward_choices_ready.is_connected(_on_checkpoint_reward_ready):
+		run_state.reward_choices_ready.connect(_on_checkpoint_reward_ready)
+	if not run_state.reward_claimed.is_connected(_on_checkpoint_reward_claimed):
+		run_state.reward_claimed.connect(_on_checkpoint_reward_claimed)
 	if not run_state.run_finished.is_connected(_on_run_finished):
 		run_state.run_finished.connect(_on_run_finished)
 
 func _on_checkpoint_room_entered(_room_id: StringName, _room_type: StringName) -> void:
+	call_deferred("save_checkpoint")
+
+func _on_checkpoint_reward_ready(_choices: Array[RewardOffer]) -> void:
+	call_deferred("save_checkpoint")
+
+func _on_checkpoint_reward_claimed(_offer: RewardOffer) -> void:
 	call_deferred("save_checkpoint")
 
 func _on_run_finished(_success: bool) -> void:
