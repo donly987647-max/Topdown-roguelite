@@ -10,12 +10,22 @@ func present(new_choices: Array[RewardOffer]) -> void:
 	choices = new_choices.duplicate()
 	_rebuild()
 	visible = not choices.is_empty()
+	if visible:
+		call_deferred("focus_first_choice")
 
 func clear() -> void:
 	choices.clear()
 	for child in get_children():
 		child.queue_free()
 	visible = false
+
+func focus_first_choice() -> void:
+	for child in get_children():
+		if child is HBoxContainer:
+			for card in child.get_children():
+				if card is Button and not (card as Button).disabled:
+					(card as Button).grab_focus()
+					return
 
 func _rebuild() -> void:
 	for child in get_children():
@@ -27,6 +37,7 @@ func _rebuild() -> void:
 	add_child(row)
 	for data in view_model.build(choices):
 		var card := Button.new()
+		card.focus_mode = Control.FOCUS_ALL
 		card.custom_minimum_size = Vector2(270.0, 190.0)
 		card.text = _card_text(data)
 		var index := int(data.get("index", -1))
