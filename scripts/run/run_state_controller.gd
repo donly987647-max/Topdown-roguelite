@@ -7,6 +7,7 @@ signal room_cleared(room_id: StringName)
 signal reward_choices_ready(choices: Array[RewardOffer])
 signal reward_claimed(offer: RewardOffer)
 signal route_choices_ready(room_ids: Array[StringName])
+signal boss_settlement_started(mandatory_rewards: Array[RewardOffer], choices: Array[RewardOffer])
 signal run_finished(success: bool)
 
 var graph: RunGraph
@@ -23,6 +24,7 @@ var selected_character_id: StringName = &""
 var seed_value := 0
 var finished := false
 var run_context: Dictionary = {}
+var boss_settlement_pending := false
 
 func register_room_template(template: RoomTemplateDefinition) -> void:
 	if template != null and template.id != &"":
@@ -51,13 +53,14 @@ func start_run(new_graph: RunGraph, seed: int = 0, context: Dictionary = {}) -> 
 	cleared_rooms.clear()
 	node_to_template.clear()
 	active_reward_choices.clear()
+	boss_settlement_pending = false
 	finished = false
 	run_started.emit(seed_value, current_room_id)
 	_emit_room_entered(current_room_id)
 	return true
 
 func enter_room(room_id: StringName) -> bool:
-	if finished or graph == null or not graph.nodes.has(room_id):
+	if finished or boss_settlement_pending or graph == null or not graph.nodes.has(room_id):
 		return false
 	if current_room_id != &"":
 		var allowed := graph.edges.get(current_room_id, [])
@@ -85,9 +88,7 @@ func clear_current_room(grant_combat_reward: bool = true) -> bool:
 	cleared_rooms[current_room_id] = true
 	room_cleared.emit(current_room_id)
 	if graph != null and current_room_id == graph.boss_id:
-		finished = true
-		run_finished.emit(true)
-		return true
+		return _begin_boss_settlement()
 	if grant_combat_reward:
 		active_reward_choices = reward_selector.generate_major_choices(build_tags)
 		if not active_reward_choices.is_empty():
@@ -101,19 +102,22 @@ func claim_reward(index: int) -> bool:
 	if index < 0 or index >= active_reward_choices.size():
 		return false
 	var offer := active_reward_choices[index]
-	var grant_context := run_context.duplicate(false)
-	grant_context["offer"] = offer
-	if not reward_grant_resolver.grant(offer, grant_context):
+	if not _grant_offer(offer):
 		return false
 	reward_selector.claim(offer, build_tags)
 	active_reward_choices.clear()
 	reward_claimed.emit(offer)
-	_emit_routes()
+	if boss_settlement_pending:
+		boss_settlement_pending = false
+		finished = true
+		run_finished.emit(true)
+	else:
+		_emit_routes()
 	return true
 
 func available_routes() -> Array[StringName]:
 	var result: Array[StringName] = []
-	if graph == null or current_room_id == &"":
+	if boss_settlement_pending or graph == null or current_room_id == &"":
 		return result
 	for id in graph.edges.get(current_room_id, []):
 		result.append(id)
@@ -122,6 +126,8 @@ func available_routes() -> Array[StringName]:
 func fail_run() -> void:
 	if finished:
 		return
+	boss_settlement_pending = false
+	active_reward_choices.clear()
 	finished = true
 	run_finished.emit(false)
 
@@ -130,6 +136,43 @@ func set_build_tags(tags: PackedStringArray) -> void:
 
 func set_character(id: StringName) -> void:
 	selected_character_id = id
+
+func _begin_boss_settlement() -> bool:
+	var mandatory := _boss_mandatory_rewards()
+	for offer in mandatory:
+		if not _grant_offer(offer):
+			push_warning("Failed to grant mandatory boss reward: %s" % String(offer.id))
+	active_reward_choices = _boss_choice_rewards()
+	boss_settlement_pending = true
+	boss_settlement_started.emit(mandatory, active_reward_choices)
+	if active_reward_choices.is_empty():
+		boss_settlement_pending = false
+		finished = true
+		run_finished.emit(true)
+	else:
+		reward_choices_ready.emit(active_reward_choices)
+	return true
+
+func _boss_mandatory_rewards() -> Array[RewardOffer]:
+	var rewards: Array[RewardOffer] = [
+		RewardOffer.new(&"gr01_compressor_core", &"boss_part", &"rare", {"display_name":"GR-01 압축 코어", "description":"폐기물 압축기 GR-01 전용 부품.", "tags":["boss","impact","factory"]}, 0.0),
+		RewardOffer.new(&"zone2_access_key", &"zone_key", &"rare", {"display_name":"생화학 처리시설 접근 키", "description":"다음 구역 진입 권한.", "zone_id":"zone_2"}, 0.0),
+	]
+	# GDD specifies a chance for a permanent record without fixing the percentage; 35% is provisional P2 tuning.
+	if randf() < 0.35:
+		rewards.append(RewardOffer.new(&"gr01_factory_record", &"record", &"rare", {"display_name":"GR-01 유지보수 기록", "description":"영구 기록 항목.", "permanent":true}, 0.0))
+	return rewards
+
+func _boss_choice_rewards() -> Array[RewardOffer]:
+	return [
+		RewardOffer.new(&"gr01_backpack_expansion", &"backpack_expansion", &"rare", {"display_name":"가방 확장", "description":"가방 외곽 셀 1칸을 확장한다.", "cell":[6,0], "tags":["backpack"]}, 0.0),
+		RewardOffer.new(&"gr01_max_health", &"max_health", &"rare", {"display_name":"생존 구조 강화", "description":"최대 생명력을 15 증가시키고 같은 양을 회복한다.", "amount":15, "tags":["survival"]}, 0.0),
+	]
+
+func _grant_offer(offer: RewardOffer) -> bool:
+	var grant_context := run_context.duplicate(false)
+	grant_context["offer"] = offer
+	return reward_grant_resolver.grant(offer, grant_context)
 
 func serialize() -> Dictionary:
 	var visited: Array[String] = []
@@ -150,6 +193,7 @@ func serialize() -> Dictionary:
 		"reward_history": reward_selector.serialize_history(),
 		"build_tags": Array(build_tags),
 		"selected_character_id": String(selected_character_id),
+		"boss_settlement_pending": boss_settlement_pending,
 		"finished": finished,
 	}
 
@@ -175,6 +219,7 @@ func restore(data: Dictionary, restored_graph: RunGraph, context: Dictionary = {
 	reward_selector.restore_history(data.get("reward_history", {}))
 	build_tags = PackedStringArray(data.get("build_tags", []))
 	selected_character_id = StringName(data.get("selected_character_id", ""))
+	boss_settlement_pending = bool(data.get("boss_settlement_pending", false))
 	finished = bool(data.get("finished", false))
 	active_reward_choices.clear()
 	return true
