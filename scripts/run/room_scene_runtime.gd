@@ -7,7 +7,7 @@ signal exits_locked(locked: bool)
 signal enemy_spawned(enemy: Node, enemy_id: StringName, wave_index: int)
 signal room_scene_cleared(template_id: StringName)
 
-@export var tile_world_size: float = 64.0
+@export var tile_world_size: float = 32.0
 
 var encounter := RoomEncounterRuntime.new()
 var enemy_registry := EnemySpawnRegistry.new()
@@ -146,7 +146,6 @@ func _has_property(node: Object, property_name: StringName) -> bool:
 	return false
 
 func _on_encounter_cleared(template_id: StringName) -> void:
-	# Keep exits locked until reward/route resolution. The coordinator unlocks them.
 	room_scene_cleared.emit(template_id)
 
 func active_enemy_count() -> int:
