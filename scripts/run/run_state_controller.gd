@@ -19,6 +19,7 @@ var visited_rooms: Array[StringName] = []
 var cleared_rooms: Dictionary = {}
 var active_reward_choices: Array[RewardOffer] = []
 var build_tags: PackedStringArray = []
+var selected_character_id: StringName = &""
 var seed_value := 0
 var finished := false
 var run_context: Dictionary = {}
@@ -128,6 +129,9 @@ func fail_run() -> void:
 func set_build_tags(tags: PackedStringArray) -> void:
 	build_tags = tags
 
+func set_character(id: StringName) -> void:
+	selected_character_id = id
+
 func serialize() -> Dictionary:
 	var visited: Array[String] = []
 	for id in visited_rooms:
@@ -146,6 +150,7 @@ func serialize() -> Dictionary:
 		"node_to_template": bindings,
 		"reward_history": reward_selector.serialize_history(),
 		"build_tags": Array(build_tags),
+		"selected_character_id": String(selected_character_id),
 		"finished": finished,
 	}
 
@@ -170,6 +175,7 @@ func restore(data: Dictionary, restored_graph: RunGraph, context: Dictionary = {
 		node_to_template[StringName(raw_node_id)] = StringName(data["node_to_template"][raw_node_id])
 	reward_selector.restore_history(data.get("reward_history", {}))
 	build_tags = PackedStringArray(data.get("build_tags", []))
+	selected_character_id = StringName(data.get("selected_character_id", ""))
 	finished = bool(data.get("finished", false))
 	active_reward_choices.clear()
 	return true
