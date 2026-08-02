@@ -7,6 +7,7 @@ signal mutation_reaction(reaction_id: StringName, target: Node)
 signal reward_rerolled(index: int, offer: RewardOffer)
 
 const MARA_KILLS_PER_CHARGE := 8
+const MARA_INCOMPATIBLE_POWER_PENALTY_SCALE := 0.5
 const KANE_MAX_FOCUS := 5
 const KANE_CHAIN_WINDOW := 3.0
 const KANE_ACTIVE_COOLDOWN := 18.0
@@ -54,6 +55,8 @@ func configure(definition: CharacterDefinition, player_node: Player, weapon_cont
 		run_state.room_entered.connect(_on_room_entered)
 	if weapon != null and not weapon.shot_fired.is_connected(_on_weapon_shot):
 		weapon.shot_fired.connect(_on_weapon_shot)
+	if weapon != null and not weapon.build_applied.is_connected(_on_weapon_build_applied):
+		weapon.build_applied.connect(_on_weapon_build_applied)
 	_apply_static_character_effects()
 	_emit_active_state()
 	return true
@@ -114,6 +117,7 @@ func _apply_static_character_effects() -> void:
 		player.set_guard(character.starting_guard)
 	if weapon != null:
 		weapon.set_character_modifiers({"critical_chance_add":character.crit_bonus} if character.crit_bonus > 0.0 else {})
+		_apply_mara_compatibility_penalty(weapon.weapon_build)
 	if facilities != null:
 		facilities.shop_price_multiplier = character.shop_price_multiplier
 		facilities.crafting_cost_multiplier = 0.80 if character.id == &"mara" else 1.0
@@ -121,6 +125,19 @@ func _apply_static_character_effects() -> void:
 		facilities.sale_multiplier = 1.25 if character.id == &"rex" else 1.0
 	if wallet != null:
 		wallet.configure_credit(character.id == &"rex", 75 if character.id == &"rex" else 0)
+
+func _on_weapon_build_applied(build: WeaponBuild) -> void:
+	_apply_mara_compatibility_penalty(build)
+
+func _apply_mara_compatibility_penalty(build: WeaponBuild) -> void:
+	if build == null or character == null:
+		return
+	var target_scale := MARA_INCOMPATIBLE_POWER_PENALTY_SCALE if character.id == &"mara" else 1.0
+	if is_equal_approx(build.compatibility_penalty_scale, target_scale):
+		return
+	build.compatibility_penalty_scale = target_scale
+	if weapon != null and build.is_complete():
+		weapon.apply_build(build)
 
 func _process_kane_focus(delta: float) -> void:
 	if _kane_focus <= 0:
