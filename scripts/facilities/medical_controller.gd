@@ -16,13 +16,25 @@ func heal_player(player: Node, scrap_cost: int, fraction: float = 0.35) -> bool:
 	if not wallet.spend(maxi(0, scrap_cost)):
 		treatment_failed.emit("insufficient_scrap")
 		return false
-	var max_health = player.get("max_health")
-	var health = player.get("health")
-	if not (max_health is float or max_health is int) or not (health is float or health is int):
+	var maximum = player.get("max_health")
+	if not (maximum is float or maximum is int):
 		wallet.add(maxi(0, scrap_cost))
 		treatment_failed.emit("player_health_contract_missing")
 		return false
-	player.set("health", minf(float(max_health), float(health) + float(max_health) * clampf(fraction, 0.0, 1.0)))
+	var amount := float(maximum) * clampf(fraction, 0.0, 1.0)
+	var healed := 0.0
+	if player.has_method("heal"):
+		healed = float(player.call("heal", amount))
+	else:
+		var health = player.get("health")
+		if health is float or health is int:
+			var before := float(health)
+			player.set("health", minf(float(maximum), before + amount))
+			healed = float(player.get("health")) - before
+	if healed <= 0.0:
+		wallet.add(maxi(0, scrap_cost))
+		treatment_failed.emit("no_healing_needed")
+		return false
 	treatment_applied.emit(&"heal")
 	return true
 
