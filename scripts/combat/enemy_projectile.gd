@@ -5,6 +5,7 @@ extends Area2D
 @export var lifetime: float = 4.0
 @export var damage: float = 12.0
 @export var knockback_force: float = 130.0
+@export var homing_strength: float = 0.0
 
 var direction := Vector2.RIGHT
 var _active := true
@@ -25,6 +26,12 @@ func configure(new_direction: Vector2, new_damage: float = -1.0, new_speed: floa
 func _physics_process(delta: float) -> void:
 	if not _active:
 		return
+	if homing_strength > 0.0:
+		var player := get_tree().get_first_node_in_group(&"player") as Node2D
+		if player != null:
+			var desired := global_position.direction_to(player.global_position)
+			direction = direction.lerp(desired, clampf(homing_strength * delta, 0.0, 1.0)).normalized()
+			rotation = direction.angle()
 	global_position += direction * speed * delta
 	lifetime -= delta
 	if lifetime <= 0.0:
@@ -39,11 +46,9 @@ func _on_area_entered(area: Area2D) -> void:
 func _try_hit(target: Node) -> void:
 	if not _active:
 		return
-
 	var receiver: Node = target
 	if not receiver.has_method("take_damage") and target.get_parent() != null and target.get_parent().has_method("take_damage"):
 		receiver = target.get_parent()
-
 	if receiver is Player:
 		receiver.take_damage(damage, direction * knockback_force)
 		_active = false
