@@ -39,6 +39,8 @@ jobs:
           fi
       - name: Run first playtest blocker regression smoke
         run: timeout 60s godot --headless --path . --script res://tools/first_playtest_regression_smoke.gd
+      - name: Run Android mobile input smoke
+        run: timeout 60s godot --headless --path . --script res://tools/mobile_android_smoke.gd
       - name: Run GDD runtime smoke
         run: timeout 60s godot --headless --path . --script res://tools/gdd_runtime_smoke.gd
       - name: Run run-system smoke
