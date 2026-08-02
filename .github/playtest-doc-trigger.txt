@@ -1,0 +1,1 @@
+sync first hands-on playtest blockers into PROJECT and GDD coverage
