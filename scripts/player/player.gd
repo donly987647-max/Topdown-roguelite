@@ -3,11 +3,12 @@ extends CharacterBody2D
 
 signal temporary_shield_changed(current: float, maximum: float)
 signal damaged(amount: float)
+signal died
 
 @export_category("Movement")
-@export var max_speed: float = 360.0
-@export var acceleration: float = 2400.0
-@export var deceleration: float = 3000.0
+@export var max_speed: float = 260.0
+@export var acceleration: float = 3250.0
+@export var deceleration: float = 4300.0
 
 @export_category("Dash")
 @export var dash_speed: float = 900.0
@@ -156,5 +157,8 @@ func mobile_input_active() -> bool:
 	return _mobile_move.length_squared() > 0.0001 or _mobile_aim_active
 
 func _die() -> void:
+	if _dead:
+		return
 	_dead = true
 	body_visual.modulate = Color(0.45, 0.45, 0.45, 1.0)
+	died.emit()
