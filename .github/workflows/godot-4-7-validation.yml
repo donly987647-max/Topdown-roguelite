@@ -24,17 +24,28 @@ jobs:
           chmod +x "$BIN"
           sudo ln -sf "$BIN" /usr/local/bin/godot
           godot --version
-      - name: Import project and parse resources
-        run: godot --headless --editor --path . --quit-after 3
+      - name: Import project resources
+        run: timeout 60s godot --headless --editor --path . --quit-after 3
+      - name: Exhaustively parse all GDScript files
+        run: timeout 120s godot --headless --path . --script res://tools/script_parse_audit.gd
+      - name: Boot default main scene
+        shell: bash
+        run: |
+          set -o pipefail
+          timeout 60s godot --headless --path . --quit-after 300 2>&1 | tee /tmp/godot-boot.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script" /tmp/godot-boot.log; then
+            echo "Godot boot emitted script errors"
+            exit 1
+          fi
       - name: Run GDD runtime smoke
-        run: godot --headless --path . --script res://tools/gdd_runtime_smoke.gd
+        run: timeout 60s godot --headless --path . --script res://tools/gdd_runtime_smoke.gd
       - name: Run run-system smoke
-        run: godot --headless --path . --script res://tools/run_system_smoke.gd
+        run: timeout 60s godot --headless --path . --script res://tools/run_system_smoke.gd
       - name: Run run-lifecycle smoke
-        run: godot --headless --path . --script res://tools/run_lifecycle_smoke.gd
+        run: timeout 60s godot --headless --path . --script res://tools/run_lifecycle_smoke.gd
       - name: Run room-scene smoke
-        run: godot --headless --path . --script res://tools/room_scene_smoke.gd
+        run: timeout 60s godot --headless --path . --script res://tools/room_scene_smoke.gd
       - name: Run P2 integration smoke
-        run: godot --headless --path . --script res://tools/p2_integration_smoke.gd
+        run: timeout 60s godot --headless --path . --script res://tools/p2_integration_smoke.gd
       - name: Run P2 frontend and GR-01 smoke
-        run: godot --headless --path . --script res://tools/p2_frontend_boss_smoke.gd
+        run: timeout 60s godot --headless --path . --script res://tools/p2_frontend_boss_smoke.gd
