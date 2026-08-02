@@ -5,6 +5,10 @@ signal scrap_changed(current: int)
 
 var scrap := 0
 
+func reset(value: int = 0) -> void:
+	scrap = maxi(0, value)
+	scrap_changed.emit(scrap)
+
 func add(amount: int) -> int:
 	if amount <= 0:
 		return scrap
