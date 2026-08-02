@@ -43,7 +43,11 @@ func _apply_profile(instance: Node, profile: EnemySpawnProfile) -> void:
 		return
 	instance.set_meta("elite", profile.elite)
 	instance.set_meta("enemy_tags", profile.tags)
-	if profile.elite:
+	for tag in profile.tags:
+		var group_name := StringName(tag)
+		if group_name != &"" and not instance.is_in_group(group_name):
+			instance.add_to_group(group_name)
+	if profile.elite and not instance.is_in_group("elite"):
 		instance.add_to_group("elite")
 	for property_name in profile.stat_overrides.keys():
 		if _has_property(instance, StringName(property_name)):
