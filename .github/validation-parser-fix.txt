@@ -1,0 +1,1 @@
+Validation marker for Godot 4.7.1 parser-fix check.
