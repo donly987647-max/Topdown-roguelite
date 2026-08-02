@@ -44,11 +44,19 @@ func _test_catalog_contract() -> void:
 	offers.clear()
 
 func _test_instant_active_effects() -> void:
-	var player := Player.new()
-	var weapon := WeaponController.new()
-	var equipment := RunEquipmentRuntime.new()
+	var player_scene := load("res://scenes/player/Player.tscn") as PackedScene
+	_expect(player_scene != null, "Production Player scene must load for active equipment regression")
+	if player_scene == null:
+		return
+	var player := player_scene.instantiate() as Player
 	root.add_child(player)
-	root.add_child(weapon)
+	var weapon := player.get_node_or_null("AimPivot/CombatController") as WeaponController
+	_expect(weapon != null, "Production Player scene must expose its WeaponController")
+	if weapon == null:
+		player.queue_free()
+		await process_frame
+		return
+	var equipment := RunEquipmentRuntime.new()
 	root.add_child(equipment)
 	equipment.player = player
 	equipment.weapon = weapon
@@ -63,7 +71,6 @@ func _test_instant_active_effects() -> void:
 
 	equipment.queue_free()
 	player.queue_free()
-	weapon.queue_free()
 	await process_frame
 
 func _expect(condition: bool, message: String) -> void:
