@@ -168,6 +168,10 @@ func _on_equipment_activated(_equipment_id: StringName, payload: Dictionary) -> 
 			_start_repair(float(payload.get("amount", 24.0)), float(payload.get("duration", 4.0)))
 		&"overclock":
 			_start_overclock(payload)
+		&"shield_pulse":
+			_apply_shield_pulse(float(payload.get("amount", 25.0)))
+		&"vent_purge":
+			_apply_vent_purge(float(payload.get("heat_removed", 55.0)))
 	_capture_active_state()
 	_emit_active_state()
 
@@ -192,6 +196,21 @@ func _start_overclock(payload: Dictionary) -> void:
 	}
 	_apply_runtime_modifiers()
 	active_effect_started.emit(_temporary_effect_id, duration)
+
+func _apply_shield_pulse(amount: float) -> void:
+	if player == null or amount <= 0.0:
+		return
+	player.add_temporary_shield(amount)
+	active_effect_started.emit(&"shield_pulse", 0.0)
+	active_effect_ended.emit(&"shield_pulse", true)
+
+func _apply_vent_purge(heat_removed: float) -> void:
+	if weapon == null or heat_removed <= 0.0:
+		return
+	weapon.heat = maxf(0.0, weapon.heat - heat_removed)
+	weapon.heat_changed.emit(weapon.heat, weapon.max_heat)
+	active_effect_started.emit(&"vent_purge", 0.0)
+	active_effect_ended.emit(&"vent_purge", true)
 
 func _finish_temporary_effect(completed: bool) -> void:
 	if _temporary_effect_id == &"":
