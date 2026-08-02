@@ -26,6 +26,7 @@ var room_runtime: RoomSceneRuntime
 var coordinator: RunSceneCoordinator
 var facilities: RunFacilityCoordinator
 var devour_runtime: DevourRoomRuntime
+var abilities: CharacterAbilityRuntime
 var ui_root: Node
 
 func _ready() -> void:
@@ -89,6 +90,9 @@ func start_new_run(seed: int = 0, character_id: StringName = &"mara") -> bool:
 		return false
 	if not starter_weapon_runtime.apply(get_weapon_controller(), character.starting_frame_id):
 		return false
+	if not _configure_character_abilities(character):
+		return false
+	context["character_ability_runtime"] = abilities
 	run_state.set_build_tags(_derive_build_tags(get_weapon_controller()))
 	var generator := RunGraphGenerator.new()
 	var graph := generator.generate(seed)
@@ -96,7 +100,9 @@ func start_new_run(seed: int = 0, character_id: StringName = &"mara") -> bool:
 	if not bool(validation.get("valid", false)):
 		push_error("Zone 1 graph validation failed: %s" % str(validation.get("errors", [])))
 		return false
-	return run_state.start_run(graph, seed, context)
+	var started := run_state.start_run(graph, seed, context)
+	_refresh_combat_hud()
+	return started
 
 func continue_run() -> bool:
 	var context := _build_run_context()
@@ -117,11 +123,15 @@ func continue_run() -> bool:
 		if not starter_weapon_runtime.apply(weapon, saved_frame):
 			return false
 	save_service.apply_runtime_state(run_state.run_context)
+	if not _configure_character_abilities(character):
+		return false
+	run_state.run_context["character_ability_runtime"] = abilities
 	run_state.set_build_tags(_derive_build_tags(weapon))
 	var node := run_state.current_node()
 	if node == null:
 		return false
 	run_state.room_entered.emit(run_state.current_room_id, node.room_type)
+	_refresh_combat_hud()
 	return true
 
 func save_checkpoint() -> bool:
@@ -150,7 +160,19 @@ func _build_run_context() -> Dictionary:
 		"weapon_controller": get_weapon_controller(),
 		"backpack_state": backpack,
 		"owned_rewards": owned_rewards,
+		"character_ability_runtime": abilities,
 	}
+
+func _configure_character_abilities(character: CharacterDefinition) -> bool:
+	if abilities != null and is_instance_valid(abilities):
+		abilities.queue_free()
+	abilities = CharacterAbilityRuntime.new()
+	abilities.name = "CharacterAbilityRuntime"
+	add_child(abilities)
+	var configured := abilities.configure(character, get_player(), get_weapon_controller(), run_state, room_runtime, facilities, wallet)
+	if configured:
+		facilities.refresh_character_modifiers()
+	return configured
 
 func _bind_checkpoint_signals() -> void:
 	if not run_state.room_entered.is_connected(_on_checkpoint_room_entered):
@@ -175,7 +197,14 @@ func _setup_ui() -> void:
 	parent.add_child(ui_root)
 	var binder := ui_root.get_node_or_null("Binder") as RunUiBinder
 	if binder != null:
-		binder.configure(coordinator)
+		binder.configure(coordinator, self)
+
+func _refresh_combat_hud() -> void:
+	if ui_root == null:
+		return
+	var hud := ui_root.get_node_or_null("CombatHUD") as CombatHud
+	if hud != null:
+		hud.configure(self)
 
 func _find_weapon_controller(root: Node) -> WeaponController:
 	if root is WeaponController:
