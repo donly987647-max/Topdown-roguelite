@@ -18,6 +18,8 @@ var wallet := RunWallet.new()
 var backpack := BackpackState.new()
 var save_service := RunSaveService.new()
 var owned_rewards: Array = []
+var character_catalog := CharacterCatalog.new()
+var character_runtime := CharacterRunRuntime.new()
 
 var room_runtime: RoomSceneRuntime
 var coordinator: RunSceneCoordinator
@@ -28,23 +30,17 @@ var ui_root: Node
 func _ready() -> void:
 	_build_runtime()
 	if auto_start:
-		if continue_if_available and save_service.has_save():
-			if continue_run():
-				return
-		start_new_run(seed_value)
+		if continue_if_available and save_service.has_save() and continue_run():
+			return
+		start_new_run(seed_value, &"mara")
 
 func _build_runtime() -> void:
 	var room_parent := get_node_or_null(room_parent_path)
 	if room_parent == null:
 		room_parent = self
-	var player := get_node_or_null(player_path) as Node2D
-	if player == null:
-		player = get_tree().get_first_node_in_group("player") as Node2D
+	var player := get_player()
 	var camera := get_node_or_null(camera_path) as Camera2D
-	var weapon := get_node_or_null(weapon_controller_path) as WeaponController
-	if weapon == null and player != null:
-		weapon = _find_weapon_controller(player)
-
+	var weapon := get_weapon_controller()
 	var content := Zone1ContentCatalog.new()
 	content.register_into(template_registry, threat_planner, spawn_registry)
 	var rewards := Zone1RewardCatalog.new().offers()
@@ -67,8 +63,8 @@ func _build_runtime() -> void:
 	facilities.configure(run_state, wallet)
 	facilities.set_shop_offers(rewards.slice(0, mini(5, rewards.size())))
 
-	if player is Player:
-		MagazineRuntime.attach_to_player(player as Player)
+	if player != null:
+		MagazineRuntime.attach_to_player(player)
 	if weapon != null:
 		devour_runtime = DevourRoomRuntime.new()
 		devour_runtime.name = "DevourRoomRuntime"
@@ -78,14 +74,24 @@ func _build_runtime() -> void:
 	_bind_checkpoint_signals()
 	_setup_ui()
 
-func start_new_run(seed: int = 0) -> bool:
+func start_new_run(seed: int = 0, character_id: StringName = &"mara") -> bool:
+	var character := character_catalog.get_by_id(character_id)
+	if character == null or character.secret:
+		return false
+	wallet.reset()
+	backpack = BackpackState.new()
+	owned_rewards.clear()
+	run_state.reward_selector.restore_history({})
+	run_state.set_character(character.id)
+	var context := _build_run_context()
+	if not character_runtime.apply(character, get_player(), wallet, context, true):
+		return false
 	var generator := RunGraphGenerator.new()
 	var graph := generator.generate(seed)
 	var validation := generator.validate(graph)
 	if not bool(validation.get("valid", false)):
 		push_error("Zone 1 graph validation failed: %s" % str(validation.get("errors", [])))
 		return false
-	var context := _build_run_context()
 	return run_state.start_run(graph, seed, context)
 
 func continue_run() -> bool:
@@ -93,6 +99,11 @@ func continue_run() -> bool:
 	if not save_service.restore_run(run_state, wallet, backpack, template_registry, context):
 		return false
 	run_state.restore_registered_templates(template_registry)
+	var character := character_catalog.get_by_id(run_state.selected_character_id)
+	if character == null:
+		return false
+	if not character_runtime.apply(character, get_player(), wallet, run_state.run_context, false):
+		return false
 	var node := run_state.current_node()
 	if node == null:
 		return false
@@ -105,17 +116,24 @@ func save_checkpoint() -> bool:
 func clear_checkpoint() -> bool:
 	return save_service.delete_save()
 
-func _build_run_context() -> Dictionary:
-	var player := get_node_or_null(player_path)
+func get_player() -> Player:
+	var player := get_node_or_null(player_path) as Player
 	if player == null:
-		player = get_tree().get_first_node_in_group("player")
-	var weapon := get_node_or_null(weapon_controller_path)
+		player = get_tree().get_first_node_in_group(&"player") as Player
+	return player
+
+func get_weapon_controller() -> WeaponController:
+	var weapon := get_node_or_null(weapon_controller_path) as WeaponController
+	var player := get_player()
 	if weapon == null and player != null:
 		weapon = _find_weapon_controller(player)
+	return weapon
+
+func _build_run_context() -> Dictionary:
 	return {
 		"wallet": wallet,
-		"player": player,
-		"weapon_controller": weapon,
+		"player": get_player(),
+		"weapon_controller": get_weapon_controller(),
 		"backpack_state": backpack,
 		"owned_rewards": owned_rewards,
 	}
@@ -161,9 +179,12 @@ func _derive_build_tags(weapon: WeaponController) -> PackedStringArray:
 	var build := weapon.weapon_build
 	if build.frame != null:
 		for tag in build.frame.compatibility_tags:
-			if tag not in result: result.append(tag)
+			if tag not in result:
+				result.append(tag)
 	for part in [build.barrel, build.magazine, build.core]:
-		if part == null: continue
+		if part == null:
+			continue
 		for tag in part.tags:
-			if tag not in result: result.append(tag)
+			if tag not in result:
+				result.append(tag)
 	return result
