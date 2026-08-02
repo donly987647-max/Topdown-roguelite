@@ -23,6 +23,10 @@ shape = SubResource("Capsule_player")
 polygon = PackedVector2Array(-17, -20, 17, -20, 21, 12, 0, 24, -21, 12)
 color = Color(0.88, 0.9, 0.94, 1)
 
+[node name="Camera2D" type="Camera2D" parent="."]
+position_smoothing_enabled = true
+position_smoothing_speed = 7.0
+
 [node name="AimPivot" type="Node2D" parent="."]
 
 [node name="GunPlaceholder" type="Polygon2D" parent="AimPivot"]
