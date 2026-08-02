@@ -20,6 +20,7 @@ var save_service := RunSaveService.new()
 var owned_rewards: Array = []
 var character_catalog := CharacterCatalog.new()
 var character_runtime := CharacterRunRuntime.new()
+var starter_weapon_runtime := StarterWeaponRuntime.new()
 
 var room_runtime: RoomSceneRuntime
 var coordinator: RunSceneCoordinator
@@ -86,6 +87,9 @@ func start_new_run(seed: int = 0, character_id: StringName = &"mara") -> bool:
 	var context := _build_run_context()
 	if not character_runtime.apply(character, get_player(), wallet, context, true):
 		return false
+	if not starter_weapon_runtime.apply(get_weapon_controller(), character.starting_frame_id):
+		return false
+	run_state.set_build_tags(_derive_build_tags(get_weapon_controller()))
 	var generator := RunGraphGenerator.new()
 	var graph := generator.generate(seed)
 	var validation := generator.validate(graph)
@@ -104,6 +108,8 @@ func continue_run() -> bool:
 		return false
 	if not character_runtime.apply(character, get_player(), wallet, run_state.run_context, false):
 		return false
+	if get_weapon_controller().weapon_build == null:
+		starter_weapon_runtime.apply(get_weapon_controller(), character.starting_frame_id)
 	var node := run_state.current_node()
 	if node == null:
 		return false
