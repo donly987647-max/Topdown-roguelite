@@ -20,6 +20,7 @@ func apply(weapon: WeaponController, frame_id: StringName) -> bool:
 	weapon.magazine_capacity = maxi(1, int(stats.get("magazine_size", weapon.magazine_capacity)))
 	weapon.reload_duration = maxf(0.05, float(stats.get("reload_time", weapon.reload_duration)))
 	weapon.uses_heat = bool(stats.get("uses_heat", weapon.uses_heat))
+	weapon.set_infinite_reserve(true)
 	weapon.ammo = weapon.magazine_capacity
 	weapon.reserve_ammo = maxi(weapon.reserve_ammo, weapon.starting_reserve_ammo)
 	weapon.call("_reset_frame_state")

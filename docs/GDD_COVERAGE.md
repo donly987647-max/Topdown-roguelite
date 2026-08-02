@@ -34,8 +34,8 @@
 | 8 | 플레이어 이동 | **PARTIAL** | 기본 260 px/s, 가감속을 GDD 0.08/0.06초 목표에 맞춘 기반. 무기별 이동 페널티 등 미완 |
 | 9 | 회피 구르기 | **PARTIAL** | 대시/i-frame 기반 존재; 정밀 회피/낙하 방지/QA 미완 |
 | 10 | 생명력과 방어 | **PARTIAL** | HP/피격/사망/임시 보호막, 사망→런 실패 연결. 방어판 정식 시스템/UI 미완 |
-| 11 | 조준과 사격 | **PARTIAL** | projectile payload, 관통/도탄/유도/치명타/폭발/연쇄/swept collision 기반. QA/피드백 미완 |
-| 12 | 재장전 시스템 | **PARTIAL** | 예비탄/완벽 재장전/취소/상태형 탄창, Reactive 방 리셋 존재. UI/QA 미완 |
+| 11 | 조준과 사격 | **PARTIAL** | projectile payload + swept collision 기반. 첫 사용자 플레이에서 일반 적이 기본 물리 레이어에 남아 탄환이 관통하는 치명 결함 발견→EnemyBody 레이어 수정 및 회귀 테스트 추가. 실제 재플레이 QA 남음 |
+| 12 | 재장전 시스템 | **PARTIAL** | 탄창/완벽 재장전/취소/상태형 탄창 유지. 사용자 결정으로 총 예비탄은 무한화하여 탄약 고갈 soft-lock 제거; 기존 GDD 탄약 경제는 추후 재정의 필요 |
 | 13 | 과열 시스템 | **PARTIAL** | heat/cool/overheat와 Rotary/Beam 연동. 밸런스/QA 미완 |
 | 14 | 무기 시스템 | **PARTIAL** | WeaponBuild/EffectResolver + starter frame-only 런타임. 완성 조립 UI/전체 저장/QA 미완 |
 | 15 | 무기 프레임 | **PARTIAL** | 12종 데이터와 발사 런타임 기반. 영구 드론/레일 감속/런처 자폭 등 fidelity 미완 |
@@ -70,9 +70,9 @@
 | 44 | 허브 | **NOT STARTED** | GDD 기준 미구현 |
 | 45 | 난도 시스템 | **PARTIAL** | threat multiplier/route risk 기반. 정식 단계·보상·적 변화 규칙 미완 |
 | 46 | 튜토리얼 | **NOT STARTED** | GDD 기준 미구현 |
-| 47 | UI 구조 | **PARTIAL** | MainMenu/CharacterSelect/RunMap/Reward/Result 실제 Control scenes. 전투 HUD/시설/설정/패드 navigation 미완 |
+| 47 | UI 구조 | **PARTIAL** | 전투 HUD와 full route map을 분리. 전체 경로 노드는 전투 중 숨기고 전투/보상 해결 후 경로 선택 시만 표시. GDD 47.1 전투용 미니맵은 별도 구현 필요 |
 | 48 | 인벤토리 UI | **NOT STARTED** | GDD 기준 미구현 |
-| 49 | 지도 UI | **PARTIAL** | graph/visited/cleared/current/safe-risk route를 실제 클릭 UI로 표시. 패드/최종 아트 미완 |
+| 49 | 지도 UI | **PARTIAL** | graph/visited/cleared/current/safe-risk route 클릭 UI 존재. 첫 플레이 피드백 반영으로 full graph는 post-combat route selection 전용; 전투 overlay 금지. 최종 아트/미니맵 미완 |
 | 50 | 접근성 | **NOT STARTED** | GDD 기준 미구현 |
 | 51 | 그래픽 방향 | **PARTIAL** | 기능용 polygon/floor/room prototype 존재; 정식 픽셀아트/배경/연출은 미완 |
 | 52 | 카메라 | **PARTIAL** | Player Camera2D + 방 진입 위치/32px camera limits 실제 적용. shake/보스 연출 미완 |
@@ -86,9 +86,9 @@
 | 60 | 일일 시드와 도전 | **PARTIAL** | seed 기반 RunGraph 지원. daily 규칙/리더보드 미완 |
 | 61 | 밸런스 기준 | **PARTIAL** | threat/reward/path/GR-01 조절점 존재. 실제 반복 플레이 데이터 미검증 |
 | 62 | 무작위성 원칙 | **PARTIAL** | seeded route + weighted/build-aware rewards + template reuse suppression. RNG stream 완전 분리 미완 |
-| 63 | 기술 구조 | **PARTIAL** | data/runtime/scene/run/save/frontend 계층 + Godot 4.7.1 CI workflow. 실제 성공 CI 미관측 |
+| 63 | 기술 구조 | **PARTIAL** | data/runtime/scene/run/save/frontend 계층 + Godot 4.7.1 CI. baseline run #154에서 86 GDScript 전수 parse/boot/기존 smoke 성공 관측; hands-on 회귀 gate 추가 |
 | 64 | 성능 목표 | **NOT STARTED** | 프로파일링/목표 검증 미실시 |
-| 65 | 화면 비율과 디스플레이 | **PARTIAL** | 1920×1080 viewport/1280×720 window/canvas stretch. 비율/UI scale QA 미완 |
+| 65 | 화면 비율과 디스플레이 | **PARTIAL** | 첫 사용자 플레이 피드백으로 1280×720 강제 창 제거, desktop fullscreen + canvas `expand` 적용. 다양한 모니터 비율/UI scale 수동 QA 남음 |
 | 66 | Steam 출시 기능 | **NOT STARTED** | GDD 기준 미구현 |
 | 67 | 콘텐츠 목표량 | **PARTIAL** | 12 frame/barrel/mag/core 데이터, Zone1 11 rooms/7 profiles 등 일부 카탈로그 존재. 출시 목표량 미충족 |
 | 68 | 게임 모드 | **NOT STARTED** | GDD 기준 미구현 |
@@ -98,7 +98,7 @@
 | 72 | 개발 단계 | **PARTIAL** | P2 one-zone 구조는 frontend→run→boss→result까지 코드상 연결. P2 완료 판정에는 실제 Godot 실행·3회 완주·저장 재실행 검증이 남음 |
 | 73 | 권장 팀 구성 | **NOT STARTED** | 구현 대상이 아닌 제작 계획 문서 항목 |
 | 74 | 최소 출시 범위와 확장 범위 | **PARTIAL** | 필수 시스템 일부 존재하나 4구역/캐릭터 실효과/패드/설정/Steam 등 미충족 |
-| 75 | QA 계획 | **PARTIAL** | 6개 headless smoke + `.github/workflows/godot-4-7-validation.yml` 추가. 현재 connector에서 성공 check 미관측, 수동 플레이 QA 미실시 |
+| 75 | QA 계획 | **PARTIAL** | 86 GDScript 전수 parse + main boot + 기존 smoke에 hands-on blocker regression smoke 추가. baseline run #154 성공 관측; 사용자 실제 재플레이/Windows 전체 런 QA 남음 |
 | 76 | 주요 위험 요소 | **PARTIAL** | 시스템 과밀/조합폭발/콘텐츠량/가독성/운 의존 위험은 추적 중. 실제 안정성 검증 전 |
 | 77 | 핵심 성공 기준 | **NOT STARTED** | 첫 5분 재미/피격 이해/보스 학습/빌드 재미 플레이 검증 미실시 |
 | 78 | 최종 제품 정의 | **NOT STARTED** | 출시 정의 미충족 |
@@ -153,9 +153,9 @@
 - [ ] 사운드 피드백
 
 ## Validation State
-- CI workflow is present for Godot 4.7.1 import + headless smoke execution.
-- Current connector-visible combined commit statuses are empty.
-- Therefore **no current row is promoted to VALIDATED due to CI**.
+- Godot 4.7.1 baseline validation run #154 was observed green for exhaustive 86-script parsing, main boot and the pre-existing smoke suite.
+- First hands-on playtest exposed defects outside that prior coverage, so no gameplay row is promoted to VALIDATED solely from run #154.
+- `first_playtest_regression_smoke.gd` now covers fullscreen, route-map timing, collision-layer contracts and infinite starter reserve ammo; user re-play remains required.
 
 ## Update Rule
 1. 의미 있는 코드 변경마다 관련 행을 갱신한다.

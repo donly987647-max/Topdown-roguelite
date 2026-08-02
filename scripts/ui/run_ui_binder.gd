@@ -28,10 +28,12 @@ func configure(run_coordinator: RunSceneCoordinator, run_bootstrap: Zone1RunBoot
 	coordinator.reward_panel_requested.connect(_on_reward_choices)
 	coordinator.route_panel_requested.connect(_on_route_choices)
 	coordinator.map_state_changed.connect(_on_map_state_changed)
+	coordinator.room_transition_started.connect(_on_room_transition_started)
 	map_panel.route_selected.connect(_on_route_selected)
 	reward_panel.reward_selected.connect(_on_reward_selected)
 	if bootstrap != null:
-		if combat_hud != null: combat_hud.configure(bootstrap)
+		if combat_hud != null:
+			combat_hud.configure(bootstrap)
 		if facility_panel != null:
 			facility_panel.configure(bootstrap)
 			facility_panel.modal_state_changed.connect(func(_open: bool): _refresh_gameplay_input())
@@ -39,21 +41,24 @@ func configure(run_coordinator: RunSceneCoordinator, run_bootstrap: Zone1RunBoot
 	return true
 
 func _unhandled_input(event: InputEvent) -> void:
-	if map_panel == null or coordinator == null:
+	if map_panel == null:
 		return
-	if event.is_action_pressed("toggle_map") and not reward_panel.visible and (facility_panel == null or not facility_panel.visible):
-		map_panel.visible = not map_panel.visible
-		if map_panel.visible:
-			_on_map_state_changed({})
+	# The full route graph is a post-combat decision screen, never an in-combat overlay.
+	# `toggle_map` is intentionally consumed during active gameplay until a dedicated
+	# combat minimap (GDD 47.1) is implemented separately.
+	if event.is_action_pressed("toggle_map"):
+		if _route_selection_required and map_panel.visible:
 			map_panel.focus_first_available()
-		_refresh_gameplay_input()
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_cancel") and map_panel.visible and not _route_selection_required:
+		return
+	if event.is_action_pressed("ui_cancel") and map_panel.visible and not _route_selection_required:
 		map_panel.visible = false
 		_refresh_gameplay_input()
 		get_viewport().set_input_as_handled()
 
 func _on_reward_choices(choices: Array[RewardOffer]) -> void:
+	_route_selection_required = false
+	map_panel.visible = false
 	reward_panel.present(choices)
 	_refresh_gameplay_input()
 
@@ -63,6 +68,8 @@ func _on_route_choices(room_ids: Array[StringName]) -> void:
 		map_panel.visible = true
 		_on_map_state_changed({})
 		map_panel.focus_first_available()
+	else:
+		map_panel.visible = false
 	_refresh_gameplay_input()
 
 func _on_reward_selected(index: int) -> void:
@@ -73,6 +80,12 @@ func _on_reward_selected(index: int) -> void:
 func _on_route_selected(room_id: StringName) -> void:
 	if coordinator.choose_route(room_id):
 		_route_selection_required = false
+		map_panel.visible = false
+	_refresh_gameplay_input()
+
+func _on_room_transition_started(_room_id: StringName) -> void:
+	_route_selection_required = false
+	if map_panel != null:
 		map_panel.visible = false
 	_refresh_gameplay_input()
 

@@ -28,7 +28,7 @@ Do not request final gameplay feedback until the GDD is fully represented and au
 
 **Current milestone:** P2 one-zone integrated vertical slice with frontend, combat HUD, facilities, live character kits and GR-01 settlement.
 
-**Current build is NOT GDD-complete and is NOT marked runtime-validated until the observed Godot 4.7.1 CI run succeeds.**
+**Current build is NOT GDD-complete. Main previously passed Godot 4.7.1 validation run #154, but the first hands-on user playtest exposed blocking display/UI/collision/ammo defects. Those findings are tracked in `docs/playtests/2026-08-02-first-launch-blockers.md` and must pass the new regression gate before this playtest-fix batch is promoted.**
 
 ### Default executable flow
 `project.godot` launches `scenes/main/RunMain.tscn`.
@@ -41,7 +41,7 @@ Current flow:
 ### Gamepad / input — GDD 7 and UI completion foundation
 - Added `GameInputSetup` to register runtime gamepad bindings without discarding existing keyboard/mouse bindings.
 - Left stick: movement. Right stick: aim. Right trigger: fire.
-- Face buttons cover dash/reload/interact/character active; Back toggles map; D-pad and accept/cancel drive Control focus navigation.
+- Face buttons cover dash/reload/interact/character active; D-pad and accept/cancel drive Control focus navigation. The full route graph is no longer available as an in-combat overlay; it appears only for post-combat route selection. A dedicated combat minimap remains separate future UI work.
 - Main menu, character select, result, run map, reward choice and facility UI now explicitly grab focus for controller navigation.
 - Touch/mobile controls remain shared from the existing mobile path; full device QA is still pending.
 
@@ -55,6 +55,7 @@ Current flow:
   - bottom-left: character active/charge and passive description;
   - top-right: room/run context, scrap/debt, key/curse placeholders.
 - Key/curse/status layers are placeholders until those systems exist; therefore HUD remains PARTIAL rather than production-complete.
+- User playtest decision: player weapons keep finite magazines/reload timing but use infinite reserve ammo (`∞`) so total ammo depletion cannot soft-lock a run.
 
 ### Characters — GDD 25 live kits
 `CharacterDefinition`, `CharacterCatalog`, `CharacterRunRuntime`, `CharacterAbilityRuntime` and `CharacterSelectPanel` now form one runtime path.
@@ -103,6 +104,7 @@ Shell-07 remains a locked secret catalog entry.
 ### Handcrafted Zone 1 rooms
 - Canonical room tile world size is 32 px.
 - `AuthoredRoomShellBuilder` uses World collision layer 2 and creates explicit boundaries/obstacles/hazards/spawns/entrances/exits from authored template cells.
+- First hands-on playtest collision audit fixed Zone 1 melee/ranged bodies to EnemyBody layer 5, melee attack areas to EnemyAttack→PlayerHurtbox, and enemy projectile scenes to EnemyProjectile→Player/World/Hurtbox.
 - Zone 1 starter `.tscn` set currently includes combat, elite, shop, crafting, medical, rest, event and dedicated boss arena resources.
 - Visuals/set dressing and final hazard art remain placeholder-level.
 
@@ -128,13 +130,13 @@ Shell-07 remains a locked secret catalog entry.
 - Full arbitrary assembled-part persistence, migration fixtures, corruption recovery UX and Steam Cloud policy remain incomplete.
 
 ### Validation automation
-- `.github/workflows/godot-4-7-validation.yml` installs canonical Godot 4.7.1, imports/parses the project headlessly, then runs the smoke suite.
+- `.github/workflows/godot-4-7-validation.yml` installs canonical Godot 4.7.1, imports/parses every GDScript, boots the default scene headlessly, runs `first_playtest_regression_smoke.gd`, then runs the existing runtime/P2 smoke suite.
 - `p2_frontend_boss_smoke.gd` now covers frontend/HUD/facility scene loading, runtime gamepad actions, character starters, all Zone 1 room resources, GR-01 phase/core behavior, facility reward rules, GR-01 mandatory/choice settlement and Rex debt semantics.
-- To obtain an observable pull-request-triggered run, validation branch `validation/godot-p2-batch` and **PR #8** were opened.
-- Observed Actions run: **Godot 4.7.1 Validation #91 / run id 30729733320**. At the time of this document update it is still queued; therefore none of the above systems are promoted to VALIDATED yet.
+- Observed baseline after parser repairs: **Godot 4.7.1 Validation run #154** passed exhaustive parsing of all 86 GDScript files, default main-scene boot, GDD runtime, run-system, lifecycle, room-scene, P2 integration, and frontend/GR-01 smoke suites.
+- First hands-on user playtest then found defects not covered by those tests. `first_playtest_regression_smoke.gd` is now a mandatory regression gate for fullscreen presentation, route-map visibility, collision-layer contracts, and infinite starter reserve ammo.
 
 ## Immediate Gaps / Next Work
-1. Inspect PR #8 Godot 4.7.1 run #91 as soon as it starts; repair every parser/runtime/smoke failure and re-run until green.
+1. Merge the first hands-on playtest blocker batch only after its Godot 4.7.1 PR validation is green, then have the user re-check fullscreen presentation, enemy hit registration, route-map timing, and reload after zero reserve.
 2. Complete the remaining character fidelity edge cases, especially Mara incompatible-part power penalty and Rex reward-slot selection polish.
 3. Finish Zone 1 P4 content target: at least eight distinct enemies, production hazard behavior, art/animation/VFX/audio and encounter pacing.
 4. Complete inventory/backpack Control UX and make acquired frame/barrel/magazine/core/passive/active rewards modify the live build rather than only generic ownership records where still applicable.
@@ -156,6 +158,9 @@ Shell-07 remains a locked secret catalog entry.
 - 2026-08-02: Runtime controller mappings are registered by `GameInputSetup` while retaining keyboard/mouse support.
 - 2026-08-02: Boss completion is gated by mandatory GR-01 settlement and the backpack/max-HP choice.
 - 2026-08-02: No CI/code status is called VALIDATED until an observed Godot 4.7.1 workflow succeeds.
+- 2026-08-02: First hands-on playtest: desktop starts fullscreen with expand stretch; the full route graph is post-combat only; dedicated combat minimap is a separate UI feature.
+- 2026-08-02: Player weapons use finite magazines but infinite reserve ammo to prevent ammo-depletion soft-locks; GDD shop/ammo economy must be reconciled later.
+- 2026-08-02: Physics layer contracts are release-blocking and covered by regression tests after normal enemies were found on the wrong default collision layer.
 
 ## Continuation Protocol
 1. Read `PROJECT.md`.
@@ -188,3 +193,12 @@ Shell-07 remains a locked secret catalog entry.
 - Added GR-01 rotating press, phase telegraphs, unsafe safe-zone mechanic, minion cap and complete GDD reward-settlement structure.
 - Upgraded save to v4 including guard/debt/character ability and pending reward state.
 - Opened PR #8 solely to obtain observable Godot 4.7.1 pull-request validation; run #91 remains queued at this snapshot.
+
+
+### 2026-08-02 — First hands-on playtest blocker batch
+- Logged user findings in `docs/playtests/2026-08-02-first-launch-blockers.md`.
+- Switched desktop startup from forced 1280×720 window to fullscreen + expand stretch.
+- Restricted full route graph to post-combat route selection; removed in-combat full-map toggle behavior.
+- Corrected Zone 1 enemy/player projectile collision-layer contracts and related enemy attack/projectile layers.
+- Made starter/player weapon reserve ammo infinite while preserving magazine/reload mechanics.
+- Added `first_playtest_regression_smoke.gd` and made it part of Godot 4.7.1 CI.
