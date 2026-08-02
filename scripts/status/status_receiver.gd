@@ -2,6 +2,7 @@ class_name StatusReceiver
 extends Node
 
 signal status_changed(status_id: StringName, stacks: int, remaining: float)
+signal status_applied(status_id: StringName, added_stacks: int, total_stacks: int)
 signal status_expired(status_id: StringName)
 
 @export var biological: bool = true
@@ -23,11 +24,14 @@ func apply_status(status_id: StringName, stacks: int = 1) -> bool:
 		applied_stacks += 1
 	var max_stacks := int(rule.get("max_stacks", 1))
 	var state: Dictionary = _states.get(status_id, {"stacks": 0, "remaining": 0.0, "tick": 0.0})
-	state["stacks"] = mini(max_stacks, int(state["stacks"]) + applied_stacks)
+	var before := int(state["stacks"])
+	state["stacks"] = mini(max_stacks, before + applied_stacks)
 	state["remaining"] = maxf(float(state["remaining"]), float(rule.get("duration", 1.0)))
 	state["tick"] = minf(float(state["tick"]), float(rule.get("tick_interval", 0.5))) if float(state["tick"]) > 0.0 else float(rule.get("tick_interval", 0.5))
 	_states[status_id] = state
+	var added := maxi(0, int(state["stacks"]) - before)
 	status_changed.emit(status_id, int(state["stacks"]), float(state["remaining"]))
+	status_applied.emit(status_id, added, int(state["stacks"]))
 	return true
 
 func _process(delta: float) -> void:
@@ -52,20 +56,20 @@ func damage_taken_multiplier() -> float:
 	if _states.has(&"vulnerable"):
 		mult *= 1.25
 	if _states.has(&"corrosion"):
-		var stacks := int((_states[&"corrosion"] as Dictionary)["stacks"])
+		var stacks_count := int((_states[&"corrosion"] as Dictionary)["stacks"])
 		var per_stack := 0.08
 		if armored:
 			per_stack = 0.12
 		elif shielded:
 			per_stack = 0.10
-		mult *= 1.0 + stacks * per_stack
+		mult *= 1.0 + stacks_count * per_stack
 	return mult
 
 func move_speed_multiplier() -> float:
 	if not _states.has(&"cold"):
 		return 1.0
-	var stacks := int((_states[&"cold"] as Dictionary)["stacks"])
-	return maxf(0.25, 1.0 - 0.12 * stacks)
+	var stacks_count := int((_states[&"cold"] as Dictionary)["stacks"])
+	return maxf(0.25, 1.0 - 0.12 * stacks_count)
 
 func attack_speed_multiplier() -> float:
 	return move_speed_multiplier() if _states.has(&"cold") else 1.0
@@ -83,6 +87,12 @@ func stacks(id: StringName) -> int:
 	if not _states.has(id):
 		return 0
 	return int((_states[id] as Dictionary)["stacks"])
+
+func active_status_ids() -> Array[StringName]:
+	var result: Array[StringName] = []
+	for id in _states.keys():
+		result.append(StringName(id))
+	return result
 
 func react_to_explosion(base_damage: float) -> float:
 	if base_damage <= 0.0 or not _states.has(&"burn"):
