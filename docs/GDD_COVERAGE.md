@@ -10,7 +10,7 @@
 - 실제 Godot 실행 성공을 확인하지 못한 기능은 `VALIDATED`로 올리지 않는다.
 
 ## Global Release Gates
-- [x] Godot 4.7.1 정식 소스 구조 확정 및 headless 실행 검증 — Actions #95/#96 성공
+- [x] Godot 4.7.1 정식 소스 구조 확정 및 headless 실행 검증 — Actions #95~#97 성공
 - [ ] GDD 1~80 전체 섹션 누락 검토
 - [ ] GDD 67.1 콘텐츠 목표량 충족 또는 승인 축소안 문서화
 - [ ] GDD 74.1 최소 출시 범위 충족
@@ -86,7 +86,7 @@
 | 60 | 일일 시드와 도전 | **PARTIAL** | seed 기반 RunGraph 지원. daily 규칙/리더보드 미완 |
 | 61 | 밸런스 기준 | **PARTIAL** | threat/reward/path/GR-01 조절점 존재. 실제 반복 플레이 데이터 미검증 |
 | 62 | 무작위성 원칙 | **PARTIAL** | seeded route + weighted/build-aware rewards + template reuse suppression. RNG stream 완전 분리 미완 |
-| 63 | 기술 구조 | **PARTIAL** | data/runtime/scene/run/save/frontend/inventory 계층 + strict Godot 4.7.1 CI workflow. 로컬 및 Actions #95/#96 전체 headless 검증 성공; 나머지 출시 시스템 미완 |
+| 63 | 기술 구조 | **PARTIAL** | data/runtime/scene/run/save/frontend/inventory 계층 + strict Godot 4.7.1 CI workflow. 로컬 및 Actions #95~#97 전체 headless 검증 성공; 나머지 출시 시스템 미완 |
 | 64 | 성능 목표 | **NOT STARTED** | 프로파일링/목표 검증 미실시 |
 | 65 | 화면 비율과 디스플레이 | **PARTIAL** | 1920×1080 viewport/1280×720 window/canvas stretch. 비율/UI scale QA 미완 |
 | 66 | Steam 출시 기능 | **NOT STARTED** | GDD 기준 미구현 |
@@ -98,7 +98,7 @@
 | 72 | 개발 단계 | **PARTIAL** | P2 one-zone 구조는 frontend→run/inventory→boss→result까지 연결되고 로컬/Actions Godot 4.7.1 headless 실행 성공. P2 완료 판정에는 3회 완주·저장 재실행·기기 QA가 남음 |
 | 73 | 권장 팀 구성 | **NOT STARTED** | 구현 대상이 아닌 제작 계획 문서 항목 |
 | 74 | 최소 출시 범위와 확장 범위 | **PARTIAL** | 필수 시스템 일부 존재하나 4구역/캐릭터 실효과/패드/설정/Steam 등 미충족 |
-| 75 | QA 계획 | **PARTIAL** | import + entry-scene + 6개 strict headless smoke를 로컬 및 Actions #95/#96에서 통과; inventory 6×5/배치 undo/live parts/v5 save 계약도 로컬 자동검증. 수동 플레이·조합/성능/기기 QA 미실시 |
+| 75 | QA 계획 | **PARTIAL** | import + entry-scene + 6개 strict headless smoke를 로컬 및 Actions #95~#97에서 통과; inventory 6×5/배치 undo/live parts/v5 save 계약도 원격 자동검증. 수동 플레이·조합/성능/기기 QA 미실시 |
 | 76 | 주요 위험 요소 | **PARTIAL** | 시스템 과밀/조합폭발/콘텐츠량/가독성/운 의존 위험은 추적 중. 실제 안정성 검증 전 |
 | 77 | 핵심 성공 기준 | **NOT STARTED** | 첫 5분 재미/피격 이해/보스 학습/빌드 재미 플레이 검증 미실시 |
 | 78 | 최종 제품 정의 | **NOT STARTED** | 출시 정의 미충족 |
@@ -155,7 +155,7 @@
 ## Validation State
 - Failed Actions run #91 exposed parser failures and a hanging/false-positive smoke structure; it was cancelled at the 20-minute job timeout.
 - The workflow now rejects Godot error logs, timeouts and missing success markers instead of trusting exit code alone.
-- Local Godot `4.7.1.stable.official.a13da4feb` and **GitHub Actions #95 / run 30734404717**, plus docs follow-up **#96 / run 30734459891**, pass project import, default entry-scene execution and all six scripted smoke suites. The inventory/assembly batch passes the same gate locally and awaits its branch run.
+- Local Godot `4.7.1.stable.official.a13da4feb` and **GitHub Actions #95 / run 30734404717**, docs follow-up **#96 / run 30734459891**, and inventory/assembly **#97 / run 30735341560** pass project import, default entry-scene execution and all six scripted smoke suites.
 - Device input, repeated full-run and manual QA are still pending; therefore rows that include those requirements remain `PARTIAL` rather than being promoted solely from headless CI.
 
 ## Update Rule

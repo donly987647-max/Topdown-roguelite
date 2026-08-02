@@ -141,7 +141,8 @@ Shell-07 remains a locked secret catalog entry.
 - Observed Actions run **#91 / run id 30729733320** was cancelled after 20 minutes: `weapon_build.gd` failed Variant type inference, `RunGraph.connect()` conflicted with `Object.connect()`, additional strict-warning parser errors were exposed, and the run-system script then stayed alive.
 - The parser/type errors, ranged telegraph constructor error, camera utility leak and run-system assertion flaw are repaired on `agent/fix-godot-validation` / **PR #9**.
 - **Godot 4.7.1 Validation #95 / run id 30734404717 succeeded**: import, default entry scene and all six scripted smokes passed through the strict wrapper. No GDD row is promoted solely from this headless result where manual, device, repeated-run or content-completeness requirements remain.
-- Documentation-only follow-up **#96 / run id 30734459891** also succeeded. The inventory/assembly batch passes the same import, entry-scene and six-smoke gate locally and awaits its branch Actions observation.
+- Documentation-only follow-up **#96 / run id 30734459891** also succeeded.
+- Inventory/assembly head **#97 / run id 30735341560** succeeded: the new 6×5 UI, reward-to-live-build path, duplicate-instance network handling and v5 part persistence pass the same canonical import, entry-scene and six-smoke gate remotely.
 
 ## Immediate Gaps / Next Work
 1. Merge the green validation repair in PR #9, then keep Godot 4.7.1 strict validation mandatory for every integration batch.
@@ -214,4 +215,4 @@ Shell-07 remains a locked secret catalog entry.
 - Added live reward ownership and JSON-backed part catalog integration. Zone 1 rewards and shop stock can now grant/equip frames, barrels, magazines and cores into the actual weapon runtime.
 - Protected equipped/progression items from unsafe selling/dismantling and synchronized removable backpack records with facility transactions.
 - Upgraded checkpoint saves to v5 so all four weapon slot IDs restore with the backpack and reward records.
-- Extended the strict smoke suite for the exact 6×5 UI, reward-to-placement path, live part payload, one-step undo and assembled-part save/restore. Import, entry scene and all six suites pass locally on canonical Godot 4.7.1.
+- Extended the strict smoke suite for the exact 6×5 UI, reward-to-placement path, live part payload, one-step undo and assembled-part save/restore. Import, entry scene and all six suites pass locally and in GitHub Actions #97 on canonical Godot 4.7.1.
