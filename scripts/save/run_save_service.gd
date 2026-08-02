@@ -14,6 +14,7 @@ func save_run(state: RunStateController, wallet: RunWallet, backpack: BackpackSt
 		"wallet": wallet.serialize() if wallet != null else {},
 		"backpack": backpack.serialize() if backpack != null else {},
 		"room_template_usage": registry.serialize_usage() if registry != null else {},
+		"owned_rewards": _json_safe(state.run_context.get("owned_rewards", [])),
 	}
 	return _write_atomic(path, JSON.stringify(payload))
 
@@ -57,6 +58,7 @@ func restore_run(state: RunStateController, wallet: RunWallet, backpack: Backpac
 	var graph := RunGraphCodec.deserialize(payload.get("graph", {}))
 	if graph.start_id == &"" or graph.boss_id == &"":
 		return false
+	_restore_owned_rewards(context, payload.get("owned_rewards", []))
 	if not state.restore(payload.get("run_state", {}), graph, context):
 		return false
 	if wallet != null and not wallet.restore(payload.get("wallet", {})):
@@ -68,6 +70,33 @@ func restore_run(state: RunStateController, wallet: RunWallet, backpack: Backpac
 		registry.restore_usage(payload.get("room_template_usage", {}))
 		state.restore_registered_templates(registry)
 	return true
+
+func _restore_owned_rewards(context: Dictionary, raw_rewards: Variant) -> void:
+	var owned = context.get("owned_rewards")
+	if not (owned is Array) or not (raw_rewards is Array):
+		return
+	owned.clear()
+	for reward in raw_rewards:
+		owned.append(reward)
+
+func _json_safe(value: Variant) -> Variant:
+	if value is StringName:
+		return String(value)
+	if value is PackedStringArray:
+		return Array(value)
+	if value is Vector2i:
+		return [value.x, value.y]
+	if value is Dictionary:
+		var result: Dictionary = {}
+		for key in value.keys():
+			result[String(key)] = _json_safe(value[key])
+		return result
+	if value is Array:
+		var result: Array = []
+		for item in value:
+			result.append(_json_safe(item))
+		return result
+	return value
 
 func has_save(path: String = DEFAULT_PATH) -> bool:
 	return not load_payload(path).is_empty()
