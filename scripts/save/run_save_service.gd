@@ -1,7 +1,7 @@
 class_name RunSaveService
 extends RefCounted
 
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
 const DEFAULT_PATH := "user://last_magazine_run.json"
 
 func save_run(state: RunStateController, wallet: RunWallet, backpack: BackpackState = null, registry: RoomTemplateRegistry = null, path: String = DEFAULT_PATH) -> bool:
@@ -15,6 +15,8 @@ func save_run(state: RunStateController, wallet: RunWallet, backpack: BackpackSt
 		"backpack": backpack.serialize() if backpack != null else {},
 		"room_template_usage": registry.serialize_usage() if registry != null else {},
 		"owned_rewards": _json_safe(state.run_context.get("owned_rewards", [])),
+		"player_state": _capture_player(state.run_context.get("player")),
+		"weapon_state": _capture_weapon(state.run_context.get("weapon_controller")),
 	}
 	return _write_atomic(path, JSON.stringify(payload))
 
@@ -59,6 +61,8 @@ func restore_run(state: RunStateController, wallet: RunWallet, backpack: Backpac
 	if graph.start_id == &"" or graph.boss_id == &"":
 		return false
 	_restore_owned_rewards(context, payload.get("owned_rewards", []))
+	context["_restored_player_state"] = payload.get("player_state", {})
+	context["_restored_weapon_state"] = payload.get("weapon_state", {})
 	if not state.restore(payload.get("run_state", {}), graph, context):
 		return false
 	if wallet != null and not wallet.restore(payload.get("wallet", {})):
@@ -70,6 +74,55 @@ func restore_run(state: RunStateController, wallet: RunWallet, backpack: Backpac
 		registry.restore_usage(payload.get("room_template_usage", {}))
 		state.restore_registered_templates(registry)
 	return true
+
+func apply_runtime_state(context: Dictionary) -> void:
+	_apply_player(context.get("player"), context.get("_restored_player_state", {}))
+	_apply_weapon(context.get("weapon_controller"), context.get("_restored_weapon_state", {}))
+	context.erase("_restored_player_state")
+	context.erase("_restored_weapon_state")
+
+func _capture_player(player: Variant) -> Dictionary:
+	if player == null:
+		return {}
+	return {
+		"health": float(player.get("health")),
+		"temporary_shield": float(player.get("temporary_shield")),
+	}
+
+func _capture_weapon(weapon: Variant) -> Dictionary:
+	if weapon == null:
+		return {}
+	var frame_id := ""
+	var build = weapon.get("weapon_build")
+	if build is WeaponBuild and build.frame != null:
+		frame_id = String(build.frame.id)
+	return {
+		"frame_id": frame_id,
+		"ammo": int(weapon.get("ammo")),
+		"reserve_ammo": int(weapon.get("reserve_ammo")),
+		"heat": float(weapon.get("heat")),
+	}
+
+func _apply_player(player: Variant, data: Dictionary) -> void:
+	if player == null or data.is_empty():
+		return
+	var max_health := float(player.get("max_health"))
+	player.set("health", clampf(float(data.get("health", max_health)), 0.0, max_health))
+	var max_shield := float(player.get("max_temporary_shield"))
+	player.set("temporary_shield", clampf(float(data.get("temporary_shield", 0.0)), 0.0, max_shield))
+	if player.has_signal("temporary_shield_changed"):
+		player.emit_signal("temporary_shield_changed", player.get("temporary_shield"), max_shield)
+
+func _apply_weapon(weapon: Variant, data: Dictionary) -> void:
+	if weapon == null or data.is_empty():
+		return
+	weapon.set("ammo", clampi(int(data.get("ammo", weapon.get("ammo"))), 0, int(weapon.get("magazine_capacity"))))
+	weapon.set("reserve_ammo", maxi(0, int(data.get("reserve_ammo", weapon.get("reserve_ammo")))))
+	weapon.set("heat", maxf(0.0, float(data.get("heat", weapon.get("heat")))))
+	if weapon.has_method("_emit_ammo"):
+		weapon.call("_emit_ammo")
+	if weapon.has_signal("heat_changed"):
+		weapon.emit_signal("heat_changed", weapon.get("heat"), weapon.get("max_heat"))
 
 func _restore_owned_rewards(context: Dictionary, raw_rewards: Variant) -> void:
 	var owned = context.get("owned_rewards")
