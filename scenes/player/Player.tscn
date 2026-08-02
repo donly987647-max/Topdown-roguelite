@@ -37,6 +37,7 @@ color = Color(0.42, 0.46, 0.52, 1)
 [node name="CombatController" type="Node2D" parent="AimPivot"]
 script = ExtResource("2_controller")
 projectile_scene = ExtResource("3_projectile")
+infinite_reserve_ammo = true
 
 [node name="Muzzle" type="Marker2D" parent="AimPivot/CombatController"]
 position = Vector2(58, 0)
