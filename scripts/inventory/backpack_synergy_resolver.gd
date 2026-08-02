@@ -26,7 +26,7 @@ func resolve(grid: BackpackGrid) -> Dictionary:
 		if item == null:
 			continue
 		_collect_tags(result["tags"], item)
-		ports_by_item[item.id] = grid.connector_world_ports(placed)
+		ports_by_item[StringName(placed.get("id", item.id))] = grid.connector_world_ports(placed)
 		result["power_supply"] += item.power_supply
 		result["power_draw"] += item.power_draw
 		result["ammo_supply"] += item.ammo_supply
@@ -53,15 +53,19 @@ func _matching_connector_links(a: Dictionary, b: Dictionary, ports_by_item: Dict
 	var item_b: BackpackItemDefinition = b.get("item")
 	if item_a == null or item_b == null:
 		return links
-	for port_a in ports_by_item.get(item_a.id, []):
-		for port_b in ports_by_item.get(item_b.id, []):
+	var instance_a := StringName(a.get("id", item_a.id))
+	var instance_b := StringName(b.get("id", item_b.id))
+	for port_a in ports_by_item.get(instance_a, []):
+		for port_b in ports_by_item.get(instance_b, []):
 			if port_a["target_cell"] != port_b["cell"] or port_b["target_cell"] != port_a["cell"]:
 				continue
 			if not _connectors_compatible(port_a["type"], port_b["type"]):
 				continue
 			links.append({
-				"a": item_a.id,
-				"b": item_b.id,
+				"a": instance_a,
+				"b": instance_b,
+				"a_definition": item_a.id,
+				"b_definition": item_b.id,
 				"a_type": port_a["type"],
 				"b_type": port_b["type"],
 				"a_cell": port_a["cell"],
@@ -93,7 +97,7 @@ func _resolve_power(items: Array, result: Dictionary) -> void:
 	for placed in items:
 		var item: BackpackItemDefinition = placed.get("item")
 		if item != null:
-			adjacency[item.id] = []
+			adjacency[StringName(placed.get("id", item.id))] = []
 	for link in result["connector_links"]:
 		if link["channel"] != &"power":
 			continue
@@ -102,11 +106,12 @@ func _resolve_power(items: Array, result: Dictionary) -> void:
 	var visited := {}
 	for placed in items:
 		var item: BackpackItemDefinition = placed.get("item")
-		if item == null or visited.has(item.id):
+		var instance_id := StringName(placed.get("id", item.id)) if item != null else &""
+		if item == null or visited.has(instance_id):
 			continue
-		var queue: Array[StringName] = [item.id]
+		var queue: Array[StringName] = [instance_id]
 		var network_ids: Array[StringName] = []
-		visited[item.id] = true
+		visited[instance_id] = true
 		while not queue.is_empty():
 			var current: StringName = queue.pop_front()
 			network_ids.append(current)
@@ -143,8 +148,9 @@ func _resolve_power(items: Array, result: Dictionary) -> void:
 				remaining -= needed
 	for placed in items:
 		var item: BackpackItemDefinition = placed.get("item")
-		if item != null and not result["powered_items"].has(item.id):
-			result["powered_items"][item.id] = item.power_draw <= 0.0 and not item.requires_power
+		var instance_id := StringName(placed.get("id", item.id)) if item != null else &""
+		if item != null and not result["powered_items"].has(instance_id):
+			result["powered_items"][instance_id] = item.power_draw <= 0.0 and not item.requires_power
 
 func _collect_adjacency_effects(active_effect_ids: Array, a: Dictionary, b: Dictionary) -> void:
 	for placed in [a, b]:
@@ -171,7 +177,7 @@ func _resolve_tag_tiers(result: Dictionary) -> void:
 func _item_by_id(items: Array, id: StringName) -> BackpackItemDefinition:
 	for placed in items:
 		var item: BackpackItemDefinition = placed.get("item")
-		if item != null and item.id == id:
+		if item != null and StringName(placed.get("id", item.id)) == id:
 			return item
 	return null
 

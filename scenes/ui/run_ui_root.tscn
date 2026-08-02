@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/run_ui_binder.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/ui/run_map_panel.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/ui/reward_choice_panel.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/ui/combat_hud.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://scenes/ui/facility_panel.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/ui/inventory_panel.tscn" id="6"]
 
 [node name="RunUIRoot" type="CanvasLayer"]
 
@@ -14,6 +15,7 @@ map_panel_path = NodePath("../RunMapPanel")
 reward_panel_path = NodePath("../RewardChoicePanel")
 combat_hud_path = NodePath("../CombatHUD")
 facility_panel_path = NodePath("../FacilityPanel")
+inventory_panel_path = NodePath("../InventoryPanel")
 
 [node name="CombatHUD" parent="." instance=ExtResource("4")]
 
@@ -24,4 +26,7 @@ visible = false
 visible = false
 
 [node name="FacilityPanel" parent="." instance=ExtResource("5")]
+visible = false
+
+[node name="InventoryPanel" parent="." instance=ExtResource("6")]
 visible = false

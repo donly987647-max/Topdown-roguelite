@@ -98,6 +98,10 @@ func dismantle_owned_reward(index: int) -> bool:
 	var owned = run_state.run_context.get("owned_rewards")
 	if not (owned is Array) or index < 0 or index >= owned.size():
 		return false
+	var inventory = run_state.run_context.get("inventory")
+	if inventory != null and inventory.has_method("can_remove_owned_record") and not bool(inventory.call("can_remove_owned_record", index)):
+		transaction_failed.emit(&"dismantle", "equipped_or_protected")
+		return false
 	var processing_cost := 0 if free_dismantles_remaining > 0 else 6
 	if processing_cost > 0 and not wallet.spend(processing_cost):
 		transaction_failed.emit(&"dismantle", "insufficient_scrap")
@@ -105,7 +109,14 @@ func dismantle_owned_reward(index: int) -> bool:
 	var raw = owned[index]
 	var rarity := StringName(raw.get("rarity", "common")) if raw is Dictionary else &"common"
 	var yield_amount := int(round(_dismantle_value(rarity) * sale_multiplier))
-	owned.remove_at(index)
+	if inventory != null and inventory.has_method("remove_owned_record"):
+		if not bool(inventory.call("remove_owned_record", index)):
+			if processing_cost > 0:
+				wallet.add(processing_cost)
+			transaction_failed.emit(&"dismantle", "remove_failed")
+			return false
+	else:
+		owned.remove_at(index)
 	wallet.add(yield_amount)
 	if free_dismantles_remaining > 0:
 		free_dismantles_remaining -= 1
@@ -118,10 +129,19 @@ func sell_owned_reward(index: int) -> bool:
 	var owned = run_state.run_context.get("owned_rewards")
 	if not (owned is Array) or index < 0 or index >= owned.size():
 		return false
+	var inventory = run_state.run_context.get("inventory")
+	if inventory != null and inventory.has_method("can_remove_owned_record") and not bool(inventory.call("can_remove_owned_record", index)):
+		transaction_failed.emit(&"sell", "equipped_or_protected")
+		return false
 	var raw = owned[index]
 	var rarity := StringName(raw.get("rarity", "common")) if raw is Dictionary else &"common"
 	var value := int(round(_dismantle_value(rarity) * 1.35 * sale_multiplier))
-	owned.remove_at(index)
+	if inventory != null and inventory.has_method("remove_owned_record"):
+		if not bool(inventory.call("remove_owned_record", index)):
+			transaction_failed.emit(&"sell", "remove_failed")
+			return false
+	else:
+		owned.remove_at(index)
 	wallet.add(value)
 	transaction_completed.emit(&"sell", value)
 	return true

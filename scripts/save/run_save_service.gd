@@ -1,7 +1,7 @@
 class_name RunSaveService
 extends RefCounted
 
-const SAVE_VERSION := 4
+const SAVE_VERSION := 5
 const DEFAULT_PATH := "user://last_magazine_run.json"
 
 func save_run(state: RunStateController, wallet: RunWallet, backpack: BackpackState = null, registry: RoomTemplateRegistry = null, path: String = DEFAULT_PATH) -> bool:
@@ -98,11 +98,20 @@ func _capture_weapon(weapon: Variant) -> Dictionary:
 	if weapon == null:
 		return {}
 	var frame_id := ""
+	var barrel_id := ""
+	var magazine_id := ""
+	var core_id := ""
 	var build = weapon.get("weapon_build")
-	if build is WeaponBuild and build.frame != null:
-		frame_id = String(build.frame.id)
+	if build is WeaponBuild:
+		frame_id = String(build.frame.id) if build.frame != null else ""
+		barrel_id = String(build.barrel.id) if build.barrel != null else ""
+		magazine_id = String(build.magazine.id) if build.magazine != null else ""
+		core_id = String(build.core.id) if build.core != null else ""
 	return {
 		"frame_id": frame_id,
+		"barrel_id": barrel_id,
+		"magazine_id": magazine_id,
+		"core_id": core_id,
 		"ammo": int(weapon.get("ammo")),
 		"reserve_ammo": int(weapon.get("reserve_ammo")),
 		"heat": float(weapon.get("heat")),

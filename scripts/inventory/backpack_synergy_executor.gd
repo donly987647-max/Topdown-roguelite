@@ -27,7 +27,7 @@ func evaluate(resolved: Dictionary) -> Dictionary:
 		"active_synergies": [],
 		"effects": {},
 	}
-	var adjacency_effects: Array = resolved.get("adjacency_effects", [])
+	var adjacency_effects: Array = resolved.get("active_effect_ids", resolved.get("adjacency_effects", []))
 	for rule_id in explicit_rules.keys():
 		var rule: Dictionary = explicit_rules[rule_id]
 		if _contains_all(adjacency_effects, rule["requires"]):

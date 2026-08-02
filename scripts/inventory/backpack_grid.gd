@@ -151,7 +151,8 @@ func connector_world_ports(placed: Dictionary) -> Array[Dictionary]:
 		var rotated_local := _rotate_local_cell(local_cell, placed.get("local_cells", []), rotation)
 		var world_cell: Vector2i = placed["origin"] + rotated_local
 		result.append({
-			"item_id": item.id,
+			"item_id": StringName(placed.get("id", item.id)),
+			"definition_id": item.id,
 			"type": connector_type,
 			"cell": world_cell,
 			"direction": rotated_direction,

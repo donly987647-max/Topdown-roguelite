@@ -81,11 +81,13 @@ func _build_shop() -> void:
 	if facilities.run_state != null:
 		var owned = facilities.run_state.run_context.get("owned_rewards")
 		if owned is Array and not owned.is_empty():
+			var sell_index := _first_removable_owned_index()
 			var sell := Button.new()
 			sell.focus_mode = Control.FOCUS_ALL
-			sell.text = "첫 보유 부품 판매"
+			sell.disabled = sell_index < 0
+			sell.text = "판매 가능한 첫 보유품 판매" if sell_index >= 0 else "장착/보호 품목은 판매 불가"
 			sell.pressed.connect(func():
-				facilities.sell_owned_reward(0)
+				facilities.sell_owned_reward(sell_index)
 				_refresh_wallet())
 			items.add_child(sell)
 
@@ -104,11 +106,13 @@ func _build_crafting() -> void:
 	if facilities.run_state != null:
 		var owned = facilities.run_state.run_context.get("owned_rewards")
 		if owned is Array and not owned.is_empty():
+			var dismantle_index := _first_removable_owned_index()
 			var dismantle := Button.new()
 			dismantle.focus_mode = Control.FOCUS_ALL
-			dismantle.text = "첫 보유 부품 분해%s" % [" · 무료" if facilities.free_dismantles_remaining > 0 else " · 수수료 6"]
+			dismantle.disabled = dismantle_index < 0
+			dismantle.text = "판매 가능한 첫 보유품 분해%s" % [" · 무료" if facilities.free_dismantles_remaining > 0 else " · 수수료 6"] if dismantle_index >= 0 else "장착/보호 품목은 분해 불가"
 			dismantle.pressed.connect(func():
-				facilities.dismantle_owned_reward(0)
+				facilities.dismantle_owned_reward(dismantle_index)
 				_rebuild(&"crafting")
 				_refresh_wallet())
 			items.add_child(dismantle)
@@ -176,3 +180,12 @@ func _offer_description(offer: RewardOffer) -> String:
 	if offer.payload is Dictionary:
 		return String(offer.payload.get("description", ""))
 	return ""
+
+func _first_removable_owned_index() -> int:
+	if facilities == null or facilities.run_state == null:
+		return -1
+	var inventory = facilities.run_state.run_context.get("inventory")
+	if inventory != null and inventory.has_method("first_removable_record_index"):
+		return int(inventory.call("first_removable_record_index"))
+	var owned = facilities.run_state.run_context.get("owned_rewards")
+	return 0 if owned is Array and not owned.is_empty() else -1

@@ -1,0 +1,185 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/inventory_panel.gd" id="1"]
+
+[node name="InventoryPanel" type="Control"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+script = ExtResource("1")
+
+[node name="Dim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.018, 0.022, 0.028, 0.96)
+
+[node name="Panel" type="PanelContainer" parent="Dim"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -570.0
+offset_top = -350.0
+offset_right = 570.0
+offset_bottom = 350.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="Dim/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 18
+
+[node name="Root" type="VBoxContainer" parent="Dim/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="Dim/Panel/Margin/Root"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Dim/Panel/Margin/Root/Header"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "RUN INVENTORY  ·  6×5"
+
+[node name="Rule" type="Label" parent="Dim/Panel/Margin/Root/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "   정리된 방에서만 편집 · I / D-PAD ↑"
+vertical_alignment = 1
+
+[node name="Close" type="Button" parent="Dim/Panel/Margin/Root/Header"]
+layout_mode = 2
+focus_mode = 2
+text = "닫기  [Esc]"
+
+[node name="Separator" type="HSeparator" parent="Dim/Panel/Margin/Root"]
+layout_mode = 2
+
+[node name="Content" type="HBoxContainer" parent="Dim/Panel/Margin/Root"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 24
+
+[node name="Left" type="VBoxContainer" parent="Dim/Panel/Margin/Root/Content"]
+custom_minimum_size = Vector2(520, 0)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="GridTitle" type="Label" parent="Dim/Panel/Margin/Root/Content/Left"]
+layout_mode = 2
+text = "가방 격자  ·  셀 선택 배치 / 우클릭 회전 / Shift+클릭 빠른 이동"
+
+[node name="Grid" type="GridContainer" parent="Dim/Panel/Margin/Root/Content/Left"]
+layout_mode = 2
+columns = 6
+theme_override_constants/h_separation = 4
+theme_override_constants/v_separation = 4
+
+[node name="StashTitle" type="Label" parent="Dim/Panel/Margin/Root/Content/Left"]
+layout_mode = 2
+text = "보관함  ·  더블클릭 자동 배치"
+
+[node name="Stash" type="ItemList" parent="Dim/Panel/Margin/Root/Content/Left"]
+custom_minimum_size = Vector2(0, 112)
+layout_mode = 2
+size_flags_vertical = 3
+allow_reselect = true
+
+[node name="Right" type="VBoxContainer" parent="Dim/Panel/Margin/Root/Content"]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="SlotsTitle" type="Label" parent="Dim/Panel/Margin/Root/Content/Right"]
+layout_mode = 2
+text = "무기 조립  ·  버튼으로 보유 파츠 순환"
+
+[node name="Slots" type="GridContainer" parent="Dim/Panel/Margin/Root/Content/Right"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+
+[node name="Frame" type="Button" parent="Dim/Panel/Margin/Root/Content/Right/Slots"]
+custom_minimum_size = Vector2(242, 48)
+layout_mode = 2
+focus_mode = 2
+text = "Frame"
+
+[node name="Barrel" type="Button" parent="Dim/Panel/Margin/Root/Content/Right/Slots"]
+custom_minimum_size = Vector2(242, 48)
+layout_mode = 2
+focus_mode = 2
+text = "Barrel"
+
+[node name="Magazine" type="Button" parent="Dim/Panel/Margin/Root/Content/Right/Slots"]
+custom_minimum_size = Vector2(242, 48)
+layout_mode = 2
+focus_mode = 2
+text = "Magazine"
+
+[node name="Core" type="Button" parent="Dim/Panel/Margin/Root/Content/Right/Slots"]
+custom_minimum_size = Vector2(242, 48)
+layout_mode = 2
+focus_mode = 2
+text = "Core"
+
+[node name="Details" type="RichTextLabel" parent="Dim/Panel/Margin/Root/Content/Right"]
+custom_minimum_size = Vector2(0, 210)
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+fit_content = true
+scroll_active = true
+
+[node name="Synergy" type="Label" parent="Dim/Panel/Margin/Root/Content/Right"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+autowrap_mode = 2
+text = "전력 / 냉각 / 탄약 / 신호"
+
+[node name="Message" type="Label" parent="Dim/Panel/Margin/Root/Content/Right"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="Actions" type="GridContainer" parent="Dim/Panel/Margin/Root/Content/Right"]
+layout_mode = 2
+columns = 2
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+
+[node name="Rotate" type="Button" parent="Dim/Panel/Margin/Root/Content/Right/Actions"]
+layout_mode = 2
+focus_mode = 2
+text = "회전  [R / 우클릭]"
+
+[node name="QuickMove" type="Button" parent="Dim/Panel/Margin/Root/Content/Right/Actions"]
+layout_mode = 2
+focus_mode = 2
+text = "빠른 이동  [Shift]"
+
+[node name="AutoSort" type="Button" parent="Dim/Panel/Margin/Root/Content/Right/Actions"]
+layout_mode = 2
+focus_mode = 2
+text = "자동 정렬"
+
+[node name="Undo" type="Button" parent="Dim/Panel/Margin/Root/Content/Right/Actions"]
+layout_mode = 2
+focus_mode = 2
+text = "직전 배치 복원"
