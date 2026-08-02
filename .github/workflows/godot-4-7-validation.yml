@@ -36,3 +36,5 @@ jobs:
         run: godot --headless --path . --script res://tools/room_scene_smoke.gd
       - name: Run P2 integration smoke
         run: godot --headless --path . --script res://tools/p2_integration_smoke.gd
+      - name: Run P2 frontend and GR-01 smoke
+        run: godot --headless --path . --script res://tools/p2_frontend_boss_smoke.gd
