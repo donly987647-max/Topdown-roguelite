@@ -1,6 +1,8 @@
 class_name Player
 extends CharacterBody2D
 
+signal health_changed(current: float, maximum: float)
+signal guard_changed(current: int, maximum: int)
 signal temporary_shield_changed(current: float, maximum: float)
 signal damaged(amount: float)
 signal died
@@ -18,12 +20,15 @@ signal died
 
 @export_category("Health")
 @export var max_health: float = 100.0
+@export var max_guard: int = 3
 @export var max_temporary_shield: float = 50.0
 @export var temporary_shield_duration: float = 6.0
 
 var health: float
+var guard: int = 0
 var temporary_shield := 0.0
 var aim_direction := Vector2.RIGHT
+var input_enabled := true
 var _last_move_direction := Vector2.RIGHT
 var _dash_direction := Vector2.ZERO
 var _dash_time_left := 0.0
@@ -40,13 +45,16 @@ var _mobile_aim_active := false
 
 func _ready() -> void:
 	health = max_health
+	health_changed.emit(health, max_health)
+	guard_changed.emit(guard, max_guard)
 	temporary_shield_changed.emit(temporary_shield, max_temporary_shield)
 	MagazineRuntime.attach_to_player(self)
 
 func _physics_process(delta: float) -> void:
 	_update_timers(delta)
-	_update_aim()
-	if _dead:
+	if input_enabled:
+		_update_aim()
+	if _dead or not input_enabled:
 		velocity = velocity.move_toward(Vector2.ZERO, deceleration * delta)
 		move_and_slide()
 		return
@@ -70,10 +78,21 @@ func _update_aim() -> void:
 	if _mobile_aim_active and _mobile_aim.length_squared() > 0.0001:
 		aim_direction = _mobile_aim.normalized()
 	else:
-		var mouse_vector := get_global_mouse_position() - global_position
-		if mouse_vector.length_squared() > 1.0:
-			aim_direction = mouse_vector.normalized()
+		var stick := Input.get_vector("aim_left", "aim_right", "aim_up", "aim_down") if InputMap.has_action("aim_left") else Vector2.ZERO
+		if stick.length_squared() > 0.04:
+			aim_direction = stick.normalized()
+		else:
+			var mouse_vector := get_global_mouse_position() - global_position
+			if mouse_vector.length_squared() > 1.0:
+				aim_direction = mouse_vector.normalized()
 	aim_pivot.rotation = aim_direction.angle()
+
+func set_input_enabled(value: bool) -> void:
+	input_enabled = value
+	if not value:
+		_mobile_move = Vector2.ZERO
+		_mobile_aim = Vector2.ZERO
+		_mobile_aim_active = false
 
 func set_mobile_move(value: Vector2) -> void:
 	_mobile_move = value.limit_length(1.0)
@@ -85,6 +104,28 @@ func set_mobile_aim(value: Vector2, active: bool = true) -> void:
 func clear_mobile_aim() -> void:
 	_mobile_aim = Vector2.ZERO
 	_mobile_aim_active = false
+
+func set_guard(value: int) -> void:
+	guard = clampi(value, 0, max_guard)
+	guard_changed.emit(guard, max_guard)
+
+func add_guard(amount: int = 1) -> int:
+	if amount <= 0 or _dead:
+		return 0
+	var before := guard
+	guard = clampi(guard + amount, 0, max_guard)
+	guard_changed.emit(guard, max_guard)
+	return guard - before
+
+func heal(amount: float) -> float:
+	if amount <= 0.0 or _dead:
+		return 0.0
+	var multiplier := float(get_meta("healing_multiplier", 1.0))
+	var before := health
+	health = minf(max_health, health + amount * multiplier)
+	if health != before:
+		health_changed.emit(health, max_health)
+	return health - before
 
 func _try_start_dash(input_direction: Vector2) -> void:
 	if _dash_cooldown_left > 0.0 or _dash_time_left > 0.0:
@@ -126,8 +167,13 @@ func take_damage(amount: float, knockback: Vector2 = Vector2.ZERO) -> bool:
 		temporary_shield -= absorbed
 		remaining -= absorbed
 		temporary_shield_changed.emit(temporary_shield, max_temporary_shield)
+	if remaining > 0.0 and guard > 0:
+		guard -= 1
+		guard_changed.emit(guard, max_guard)
+		remaining = 0.0
 	if remaining > 0.0:
 		health = maxf(0.0, health - remaining)
+		health_changed.emit(health, max_health)
 	velocity += knockback
 	_invulnerability_left = 0.35
 	damaged.emit(amount)
