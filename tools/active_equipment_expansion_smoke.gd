@@ -7,7 +7,7 @@ func _init() -> void:
 
 func _run_tests() -> void:
 	_test_catalog_contract()
-	await _test_instant_active_effects()
+	_test_instant_active_effects()
 	if failures.is_empty():
 		print("ACTIVE_EQUIPMENT_EXPANSION_SMOKE_OK")
 		quit(0)
@@ -36,30 +36,17 @@ func _test_catalog_contract() -> void:
 	var vent_activation: Dictionary = vent_payload.get("activation_payload", {})
 	_expect(StringName(shield_activation.get("effect", "")) == &"shield_pulse", "Shield Emitter catalog payload must use shield_pulse")
 	_expect(StringName(vent_activation.get("effect", "")) == &"vent_purge", "Vent Purge catalog payload must use vent_purge")
-	shield_activation.clear()
-	vent_activation.clear()
-	shield_payload.clear()
-	vent_payload.clear()
-	active_ids.clear()
 	offers.clear()
 
 func _test_instant_active_effects() -> void:
-	var player_scene := load("res://scenes/player/Player.tscn") as PackedScene
-	_expect(player_scene != null, "Production Player scene must load for active equipment regression")
-	if player_scene == null:
-		return
-	var player := player_scene.instantiate() as Player
-	root.add_child(player)
-	var weapon := player.get_node_or_null("AimPivot/CombatController") as WeaponController
-	_expect(weapon != null, "Production Player scene must expose its WeaponController")
-	if weapon == null:
-		player.queue_free()
-		await process_frame
-		return
+	var player := Player.new()
+	var weapon := WeaponController.new()
+	var inventory := RunInventoryRuntime.new()
+	var backpack := BackpackState.new()
+	_expect(inventory.configure(backpack, weapon, [], [], &"service_pistol"), "Active effect fixture inventory should configure")
 	var equipment := RunEquipmentRuntime.new()
 	root.add_child(equipment)
-	equipment.player = player
-	equipment.weapon = weapon
+	_expect(equipment.configure(inventory, player, weapon), "Active effect fixture should use the normal configure path")
 
 	player.temporary_shield = 0.0
 	equipment.call("_on_equipment_activated", &"shield_emitter", {"effect":"shield_pulse", "amount":25.0})
@@ -69,9 +56,10 @@ func _test_instant_active_effects() -> void:
 	equipment.call("_on_equipment_activated", &"vent_purge", {"effect":"vent_purge", "heat_removed":55.0})
 	_expect(is_equal_approx(weapon.heat, 25.0), "Vent Purge must remove 55 heat without going below zero")
 
-	equipment.queue_free()
-	player.queue_free()
-	await process_frame
+	equipment.free()
+	inventory.free()
+	player.free()
+	weapon.free()
 
 func _expect(condition: bool, message: String) -> void:
 	if not condition:
