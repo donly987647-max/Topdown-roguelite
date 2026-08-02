@@ -375,24 +375,27 @@ func _fire_compression_hammer() -> bool:
 	for candidate in get_tree().get_nodes_in_group("enemy"):
 		if not (candidate is Node2D) or not candidate.has_method("take_damage"):
 			continue
-		var offset := candidate.global_position - origin
+		var enemy_node: Node2D = candidate as Node2D
+		var offset: Vector2 = enemy_node.global_position - origin
 		if offset.length() > 125.0 or offset.length_squared() <= 0.01:
 			continue
 		if forward.dot(offset.normalized()) < 0.42:
 			continue
-		var amount := damage * _perfect_reload_damage_bonus * _devour_multiplier
-		candidate.take_damage(amount, forward * 620.0)
+		var amount: float = damage * _perfect_reload_damage_bonus * _devour_multiplier
+		enemy_node.call("take_damage", amount, forward * 620.0)
 		hit_any = true
 	for node in get_tree().get_nodes_in_group("enemy_projectile"):
 		if not (node is EnemyProjectile) or not is_instance_valid(node):
 			continue
-		if origin.distance_squared_to(node.global_position) > 135.0 * 135.0:
+		var enemy_projectile: EnemyProjectile = node as EnemyProjectile
+		if origin.distance_squared_to(enemy_projectile.global_position) > 135.0 * 135.0:
 			continue
-		var reflected_direction := origin.direction_to(node.global_position)
-		var reflected_damage := node.damage * 1.5
-		node.queue_free()
-		var payload := {"owner": _owner_actor(), "weapon_controller": self, "faction": &"player", "pierce": 0, "ricochet": 0}
-		_spawn_projectile(reflected_direction, payload, reflected_damage / maxf(damage, 0.01), node.global_position - muzzle.global_position)
+		var reflected_direction: Vector2 = origin.direction_to(enemy_projectile.global_position)
+		var reflected_damage: float = enemy_projectile.damage * 1.5
+		var reflected_position: Vector2 = enemy_projectile.global_position
+		enemy_projectile.queue_free()
+		var payload: Dictionary = {"owner": _owner_actor(), "weapon_controller": self, "faction": &"player", "pierce": 0, "ricochet": 0}
+		_spawn_projectile(reflected_direction, payload, reflected_damage / maxf(damage, 0.01), reflected_position - muzzle.global_position)
 		hit_any = true
 	_consume_one_shot_bonuses()
 	_play_muzzle_flash()
@@ -459,7 +462,7 @@ func _payload_has_devour() -> bool:
 	return bool(payload.get("devour", false))
 
 func _read_health(receiver: Node) -> float:
-	var value := receiver.get("health")
+	var value: Variant = receiver.get("health")
 	if value is float or value is int:
 		return maxf(0.0, float(value))
 	return -1.0
