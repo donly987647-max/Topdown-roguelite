@@ -12,6 +12,7 @@ var character_select: CharacterSelectPanel
 var result_panel: RunResultPanel
 
 func _ready() -> void:
+	GameInputSetup.configure()
 	bootstrap = get_node_or_null(bootstrap_path) as Zone1RunBootstrap
 	main_menu = get_node_or_null(main_menu_path) as MainMenuPanel
 	character_select = get_node_or_null(character_select_path) as CharacterSelectPanel
@@ -78,6 +79,7 @@ func _set_combat_enabled(enabled: bool) -> void:
 	var player := bootstrap.get_player()
 	if player != null:
 		player.set_physics_process(enabled)
+		player.set_input_enabled(enabled)
 	var weapon := bootstrap.get_weapon_controller()
 	if weapon != null:
 		weapon.set_process(enabled)
