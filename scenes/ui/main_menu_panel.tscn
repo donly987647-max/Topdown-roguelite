@@ -51,6 +51,10 @@ text = "NEW RUN"
 custom_minimum_size = Vector2(360,60)
 layout_mode = 2
 text = "CONTINUE"
+[node name="Settings" type="Button" parent="Panel/VBox"]
+custom_minimum_size = Vector2(360,60)
+layout_mode = 2
+text = "SETTINGS"
 [node name="Quit" type="Button" parent="Panel/VBox"]
 custom_minimum_size = Vector2(360,60)
 layout_mode = 2
