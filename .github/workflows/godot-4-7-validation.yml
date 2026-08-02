@@ -1,0 +1,38 @@
+name: Godot 4.7.1 Validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  headless-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.7.1
+        shell: bash
+        run: |
+          set -euxo pipefail
+          URL="https://github.com/godotengine/godot/releases/download/4.7.1-stable/Godot_v4.7.1-stable_linux.x86_64.zip"
+          curl -fL "$URL" -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          BIN="$(find /tmp/godot -maxdepth 1 -type f -name 'Godot_v4.7.1-stable_linux*' | head -n1)"
+          chmod +x "$BIN"
+          sudo ln -sf "$BIN" /usr/local/bin/godot
+          godot --version
+      - name: Import project and parse resources
+        run: godot --headless --editor --path . --quit-after 3
+      - name: Run GDD runtime smoke
+        run: godot --headless --path . --script res://tools/gdd_runtime_smoke.gd
+      - name: Run run-system smoke
+        run: godot --headless --path . --script res://tools/run_system_smoke.gd
+      - name: Run run-lifecycle smoke
+        run: godot --headless --path . --script res://tools/run_lifecycle_smoke.gd
+      - name: Run room-scene smoke
+        run: godot --headless --path . --script res://tools/room_scene_smoke.gd
+      - name: Run P2 integration smoke
+        run: godot --headless --path . --script res://tools/p2_integration_smoke.gd
