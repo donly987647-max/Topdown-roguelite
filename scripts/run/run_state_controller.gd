@@ -79,7 +79,7 @@ func current_template() -> RoomTemplateDefinition:
 	var template_id: StringName = node_to_template.get(current_room_id, &"")
 	return room_templates.get(template_id)
 
-func clear_current_room(major_reward: bool = true) -> bool:
+func clear_current_room(grant_combat_reward: bool = true) -> bool:
 	if finished or current_room_id == &"" or cleared_rooms.has(current_room_id):
 		return false
 	cleared_rooms[current_room_id] = true
@@ -88,14 +88,13 @@ func clear_current_room(major_reward: bool = true) -> bool:
 		finished = true
 		run_finished.emit(true)
 		return true
-	if major_reward:
+	if grant_combat_reward:
 		active_reward_choices = reward_selector.generate_major_choices(build_tags)
-	else:
-		active_reward_choices = reward_selector.generate_choices()
-	if not active_reward_choices.is_empty():
-		reward_choices_ready.emit(active_reward_choices)
-	else:
-		_emit_routes()
+		if not active_reward_choices.is_empty():
+			reward_choices_ready.emit(active_reward_choices)
+			return true
+	active_reward_choices.clear()
+	_emit_routes()
 	return true
 
 func claim_reward(index: int) -> bool:
