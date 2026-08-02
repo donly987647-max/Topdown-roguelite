@@ -8,6 +8,8 @@ radius = 17.0
 
 [node name="Zone1Ranged" type="CharacterBody2D"]
 script = ExtResource("1")
+collision_layer = 16
+collision_mask = 3
 projectile_scene = ExtResource("2")
 mechanical = true
 biological = false
