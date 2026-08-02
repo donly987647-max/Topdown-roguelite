@@ -1,6 +1,6 @@
 extends SceneTree
 
-func _init() -> void:
+func _initialize() -> void:
 	var generator := RunGraphGenerator.new()
 	var graph := generator.generate(12345)
 	var validation := generator.validate(graph)
