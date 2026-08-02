@@ -13,7 +13,7 @@ func enemy_profiles() -> Array[EnemySpawnProfile]:
 		_enemy(&"fork_drone", "Fork Drone", 3, ["ranged", "flying", "mechanical"], RANGED_SCENE, false, {"max_health":44.0,"move_speed":175.0,"preferred_distance":480.0,"retreat_distance":300.0,"fire_interval":0.92,"projectile_damage":9.0,"biological":false,"mechanical":true}),
 		_enemy(&"crusher_brute", "Crusher Brute", 4, ["melee", "heavy", "mechanical"], MELEE_SCENE, false, {"max_health":155.0,"move_speed":92.0,"contact_damage":22.0,"attack_cooldown":1.05,"biological":false,"mechanical":true}),
 		_enemy(&"elite_line_guard", "Elite Line Guard", 6, ["elite", "melee", "mechanical"], MELEE_SCENE, true, {"max_health":190.0,"move_speed":158.0,"contact_damage":20.0,"attack_cooldown":0.68,"biological":false,"mechanical":true}),
-		_enemy(&"gr01_proto", "GR-01 Prototype", 12, ["boss", "heavy", "mechanical"], MELEE_SCENE, true, {"max_health":520.0,"move_speed":82.0,"contact_damage":28.0,"attack_cooldown":0.72,"biological":false,"mechanical":true}),
+		_enemy(&"gr01_proto", "GR-01 Prototype", 12, ["boss", "heavy", "mechanical"], MELEE_SCENE, false, {"max_health":520.0,"move_speed":82.0,"contact_damage":28.0,"attack_cooldown":0.72,"biological":false,"mechanical":true}),
 	]
 
 func room_templates() -> Array[RoomTemplateDefinition]:
