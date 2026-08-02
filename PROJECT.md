@@ -28,7 +28,7 @@ Do not request final gameplay feedback until the GDD is fully represented and au
 
 **Current milestone:** P2 one-zone integrated vertical slice with frontend, combat HUD, facilities, live character kits and GR-01 settlement.
 
-**Current build is NOT GDD-complete. The entry scene and full headless suite pass locally under Godot 4.7.1; GDD rows remain unpromoted until the repaired workflow also succeeds on GitHub Actions.**
+**Current build is NOT GDD-complete. The entry scene and full strict headless suite pass locally and on GitHub Actions under Godot 4.7.1. This establishes a code/runtime baseline, not final gameplay, device or release validation.**
 
 ### Default executable flow
 `project.godot` launches `scenes/main/RunMain.tscn`.
@@ -133,14 +133,15 @@ Shell-07 remains a locked secret catalog entry.
 - `p2_frontend_boss_smoke.gd` now covers frontend/HUD/facility scene loading, runtime gamepad actions, character starters, all Zone 1 room resources, GR-01 phase/core behavior, facility reward rules, GR-01 mandatory/choice settlement and Rex debt semantics.
 - To obtain an observable pull-request-triggered run, validation branch `validation/godot-p2-batch` and **PR #8** were opened.
 - Observed Actions run **#91 / run id 30729733320** was cancelled after 20 minutes: `weapon_build.gd` failed Variant type inference, `RunGraph.connect()` conflicted with `Object.connect()`, additional strict-warning parser errors were exposed, and the run-system script then stayed alive.
-- The parser/type errors, ranged telegraph constructor error, camera utility leak and run-system assertion flaw are repaired on `agent/fix-godot-validation`. Local Godot 4.7.1 import, entry-scene smoke and all six scripted smokes pass with the strict wrapper. Remote Actions confirmation is still required before promotion to `VALIDATED`.
+- The parser/type errors, ranged telegraph constructor error, camera utility leak and run-system assertion flaw are repaired on `agent/fix-godot-validation` / **PR #9**.
+- **Godot 4.7.1 Validation #95 / run id 30734404717 succeeded**: import, default entry scene and all six scripted smokes passed through the strict wrapper. No GDD row is promoted solely from this headless result where manual, device, repeated-run or content-completeness requirements remain.
 
 ## Immediate Gaps / Next Work
-1. Publish `agent/fix-godot-validation`, obtain a green Godot 4.7.1 Actions run, then synchronize the CI result in this handoff and the coverage matrix.
-2. Complete the remaining character fidelity edge cases, especially Mara incompatible-part power penalty and Rex reward-slot selection polish.
-3. Finish Zone 1 P4 content target: at least eight distinct enemies, production hazard behavior, art/animation/VFX/audio and encounter pacing.
-4. Complete inventory/backpack Control UX and make acquired frame/barrel/magazine/core/passive/active rewards modify the live build rather than only generic ownership records where still applicable.
-5. Perform repeated GR-01 completion/balance passes once executable validation is available.
+1. Merge the green validation repair in PR #9, then keep Godot 4.7.1 strict validation mandatory for every integration batch.
+2. Complete inventory/backpack Control UX and make acquired frame/barrel/magazine/core/passive/active rewards modify the live build rather than only generic ownership records where still applicable.
+3. Complete the remaining character fidelity edge cases, especially Mara incompatible-part power penalty and Rex reward-slot selection polish.
+4. Finish Zone 1 P4 content target: at least eight distinct enemies, production hazard behavior, art/animation/VFX/audio and encounter pacing.
+5. Perform three repeated GR-01 completion/save-resume/balance passes and then device/input QA.
 6. Only after the one-zone vertical slice is stable, expand Zones 2–4, secret zone, hub/meta, tutorial, accessibility, achievements/daily challenge and Steam integration.
 
 ## Design Decisions
@@ -159,6 +160,7 @@ Shell-07 remains a locked secret catalog entry.
 - 2026-08-02: Boss completion is gated by mandatory GR-01 settlement and the backpack/max-HP choice.
 - 2026-08-02: No CI/code status is called VALIDATED until an observed Godot 4.7.1 workflow succeeds.
 - 2026-08-02: Headless checks must fail on Godot error logs and require a per-suite success marker; process exit code alone is insufficient.
+- 2026-08-02: Godot 4.7.1 Actions #95 is the first observed green canonical headless baseline; manual/device/full-run QA remains separate.
 
 ## Continuation Protocol
 1. Read `PROJECT.md`.
@@ -197,4 +199,4 @@ Shell-07 remains a locked secret catalog entry.
 - Repaired ranged-enemy telegraph construction and converted the stateless room-entry camera helper to `RefCounted`, eliminating the default-scene shutdown leak.
 - Corrected the passive multiplier smoke expectation and changed the run-system smoke to aggregate failures before choosing its exit status.
 - Added strict error/timeout/success-marker enforcement to every headless check.
-- Local result: project import, default entry scene and all six scripted smoke suites pass under `4.7.1.stable.official.a13da4feb`; remote Actions confirmation pending.
+- Local and remote result: project import, default entry scene and all six scripted smoke suites pass under `4.7.1.stable.official.a13da4feb`; GitHub Actions #95 / run 30734404717 succeeded.
