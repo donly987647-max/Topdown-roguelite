@@ -48,23 +48,19 @@ func _build_runtime() -> void:
 	var rewards := Zone1RewardCatalog.new().offers()
 	run_state.reward_selector.set_pool(rewards)
 	run_state.set_build_tags(_derive_build_tags(weapon))
-
 	room_runtime = RoomSceneRuntime.new()
 	room_runtime.name = "RoomSceneRuntime"
 	add_child(room_runtime)
 	room_runtime.configure(room_parent, spawn_registry, threat_planner)
-
 	coordinator = RunSceneCoordinator.new()
 	coordinator.name = "RunSceneCoordinator"
 	add_child(coordinator)
 	coordinator.configure(run_state, room_runtime, template_registry, player, camera)
-
 	facilities = RunFacilityCoordinator.new()
 	facilities.name = "RunFacilityCoordinator"
 	add_child(facilities)
 	facilities.configure(run_state, wallet)
 	facilities.set_shop_offers(rewards.slice(0, mini(5, rewards.size())))
-
 	if player != null:
 		MagazineRuntime.attach_to_player(player)
 	if weapon != null:
@@ -72,7 +68,6 @@ func _build_runtime() -> void:
 		devour_runtime.name = "DevourRoomRuntime"
 		add_child(devour_runtime)
 		devour_runtime.configure(weapon, room_runtime)
-
 	_bind_checkpoint_signals()
 	_setup_ui()
 
@@ -132,9 +127,15 @@ func continue_run() -> bool:
 	var node := run_state.current_node()
 	if node == null:
 		return false
-	run_state.room_entered.emit(run_state.current_room_id, node.room_type)
 	_refresh_combat_hud()
+	if not run_state.active_reward_choices.is_empty():
+		call_deferred("_resume_pending_reward_flow")
+	else:
+		run_state.room_entered.emit(run_state.current_room_id, node.room_type)
 	return true
+
+func _resume_pending_reward_flow() -> void:
+	run_state.resume_pending_flow()
 
 func save_checkpoint() -> bool:
 	return save_service.save_run(run_state, wallet, backpack, template_registry)
@@ -156,14 +157,7 @@ func get_weapon_controller() -> WeaponController:
 	return weapon
 
 func _build_run_context() -> Dictionary:
-	return {
-		"wallet": wallet,
-		"player": get_player(),
-		"weapon_controller": get_weapon_controller(),
-		"backpack_state": backpack,
-		"owned_rewards": owned_rewards,
-		"character_ability_runtime": abilities,
-	}
+	return {"wallet":wallet, "player":get_player(), "weapon_controller":get_weapon_controller(), "backpack_state":backpack, "owned_rewards":owned_rewards, "character_ability_runtime":abilities}
 
 func _configure_character_abilities(character: CharacterDefinition) -> bool:
 	if abilities != null and is_instance_valid(abilities):
