@@ -24,12 +24,22 @@ func clear() -> void:
 	visible = false
 
 func focus_first_choice() -> void:
+	focus_choice(0)
+
+func focus_choice(index: int) -> void:
+	if index < 0 or index >= choices.size():
+		return
 	for child in get_children():
-		if child is HBoxContainer:
-			for card in child.get_children():
-				if card is Button and not (card as Button).disabled:
-					(card as Button).grab_focus()
-					return
+		if child is not HBoxContainer:
+			continue
+		var cards := child.get_children()
+		if index >= cards.size():
+			return
+		var card := cards[index] as Button
+		if card != null and not card.disabled:
+			card.grab_focus()
+			_set_focused_index(index)
+		return
 
 func focused_index() -> int:
 	return _focused_index
