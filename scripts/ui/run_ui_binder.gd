@@ -49,6 +49,11 @@ func configure(run_coordinator: RunSceneCoordinator, run_bootstrap: Zone1RunBoot
 func _unhandled_input(event: InputEvent) -> void:
 	if map_panel == null or coordinator == null:
 		return
+	if reward_panel != null and reward_panel.visible and event.is_action_pressed("character_active"):
+		if _try_activate_rex_reward_reroll():
+			_refresh_gameplay_input()
+			get_viewport().set_input_as_handled()
+			return
 	var joypad_inventory_conflict := event is InputEventJoypadButton and map_panel.visible and (inventory_panel == null or not inventory_panel.visible)
 	if event.is_action_pressed("toggle_inventory") and not joypad_inventory_conflict:
 		if inventory_panel != null and inventory_panel.visible:
@@ -92,9 +97,33 @@ func _on_reward_selected(index: int) -> void:
 		reward_panel.clear()
 	_refresh_gameplay_input()
 
-func _on_reward_focus_changed(index: int) -> void:
-	if bootstrap != null and bootstrap.abilities != null:
-		bootstrap.abilities.set_rex_reward_index(index)
+func _on_reward_focus_changed(_index: int) -> void:
+	pass
+
+func _try_activate_rex_reward_reroll() -> bool:
+	if bootstrap == null or bootstrap.abilities == null or bootstrap.run_state == null:
+		return false
+	if bootstrap.abilities.character == null or bootstrap.abilities.character.id != &"rex":
+		return false
+	var choices := bootstrap.run_state.active_reward_choices
+	if choices.is_empty():
+		return false
+	var target_index := clampi(reward_panel.focused_index(), 0, choices.size() - 1)
+	if target_index != 0:
+		var first_offer := choices[0]
+		choices[0] = choices[target_index]
+		choices[target_index] = first_offer
+	var activated := bootstrap.abilities.try_activate()
+	if target_index != 0:
+		var rerolled_offer := choices[0]
+		choices[0] = choices[target_index]
+		choices[target_index] = rerolled_offer
+	if not activated:
+		return false
+	reward_panel.present(choices)
+	reward_panel.call_deferred("focus_choice", target_index)
+	bootstrap.save_checkpoint()
+	return true
 
 func _on_route_selected(room_id: StringName) -> void:
 	if coordinator.choose_route(room_id):
