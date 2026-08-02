@@ -90,6 +90,8 @@ func _register_enemy(enemy: Node, enemy_id: StringName, wave_index: int) -> void
 	var instance_id := enemy.get_instance_id()
 	_active_enemies[instance_id] = enemy
 	enemy.set_meta("room_wave_index", wave_index)
+	if room_root != null and room_root.has_method("on_enemy_spawned"):
+		room_root.call("on_enemy_spawned", enemy, enemy_id)
 	enemy_spawned.emit(enemy, enemy_id, wave_index)
 	enemy.tree_exiting.connect(func(): _on_enemy_removed(instance_id), CONNECT_ONE_SHOT)
 
