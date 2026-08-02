@@ -1,12 +1,19 @@
 class_name AuthoredRoomShellBuilder
 extends RefCounted
 
-var tile_world_size := 64.0
+var tile_world_size := 32.0
 
 func build(template: RoomTemplateDefinition) -> Node2D:
 	var root := Node2D.new()
 	root.name = "Room_%s" % String(template.id)
+	build_into(root, template)
+	return root
+
+func build_into(root: Node2D, template: RoomTemplateDefinition) -> void:
+	if root == null or template == null:
+		return
 	root.set_meta("authored_room_shell", true)
+	root.set_meta("room_template_id", template.id)
 	_build_boundary(root, template.tile_size)
 	for cell in template.obstacle_cells:
 		_add_block(root, cell, false)
@@ -18,7 +25,6 @@ func build(template: RoomTemplateDefinition) -> Node2D:
 		_add_marker(root, cell, template.entrance_group, "Entrance")
 	for cell in template.exit_cells:
 		_add_exit(root, cell, template.exit_group)
-	return root
 
 func _build_boundary(root: Node2D, size: Vector2i) -> void:
 	for x in range(size.x):
@@ -32,6 +38,8 @@ func _add_block(root: Node2D, cell: Vector2i, boundary: bool) -> void:
 	var body := StaticBody2D.new()
 	body.name = "%s_%d_%d" % ["Boundary" if boundary else "Obstacle", cell.x, cell.y]
 	body.position = _cell_center(cell)
+	body.collision_layer = 2
+	body.collision_mask = 1
 	var shape := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
 	rect.size = Vector2.ONE * tile_world_size
@@ -43,6 +51,8 @@ func _add_hazard(root: Node2D, cell: Vector2i) -> void:
 	var area := Area2D.new()
 	area.name = "Hazard_%d_%d" % [cell.x, cell.y]
 	area.position = _cell_center(cell)
+	area.collision_layer = 0
+	area.collision_mask = 1
 	area.add_to_group("room_hazard")
 	area.set_meta("hazard_cell", cell)
 	var shape := CollisionShape2D.new()
@@ -56,7 +66,8 @@ func _add_marker(root: Node2D, cell: Vector2i, group_name: StringName, prefix: S
 	var marker := Marker2D.new()
 	marker.name = "%s_%d_%d" % [prefix, cell.x, cell.y]
 	marker.position = _cell_center(cell)
-	if group_name != &"": marker.add_to_group(group_name)
+	if group_name != &"":
+		marker.add_to_group(group_name)
 	root.add_child(marker)
 
 func _add_exit(root: Node2D, cell: Vector2i, group_name: StringName) -> void:
@@ -65,7 +76,10 @@ func _add_exit(root: Node2D, cell: Vector2i, group_name: StringName) -> void:
 	gate.position = _cell_center(cell)
 	gate.starts_locked = true
 	gate.disable_collision_when_locked = false
-	if group_name != &"": gate.add_to_group(group_name)
+	gate.collision_layer = 0
+	gate.collision_mask = 1
+	if group_name != &"":
+		gate.add_to_group(group_name)
 	var shape := CollisionShape2D.new()
 	var rect := RectangleShape2D.new()
 	rect.size = Vector2(tile_world_size * 0.8, tile_world_size * 0.8)
