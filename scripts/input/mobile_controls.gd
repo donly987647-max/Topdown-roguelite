@@ -1,4 +1,3 @@
-class_name MobileControls
 extends CanvasLayer
 
 @export var player_path: NodePath = NodePath("../Player")
