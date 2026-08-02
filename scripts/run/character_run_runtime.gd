@@ -13,9 +13,11 @@ func apply(character: CharacterDefinition, player: Player, wallet: RunWallet, co
 		player.max_health = character.max_health
 		if grant_starting_resources or player.health <= 0.0:
 			player.health = character.max_health
+			player.health_changed.emit(player.health, player.max_health)
 		player.max_speed = BASE_MOVE_SPEED * character.move_speed_multiplier
+		if grant_starting_resources:
+			player.set_guard(character.starting_guard)
 		player.set_meta("character_id", character.id)
-		player.set_meta("starting_guard", character.starting_guard)
 		player.set_meta("crit_bonus", character.crit_bonus)
 		player.set_meta("status_buildup_multiplier", character.status_buildup_multiplier)
 		player.set_meta("healing_multiplier", character.healing_multiplier)
