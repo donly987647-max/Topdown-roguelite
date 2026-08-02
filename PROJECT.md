@@ -146,7 +146,7 @@ Shell-07 remains a locked secret catalog entry.
 - **Godot 4.7.1 Validation #95 / run id 30734404717 succeeded**: import, default entry scene and all six scripted smokes passed through the strict wrapper. No GDD row is promoted solely from this headless result where manual, device, repeated-run or content-completeness requirements remain.
 - Documentation-only follow-up **#96 / run id 30734459891** also succeeded.
 - Inventory/assembly head **#97 / run id 30735341560** succeeded: the new 6×5 UI, reward-to-live-build path, duplicate-instance network handling and v5 part persistence pass the same canonical import, entry-scene and six-smoke gate remotely.
-- The equipment-effects/drag/save-v6 batch passes local 4.7.1 import, default entry scene and all six strict smoke suites. Remote Actions observation is pending publication of this batch.
+- Equipment-effects/drag/save-v6 head **#99 / run id 30739136020** succeeded: local and remote 4.7.1 import, default entry scene and all six strict smoke suites pass.
 
 ## Immediate Gaps / Next Work
 1. Merge the green validation repair in PR #9, then keep Godot 4.7.1 strict validation mandatory for every integration batch.
@@ -227,4 +227,4 @@ Shell-07 remains a locked secret catalog entry.
 - Added power-gated passive aggregation and live player/weapon modifier recomputation without stat compounding.
 - Implemented Repair Injector and Overclock Key combat effects with separate Q/RB input and HUD state; character actives moved to F/Y.
 - Upgraded checkpoint saves to v6 for active-item identity, cooldown/charges and temporary effect restoration.
-- Added strict regressions for unpowered/powered modules, rotation-sensitive connector links, passive removal, repair activation, overclock expiry and v6 save round-trip. Local Godot 4.7.1 import, entry scene and all six scripted suites pass; remote observation pending.
+- Added strict regressions for unpowered/powered modules, rotation-sensitive connector links, passive removal, repair activation, overclock expiry and v6 save round-trip. Local Godot 4.7.1 and GitHub Actions #99 pass import, entry scene and all six scripted suites.
