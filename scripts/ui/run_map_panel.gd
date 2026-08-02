@@ -30,6 +30,7 @@ func rebuild() -> void:
 	var available: Array = graph.edges.get(current_id, [])
 	for node_data in model.get("nodes", []):
 		var button := Button.new()
+		button.focus_mode = Control.FOCUS_ALL
 		var id := StringName(node_data.get("id", ""))
 		button.text = _label_for(node_data)
 		button.position = margin + Vector2(float(node_data.get("depth", 0)) * node_spacing.x, float(node_data.get("lane", 0)) * node_spacing.y)
@@ -39,6 +40,13 @@ func rebuild() -> void:
 		button.pressed.connect(func(): route_selected.emit(id))
 		add_child(button)
 		_buttons[id] = button
+
+func focus_first_available() -> void:
+	for id in _buttons.keys():
+		var button: Button = _buttons[id]
+		if not button.disabled:
+			button.grab_focus()
+			return
 
 func update_state(current: StringName, visited_rooms: Array[StringName], cleared_rooms: Dictionary) -> void:
 	current_id = current
