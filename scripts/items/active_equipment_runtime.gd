@@ -18,6 +18,21 @@ func equip(definition: ActiveEquipmentDefinition) -> void:
 		equipment_equipped.emit(equipment.id)
 		equipment_charges_changed.emit(equipment.id, charges_remaining, equipment.charges)
 
+func snapshot() -> Dictionary:
+	return {
+		"equipment_id": String(equipment.id) if equipment != null else "",
+		"cooldown_remaining": cooldown_remaining,
+		"charges_remaining": charges_remaining,
+	}
+
+func restore_state(data: Dictionary) -> void:
+	if equipment == null or data.is_empty():
+		return
+	cooldown_remaining = clampf(float(data.get("cooldown_remaining", 0.0)), 0.0, equipment.cooldown)
+	charges_remaining = clampi(int(data.get("charges_remaining", equipment.charges)), 0, equipment.charges) if equipment.charges > 0 else 0
+	equipment_cooldown_changed.emit(equipment.id, cooldown_remaining, equipment.cooldown)
+	equipment_charges_changed.emit(equipment.id, charges_remaining, equipment.charges)
+
 func _process(delta: float) -> void:
 	if equipment == null or cooldown_remaining <= 0.0:
 		return

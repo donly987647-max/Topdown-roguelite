@@ -25,16 +25,73 @@ jobs:
           sudo ln -sf "$BIN" /usr/local/bin/godot
           godot --version
       - name: Import project and parse resources
-        run: godot --headless --editor --path . --quit-after 3
+        run: bash tools/run_godot_check.sh - --headless --editor --path . --quit-after 8
+      - name: Run entry-scene smoke
+        run: bash tools/run_godot_check.sh - --headless --path . --quit-after 120
       - name: Run GDD runtime smoke
-        run: godot --headless --path . --script res://tools/gdd_runtime_smoke.gd
+        run: 'bash tools/run_godot_check.sh "GDD runtime smoke: PASS" --headless --path . --script res://tools/gdd_runtime_smoke.gd'
+      - name: Run weapon compatibility smoke
+        run: bash tools/run_godot_check.sh "WEAPON_COMPATIBILITY_SMOKE_OK" --headless --path . --script res://tools/weapon_compatibility_smoke.gd
+      - name: Run active equipment expansion smoke
+        run: bash tools/run_godot_check.sh "ACTIVE_EQUIPMENT_EXPANSION_SMOKE_OK" --headless --path . --script res://tools/active_equipment_expansion_smoke.gd
+      - name: Run settings smoke
+        run: bash tools/run_godot_check.sh "SETTINGS_SMOKE_OK" --headless --path . --script res://tools/settings_smoke.gd
       - name: Run run-system smoke
-        run: godot --headless --path . --script res://tools/run_system_smoke.gd
+        run: 'bash tools/run_godot_check.sh "run_system_smoke: PASS" --headless --path . --script res://tools/run_system_smoke.gd'
       - name: Run run-lifecycle smoke
-        run: godot --headless --path . --script res://tools/run_lifecycle_smoke.gd
+        run: bash tools/run_godot_check.sh "RUN_LIFECYCLE_SMOKE_OK" --headless --path . --script res://tools/run_lifecycle_smoke.gd
       - name: Run room-scene smoke
-        run: godot --headless --path . --script res://tools/room_scene_smoke.gd
+        run: bash tools/run_godot_check.sh "ROOM_SCENE_SMOKE_OK" --headless --path . --script res://tools/room_scene_smoke.gd
       - name: Run P2 integration smoke
-        run: godot --headless --path . --script res://tools/p2_integration_smoke.gd
+        run: bash tools/run_godot_check.sh "P2_INTEGRATION_SMOKE_OK" --headless --path . --script res://tools/p2_integration_smoke.gd
       - name: Run P2 frontend and GR-01 smoke
-        run: godot --headless --path . --script res://tools/p2_frontend_boss_smoke.gd
+        run: bash tools/run_godot_check.sh "P2_FRONTEND_BOSS_SMOKE_OK" --headless --path . --script res://tools/p2_frontend_boss_smoke.gd
+      - name: Install Windows export template
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -fL "https://github.com/godotengine/godot/releases/download/4.7.1-stable/Godot_v4.7.1-stable_export_templates.tpz" -o /tmp/templates.tpz
+          rm -rf /tmp/godot_export_templates
+          mkdir -p /tmp/godot_export_templates
+          unzip -q /tmp/templates.tpz -d /tmp/godot_export_templates
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.7.1.stable"
+          cp -R /tmp/godot_export_templates/templates/. "$HOME/.local/share/godot/export_templates/4.7.1.stable/"
+          test -f "$HOME/.local/share/godot/export_templates/4.7.1.stable/windows_debug_x86_64.exe"
+      - name: Export Windows playtest
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p builds/windows
+          godot --headless --path . --export-debug "Windows Playtest" builds/windows/LAST_MAGAZINE_Playtest.exe
+          test -s builds/windows/LAST_MAGAZINE_Playtest.exe
+          file builds/windows/LAST_MAGAZINE_Playtest.exe
+          sha256sum builds/windows/LAST_MAGAZINE_Playtest.exe | tee builds/windows/SHA256SUMS.txt
+          cat > builds/windows/PLAYTEST_README.txt <<'EOF'
+          LAST MAGAZINE — INTERMEDIATE PLAYTEST
+
+          This is a mid-development check build, not a release candidate.
+
+          Priority checks:
+          1. Main menu -> character select -> Zone 1 run
+          2. Movement / aim / shooting / dash / reload feel
+          3. Reward selection and route progression
+          4. 6x5 inventory drag/drop, rotation and power-network readability
+          5. Q active equipment vs F character skill
+          6. Zone 1 enemy readability and combat pacing
+          7. Shop / crafting / medical interactions
+          8. GR-01 boss flow
+          9. Settings and save/continue
+
+          Expected incomplete areas:
+          - Production pixel art, VFX and audio
+          - Final balance and 20-minute pacing
+          - Full accessibility consumers and key rebinding
+          - Zones 2-4, hub/meta progression and Steam integration
+          EOF
+      - name: Upload Windows playtest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LAST-MAGAZINE-Windows-Playtest
+          path: builds/windows/
+          if-no-files-found: error
+          retention-days: 14

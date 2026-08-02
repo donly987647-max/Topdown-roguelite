@@ -1,5 +1,5 @@
 class_name RoomEntryCameraController
-extends Node
+extends RefCounted
 
 @export var tile_world_size: float = 32.0
 

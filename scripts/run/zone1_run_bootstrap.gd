@@ -21,12 +21,15 @@ var owned_rewards: Array = []
 var character_catalog := CharacterCatalog.new()
 var character_runtime := CharacterRunRuntime.new()
 var starter_weapon_runtime := StarterWeaponRuntime.new()
+var reward_catalog_offers: Array[RewardOffer] = []
 
 var room_runtime: RoomSceneRuntime
 var coordinator: RunSceneCoordinator
 var facilities: RunFacilityCoordinator
 var devour_runtime: DevourRoomRuntime
 var abilities: CharacterAbilityRuntime
+var inventory: RunInventoryRuntime
+var equipment: RunEquipmentRuntime
 var ui_root: Node
 
 func _ready() -> void:
@@ -45,8 +48,8 @@ func _build_runtime() -> void:
 	var weapon := get_weapon_controller()
 	var content := Zone1ContentCatalog.new()
 	content.register_into(template_registry, threat_planner, spawn_registry)
-	var rewards := Zone1RewardCatalog.new().offers()
-	run_state.reward_selector.set_pool(rewards)
+	reward_catalog_offers = Zone1RewardCatalog.new().offers()
+	run_state.reward_selector.set_pool(reward_catalog_offers)
 	run_state.set_build_tags(_derive_build_tags(weapon))
 	room_runtime = RoomSceneRuntime.new()
 	room_runtime.name = "RoomSceneRuntime"
@@ -60,7 +63,16 @@ func _build_runtime() -> void:
 	facilities.name = "RunFacilityCoordinator"
 	add_child(facilities)
 	facilities.configure(run_state, wallet)
-	facilities.set_shop_offers(rewards.slice(0, mini(5, rewards.size())))
+	facilities.set_shop_offers(_shop_offer_subset())
+	inventory = RunInventoryRuntime.new()
+	inventory.name = "RunInventoryRuntime"
+	add_child(inventory)
+	inventory.configure(backpack, weapon, owned_rewards, reward_catalog_offers)
+	inventory.build_changed.connect(_on_inventory_build_changed)
+	equipment = RunEquipmentRuntime.new()
+	equipment.name = "RunEquipmentRuntime"
+	add_child(equipment)
+	equipment.configure(inventory, player, weapon)
 	if player != null:
 		MagazineRuntime.attach_to_player(player)
 	if weapon != null:
@@ -85,10 +97,13 @@ func start_new_run(seed: int = 0, character_id: StringName = &"mara") -> bool:
 		return false
 	if not starter_weapon_runtime.apply(get_weapon_controller(), character.starting_frame_id):
 		return false
+	inventory.configure(backpack, get_weapon_controller(), owned_rewards, reward_catalog_offers, character.starting_frame_id)
 	if not _configure_character_abilities(character):
 		return false
 	context["backpack_state"] = backpack
 	context["character_ability_runtime"] = abilities
+	context["inventory"] = inventory
+	context["equipment_runtime"] = equipment
 	run_state.set_build_tags(_derive_build_tags(get_weapon_controller()))
 	var generator := RunGraphGenerator.new()
 	var graph := generator.generate(seed)
@@ -113,15 +128,20 @@ func continue_run() -> bool:
 	var weapon := get_weapon_controller()
 	if weapon == null:
 		return false
-	if weapon.weapon_build == null:
-		var saved_weapon: Dictionary = run_state.run_context.get("_restored_weapon_state", {})
-		var saved_frame := StringName(saved_weapon.get("frame_id", String(character.starting_frame_id)))
-		if not starter_weapon_runtime.apply(weapon, saved_frame):
-			return false
+	var saved_weapon: Dictionary = run_state.run_context.get("_restored_weapon_state", {})
+	var saved_frame := StringName(saved_weapon.get("frame_id", String(character.starting_frame_id)))
+	if saved_frame == &"":
+		saved_frame = character.starting_frame_id
+	if not starter_weapon_runtime.apply(weapon, saved_frame):
+		return false
+	inventory.configure(backpack, weapon, owned_rewards, reward_catalog_offers, character.starting_frame_id)
+	inventory.restore_equipment(saved_weapon)
 	if not _configure_character_abilities(character):
 		return false
 	run_state.run_context["backpack_state"] = backpack
 	run_state.run_context["character_ability_runtime"] = abilities
+	run_state.run_context["inventory"] = inventory
+	run_state.run_context["equipment_runtime"] = equipment
 	save_service.apply_runtime_state(run_state.run_context)
 	run_state.set_build_tags(_derive_build_tags(weapon))
 	var node := run_state.current_node()
@@ -157,7 +177,7 @@ func get_weapon_controller() -> WeaponController:
 	return weapon
 
 func _build_run_context() -> Dictionary:
-	return {"wallet":wallet, "player":get_player(), "weapon_controller":get_weapon_controller(), "backpack_state":backpack, "owned_rewards":owned_rewards, "character_ability_runtime":abilities}
+	return {"wallet":wallet, "player":get_player(), "weapon_controller":get_weapon_controller(), "backpack_state":backpack, "owned_rewards":owned_rewards, "character_ability_runtime":abilities, "inventory":inventory, "equipment_runtime":equipment}
 
 func _configure_character_abilities(character: CharacterDefinition) -> bool:
 	if abilities != null and is_instance_valid(abilities):
@@ -191,6 +211,10 @@ func _on_checkpoint_reward_claimed(_offer: RewardOffer) -> void:
 
 func _on_run_finished(_success: bool) -> void:
 	clear_checkpoint()
+
+func _on_inventory_build_changed(_build: WeaponBuild) -> void:
+	run_state.set_build_tags(_derive_build_tags(get_weapon_controller()))
+	_refresh_combat_hud()
 
 func _setup_ui() -> void:
 	var parent := get_node_or_null(ui_parent_path)
@@ -236,4 +260,14 @@ func _derive_build_tags(weapon: WeaponController) -> PackedStringArray:
 		for tag in part.tags:
 			if tag not in result:
 				result.append(tag)
+	return result
+
+func _shop_offer_subset() -> Array[RewardOffer]:
+	var preferred_ids := [&"field_patch", &"shield_cell", &"feed_ramp", &"cold_sink", &"precision_barrel", &"extended_mag", &"fire_core", &"burst_carbine"]
+	var result: Array[RewardOffer] = []
+	for preferred_id in preferred_ids:
+		for offer in reward_catalog_offers:
+			if offer != null and offer.id == preferred_id:
+				result.append(offer)
+				break
 	return result

@@ -50,7 +50,7 @@ func _calculate_depths(graph: RunGraph) -> Dictionary:
 	depths[graph.start_id] = 0
 	var queue: Array[StringName] = [graph.start_id]
 	while not queue.is_empty():
-		var current := queue.pop_front()
+		var current: StringName = queue.pop_front()
 		var next_depth := int(depths[current]) + 1
 		for next_id in graph.edges.get(current, []):
 			if not depths.has(next_id) or next_depth < int(depths[next_id]):

@@ -19,7 +19,7 @@ func add_node(node: RoomNodeDefinition) -> bool:
 	edges[node.id] = []
 	return true
 
-func connect(from_id: StringName, to_id: StringName) -> bool:
+func connect_rooms(from_id: StringName, to_id: StringName) -> bool:
 	if not nodes.has(from_id) or not nodes.has(to_id) or from_id == to_id:
 		return false
 	var list: Array = edges.get(from_id, [])
@@ -43,11 +43,13 @@ func has_path(from_id: StringName, to_id: StringName) -> bool:
 	var visited: Dictionary = {}
 	var queue: Array[StringName] = [from_id]
 	while not queue.is_empty():
-		var current := queue.pop_front()
+		var current: StringName = queue.pop_front()
 		if visited.has(current):
 			continue
 		visited[current] = true
-		for next_id in edges.get(current, []):
+		var adjacent: Array = edges.get(current, [])
+		for next_value in adjacent:
+			var next_id := StringName(next_value)
 			if next_id == to_id:
 				return true
 			if not visited.has(next_id):

@@ -55,6 +55,9 @@ var _is_reloading := false
 var _overheat_left := 0.0
 var _overheated := false
 var _build_stats: Dictionary = {}
+var _base_runtime_stats: Dictionary = {}
+var _equipment_modifiers: Dictionary = {}
+var _character_modifiers: Dictionary = {}
 var _perfect_reload_damage_bonus := 1.0
 var _perfect_reload_force_crit := false
 var _burst_remaining := 0
@@ -75,7 +78,10 @@ var _absorption_shield_generated := 0.0
 
 func _ready() -> void:
 	if weapon_build != null:
-		apply_build(weapon_build)
+		if weapon_build.is_complete():
+			apply_build(weapon_build)
+		else:
+			apply_frame_build(weapon_build)
 	ammo = magazine_capacity
 	reserve_ammo = maxi(0, starting_reserve_ammo)
 	_emit_ammo()
@@ -86,22 +92,66 @@ func _ready() -> void:
 func apply_build(build: WeaponBuild) -> bool:
 	if build == null or not build.is_complete() or not build.is_compatible():
 		return false
+	return _apply_computed_build(build)
+
+func apply_frame_build(build: WeaponBuild) -> bool:
+	if build == null or build.frame == null:
+		return false
+	return _apply_computed_build(build)
+
+func _apply_computed_build(build: WeaponBuild) -> bool:
 	weapon_build = build
 	_build_stats = build.computed_stats()
-	damage = float(_build_stats.get("damage", damage))
 	var interval := maxf(0.01, float(_build_stats.get("fire_interval", 1.0 / maxf(rounds_per_second, 0.01))))
-	rounds_per_second = 1.0 / interval
-	magazine_capacity = maxi(1, int(round(_build_stats.get("magazine_size", magazine_capacity))))
-	reload_duration = maxf(0.05, float(_build_stats.get("reload_time", reload_duration)))
-	uses_heat = bool(_build_stats.get("uses_heat", uses_heat))
-	heat_per_shot = maxf(0.0, float(_build_stats.get("heat_per_shot", heat_per_shot)))
-	if _build_stats.has("projectile_speed"):
-		projectile_speed = maxf(1.0, float(_build_stats["projectile_speed"]))
-	if _build_stats.has("spread"):
-		spread_degrees = maxf(0.0, float(_build_stats["spread"]))
+	_base_runtime_stats = {
+		"damage": float(_build_stats.get("damage", damage)),
+		"rounds_per_second": 1.0 / interval,
+		"magazine_capacity": maxi(1, int(round(_build_stats.get("magazine_size", magazine_capacity)))),
+		"reload_duration": maxf(0.05, float(_build_stats.get("reload_time", reload_duration))),
+		"uses_heat": bool(_build_stats.get("uses_heat", uses_heat)),
+		"heat_per_shot": maxf(0.0, float(_build_stats.get("heat_per_shot", heat_per_shot))),
+		"heat_cool_rate": maxf(0.0, float(_build_stats.get("heat_cool_rate", heat_cool_rate))),
+		"projectile_speed": maxf(1.0, float(_build_stats.get("projectile_speed", projectile_speed))),
+		"spread_degrees": maxf(0.0, float(_build_stats.get("spread", spread_degrees))),
+	}
+	_recompute_runtime_stats()
 	_reset_frame_state()
 	build_applied.emit(build)
 	return true
+
+func set_equipment_modifiers(modifiers: Dictionary) -> void:
+	_equipment_modifiers = modifiers.duplicate(true)
+	_recompute_runtime_stats()
+
+func set_character_modifiers(modifiers: Dictionary) -> void:
+	_character_modifiers = modifiers.duplicate(true)
+	_recompute_runtime_stats()
+
+func _recompute_runtime_stats() -> void:
+	if _base_runtime_stats.is_empty():
+		return
+	var modifiers := _combined_runtime_modifiers()
+	damage = float(_base_runtime_stats["damage"]) * maxf(0.0, float(modifiers.get("damage_mult", 1.0)))
+	rounds_per_second = float(_base_runtime_stats["rounds_per_second"]) * maxf(0.01, float(modifiers.get("fire_rate_mult", 1.0)))
+	var capacity := float(_base_runtime_stats["magazine_capacity"]) * maxf(0.01, float(modifiers.get("magazine_mult", 1.0))) + float(modifiers.get("magazine_add", 0.0))
+	magazine_capacity = maxi(1, int(round(capacity)))
+	reload_duration = maxf(0.05, float(_base_runtime_stats["reload_duration"]) / maxf(0.01, float(modifiers.get("reload_speed_mult", 1.0))))
+	uses_heat = bool(_base_runtime_stats["uses_heat"])
+	heat_per_shot = maxf(0.0, float(_base_runtime_stats["heat_per_shot"]) * maxf(0.0, float(modifiers.get("heat_per_shot_mult", 1.0))))
+	heat_cool_rate = maxf(0.0, float(_base_runtime_stats["heat_cool_rate"]) * maxf(0.0, float(modifiers.get("heat_cool_rate_mult", 1.0))))
+	projectile_speed = maxf(1.0, float(_base_runtime_stats["projectile_speed"]) * maxf(0.01, float(modifiers.get("projectile_speed_mult", 1.0))))
+	spread_degrees = maxf(0.0, float(_base_runtime_stats["spread_degrees"]) * maxf(0.0, float(modifiers.get("spread_mult", 1.0))))
+	ammo = mini(ammo, magazine_capacity)
+	_emit_ammo()
+
+func _combined_runtime_modifiers() -> Dictionary:
+	var result := _character_modifiers.duplicate(true)
+	for key in _equipment_modifiers.keys():
+		if String(key).ends_with("_mult"):
+			result[key] = float(result.get(key, 1.0)) * float(_equipment_modifiers[key])
+		else:
+			result[key] = float(result.get(key, 0.0)) + float(_equipment_modifiers[key])
+	return result
 
 func _process(delta: float) -> void:
 	_fire_cooldown = maxf(0.0, _fire_cooldown - delta)
@@ -174,6 +224,7 @@ func _fire_projectile_round(cooldown_override: float = -1.0, damage_multiplier: 
 	for key in payload_overrides.keys():
 		payload[key] = payload_overrides[key]
 	_apply_frame_payload(payload)
+	_apply_runtime_payload_modifiers(payload)
 	if _perfect_reload_force_crit:
 		payload["critical_chance"] = 1.0
 	var pellet_count := WeaponEffectResolver.pellet_count(weapon_build, _build_stats)
@@ -210,6 +261,13 @@ func _apply_frame_payload(payload: Dictionary) -> void:
 			payload["chain_range"] = maxf(260.0, float(payload.get("chain_range", 0.0)))
 		&"sawblade_caster":
 			payload["ricochet"] = maxi(3, int(payload.get("ricochet", 0)))
+
+func _apply_runtime_payload_modifiers(payload: Dictionary) -> void:
+	var modifiers := _combined_runtime_modifiers()
+	payload["critical_chance"] = clampf(float(payload.get("critical_chance", 0.0)) + float(modifiers.get("critical_chance_add", 0.0)), 0.0, 1.0)
+	payload["critical_multiplier"] = maxf(1.0, float(payload.get("critical_multiplier", 2.0)) * maxf(0.0, float(modifiers.get("critical_damage_mult", 1.0))))
+	payload["explosion_radius"] = maxf(0.0, float(payload.get("explosion_radius", 0.0)) * maxf(0.0, float(modifiers.get("explosion_radius_mult", 1.0))))
+	payload["chain_count"] = maxi(0, int(payload.get("chain_count", 0)) + int(round(float(modifiers.get("chain_count_add", 0.0)))))
 
 func _spawn_projectile(direction: Vector2, payload: Dictionary, damage_multiplier: float, position_offset: Vector2 = Vector2.ZERO) -> void:
 	var projectile := projectile_scene.instantiate() as Projectile
@@ -375,24 +433,26 @@ func _fire_compression_hammer() -> bool:
 	for candidate in get_tree().get_nodes_in_group("enemy"):
 		if not (candidate is Node2D) or not candidate.has_method("take_damage"):
 			continue
-		var offset := candidate.global_position - origin
+		var enemy := candidate as Node2D
+		var offset: Vector2 = enemy.global_position - origin
 		if offset.length() > 125.0 or offset.length_squared() <= 0.01:
 			continue
 		if forward.dot(offset.normalized()) < 0.42:
 			continue
 		var amount := damage * _perfect_reload_damage_bonus * _devour_multiplier
-		candidate.take_damage(amount, forward * 620.0)
+		enemy.take_damage(amount, forward * 620.0)
 		hit_any = true
 	for node in get_tree().get_nodes_in_group("enemy_projectile"):
 		if not (node is EnemyProjectile) or not is_instance_valid(node):
 			continue
-		if origin.distance_squared_to(node.global_position) > 135.0 * 135.0:
+		var enemy_projectile := node as EnemyProjectile
+		if origin.distance_squared_to(enemy_projectile.global_position) > 135.0 * 135.0:
 			continue
-		var reflected_direction := origin.direction_to(node.global_position)
-		var reflected_damage := node.damage * 1.5
-		node.queue_free()
+		var reflected_direction := origin.direction_to(enemy_projectile.global_position)
+		var reflected_damage: float = enemy_projectile.damage * 1.5
+		enemy_projectile.queue_free()
 		var payload := {"owner": _owner_actor(), "weapon_controller": self, "faction": &"player", "pierce": 0, "ricochet": 0}
-		_spawn_projectile(reflected_direction, payload, reflected_damage / maxf(damage, 0.01), node.global_position - muzzle.global_position)
+		_spawn_projectile(reflected_direction, payload, reflected_damage / maxf(damage, 0.01), enemy_projectile.global_position - muzzle.global_position)
 		hit_any = true
 	_consume_one_shot_bonuses()
 	_play_muzzle_flash()
@@ -459,7 +519,7 @@ func _payload_has_devour() -> bool:
 	return bool(payload.get("devour", false))
 
 func _read_health(receiver: Node) -> float:
-	var value := receiver.get("health")
+	var value: Variant = receiver.get("health")
 	if value is float or value is int:
 		return maxf(0.0, float(value))
 	return -1.0
@@ -544,8 +604,6 @@ func _is_in_perfect_reload_window() -> bool:
 	return progress >= perfect_reload_window_start and progress <= perfect_reload_window_end
 
 func _update_heat(delta: float) -> void:
-	if not uses_heat:
-		return
 	if _overheated:
 		_overheat_left -= delta
 		if _overheat_left <= 0.0:
@@ -553,6 +611,8 @@ func _update_heat(delta: float) -> void:
 			heat = 0.0
 			heat_changed.emit(heat, max_heat)
 			overheat_recovered.emit()
+			return
+	if not uses_heat:
 		return
 	if heat > 0.0 and not Input.is_action_pressed("fire"):
 		heat = maxf(0.0, heat - heat_cool_rate * delta)
@@ -564,6 +624,18 @@ func _begin_overheat() -> void:
 	_burst_remaining = 0
 	_charge_time = 0.0
 	overheated.emit(overheat_lock_duration)
+
+func force_overheat(duration: float = -1.0) -> void:
+	if duration > 0.0:
+		_overheat_left = duration
+	else:
+		_overheat_left = overheat_lock_duration
+	_overheated = true
+	heat = max_heat
+	_burst_remaining = 0
+	_charge_time = 0.0
+	heat_changed.emit(heat, max_heat)
+	overheated.emit(_overheat_left)
 
 func _emit_ammo() -> void:
 	ammo_changed.emit(ammo, magazine_capacity, -1 if infinite_reserve_ammo else reserve_ammo)

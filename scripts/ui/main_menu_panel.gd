@@ -3,15 +3,18 @@ extends Control
 
 signal new_run_requested
 signal continue_requested
+signal settings_requested
 signal quit_requested
 
 @onready var new_run_button: Button = $Panel/VBox/NewRun
 @onready var continue_button: Button = $Panel/VBox/Continue
+@onready var settings_button: Button = $Panel/VBox/Settings
 @onready var quit_button: Button = $Panel/VBox/Quit
 
 func _ready() -> void:
 	new_run_button.pressed.connect(func(): new_run_requested.emit())
 	continue_button.pressed.connect(func(): continue_requested.emit())
+	settings_button.pressed.connect(func(): settings_requested.emit())
 	quit_button.pressed.connect(func(): quit_requested.emit())
 	visibility_changed.connect(_on_visibility_changed)
 	call_deferred("focus_default")

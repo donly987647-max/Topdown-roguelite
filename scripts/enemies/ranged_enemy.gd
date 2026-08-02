@@ -95,7 +95,7 @@ func _begin_telegraph(direction: Vector2) -> void:
 
 func _update_telegraph_visual() -> void:
 	var length := preferred_distance * 1.35
-	telegraph_line.points = PackedVector2Array(Vector2(30, 0), Vector2(length, 0))
+	telegraph_line.points = PackedVector2Array([Vector2(30, 0), Vector2(length, 0)])
 	var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.025)
 	telegraph_line.modulate = Color(1.0, 0.35 + pulse * 0.25, 0.2, 0.55 + pulse * 0.35)
 

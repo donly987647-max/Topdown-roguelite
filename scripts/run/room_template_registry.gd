@@ -35,8 +35,8 @@ func choose_for_node(node: RoomNodeDefinition, zone_id: StringName, rng: RandomN
 	if candidates.is_empty():
 		return null
 	candidates.sort_custom(func(a: RoomTemplateDefinition, b: RoomTemplateDefinition):
-		var a_score := abs(a.recommended_threat - node.difficulty) + int(usage_counts.get(a.id, 0)) * 2
-		var b_score := abs(b.recommended_threat - node.difficulty) + int(usage_counts.get(b.id, 0)) * 2
+		var a_score: int = absi(a.recommended_threat - node.difficulty) + int(usage_counts.get(a.id, 0)) * 2
+		var b_score: int = absi(b.recommended_threat - node.difficulty) + int(usage_counts.get(b.id, 0)) * 2
 		return a_score < b_score
 	)
 	var shortlist_count := mini(3, candidates.size())
