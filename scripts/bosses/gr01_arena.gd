@@ -1,11 +1,11 @@
 class_name GR01Arena
 extends Node2D
 
-@export var boss_path: NodePath = NodePath("GR01Boss")
 @export var arena_center := Vector2(544, 352)
 @export var base_half_size := Vector2(512, 320)
 
-@onready var boss: GR01Boss = get_node_or_null(boss_path) as GR01Boss
+var boss: GR01Boss
+
 @onready var left_wall: StaticBody2D = $CompressionWalls/Left
 @onready var right_wall: StaticBody2D = $CompressionWalls/Right
 @onready var top_wall: StaticBody2D = $CompressionWalls/Top
@@ -17,9 +17,14 @@ var compression_factor := 1.0
 var conveyor_direction := Vector2.RIGHT
 var safe_zone_index := 0
 
-func _ready() -> void:
-	if boss == null:
+func on_enemy_spawned(enemy: Node, enemy_id: StringName) -> void:
+	if enemy_id == &"gr01_proto" and enemy is GR01Boss:
+		bind_boss(enemy as GR01Boss)
+
+func bind_boss(value: GR01Boss) -> void:
+	if value == null or boss == value:
 		return
+	boss = value
 	boss.arena_compression_requested.connect(_on_compression_requested)
 	boss.conveyor_direction_changed.connect(_on_conveyor_direction_changed)
 	boss.falling_block_warning.connect(_on_falling_block_warning)
