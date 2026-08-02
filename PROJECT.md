@@ -28,7 +28,7 @@ Do not request final gameplay feedback until the GDD is fully represented and au
 
 **Current milestone:** P2 one-zone integrated vertical slice with frontend, combat HUD, facilities, live character kits and GR-01 settlement.
 
-**Current build is NOT GDD-complete and is NOT marked runtime-validated until the observed Godot 4.7.1 CI run succeeds.**
+**Current build is NOT GDD-complete. The entry scene and full headless suite pass locally under Godot 4.7.1; GDD rows remain unpromoted until the repaired workflow also succeeds on GitHub Actions.**
 
 ### Default executable flow
 `project.godot` launches `scenes/main/RunMain.tscn`.
@@ -128,13 +128,15 @@ Shell-07 remains a locked secret catalog entry.
 - Full arbitrary assembled-part persistence, migration fixtures, corruption recovery UX and Steam Cloud policy remain incomplete.
 
 ### Validation automation
-- `.github/workflows/godot-4-7-validation.yml` installs canonical Godot 4.7.1, imports/parses the project headlessly, then runs the smoke suite.
+- `.github/workflows/godot-4-7-validation.yml` installs canonical Godot 4.7.1, imports/parses the project, loads the default entry scene, then runs the six-script smoke suite.
+- `tools/run_godot_check.sh` now rejects non-zero exits, timeouts, parser/compiler/script/runtime error logs and missing success markers. This prevents a failed GDScript dependency from printing a misleading `PASS` or hanging until the job timeout.
 - `p2_frontend_boss_smoke.gd` now covers frontend/HUD/facility scene loading, runtime gamepad actions, character starters, all Zone 1 room resources, GR-01 phase/core behavior, facility reward rules, GR-01 mandatory/choice settlement and Rex debt semantics.
 - To obtain an observable pull-request-triggered run, validation branch `validation/godot-p2-batch` and **PR #8** were opened.
-- Observed Actions run: **Godot 4.7.1 Validation #91 / run id 30729733320**. At the time of this document update it is still queued; therefore none of the above systems are promoted to VALIDATED yet.
+- Observed Actions run **#91 / run id 30729733320** was cancelled after 20 minutes: `weapon_build.gd` failed Variant type inference, `RunGraph.connect()` conflicted with `Object.connect()`, additional strict-warning parser errors were exposed, and the run-system script then stayed alive.
+- The parser/type errors, ranged telegraph constructor error, camera utility leak and run-system assertion flaw are repaired on `agent/fix-godot-validation`. Local Godot 4.7.1 import, entry-scene smoke and all six scripted smokes pass with the strict wrapper. Remote Actions confirmation is still required before promotion to `VALIDATED`.
 
 ## Immediate Gaps / Next Work
-1. Inspect PR #8 Godot 4.7.1 run #91 as soon as it starts; repair every parser/runtime/smoke failure and re-run until green.
+1. Publish `agent/fix-godot-validation`, obtain a green Godot 4.7.1 Actions run, then synchronize the CI result in this handoff and the coverage matrix.
 2. Complete the remaining character fidelity edge cases, especially Mara incompatible-part power penalty and Rex reward-slot selection polish.
 3. Finish Zone 1 P4 content target: at least eight distinct enemies, production hazard behavior, art/animation/VFX/audio and encounter pacing.
 4. Complete inventory/backpack Control UX and make acquired frame/barrel/magazine/core/passive/active rewards modify the live build rather than only generic ownership records where still applicable.
@@ -156,6 +158,7 @@ Shell-07 remains a locked secret catalog entry.
 - 2026-08-02: Runtime controller mappings are registered by `GameInputSetup` while retaining keyboard/mouse support.
 - 2026-08-02: Boss completion is gated by mandatory GR-01 settlement and the backpack/max-HP choice.
 - 2026-08-02: No CI/code status is called VALIDATED until an observed Godot 4.7.1 workflow succeeds.
+- 2026-08-02: Headless checks must fail on Godot error logs and require a per-suite success marker; process exit code alone is insufficient.
 
 ## Continuation Protocol
 1. Read `PROJECT.md`.
@@ -187,4 +190,11 @@ Shell-07 remains a locked secret catalog entry.
 - Added Rex debt/defective-shop economy and character-aware medical/crafting behavior.
 - Added GR-01 rotating press, phase telegraphs, unsafe safe-zone mechanic, minion cap and complete GDD reward-settlement structure.
 - Upgraded save to v4 including guard/debt/character ability and pending reward state.
-- Opened PR #8 solely to obtain observable Godot 4.7.1 pull-request validation; run #91 remains queued at this snapshot.
+- Opened PR #8 solely to obtain observable Godot 4.7.1 pull-request validation; run #91 later failed parser checks and was cancelled on timeout.
+
+### 2026-08-02 — Godot 4.7.1 validation repair
+- Renamed the graph edge method to avoid `Object.connect()` override conflicts and added strict Variant/typed-array conversions required by Godot 4.7.1.
+- Repaired ranged-enemy telegraph construction and converted the stateless room-entry camera helper to `RefCounted`, eliminating the default-scene shutdown leak.
+- Corrected the passive multiplier smoke expectation and changed the run-system smoke to aggregate failures before choosing its exit status.
+- Added strict error/timeout/success-marker enforcement to every headless check.
+- Local result: project import, default entry scene and all six scripted smoke suites pass under `4.7.1.stable.official.a13da4feb`; remote Actions confirmation pending.

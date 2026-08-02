@@ -32,13 +32,13 @@ func generate(seed_value: int = 0) -> RunGraph:
 			layer.append(id)
 		for from_id in previous:
 			for to_id in layer:
-				graph.connect(from_id, to_id)
+				graph.connect_rooms(from_id, to_id)
 		previous = layer
 	var boss := _make_node(&"boss", &"boss", main_depth + 1, &"forced")
 	graph.add_node(boss)
 	graph.boss_id = boss.id
 	for from_id in previous:
-		graph.connect(from_id, boss.id)
+		graph.connect_rooms(from_id, boss.id)
 	return graph
 
 func validate(graph: RunGraph) -> Dictionary:

@@ -30,10 +30,10 @@
 | 4 | 세계관 | **NOT STARTED** | 서사/환경 전달 콘텐츠 미구현 |
 | 5 | 전체 게임 구조 | **PARTIAL** | 기본 실행 Scene이 Main Menu→Character Select→Zone1 Run→GR-01→Result 흐름으로 변경. 4구역/허브/메타 미완 |
 | 6 | 게임 루프 | **PARTIAL** | 실제 방 로딩, 위협도 wave, 3택 보상, 경로 선택, 시설, 보스 성공/실패 결과, room-entry checkpoint 기반 존재 |
-| 7 | 플레이어 조작 | **PARTIAL** | 키보드/마우스·Android 기초. 게임패드/키 재지정 미완 |
+| 7 | 플레이어 조작 | **PARTIAL** | 키보드/마우스·Android 기초와 런타임 게임패드 이동/조준/사격/액션/메뉴 포커스 기반. 키 재지정·실기기 QA 미완 |
 | 8 | 플레이어 이동 | **PARTIAL** | 기본 260 px/s, 가감속을 GDD 0.08/0.06초 목표에 맞춘 기반. 무기별 이동 페널티 등 미완 |
 | 9 | 회피 구르기 | **PARTIAL** | 대시/i-frame 기반 존재; 정밀 회피/낙하 방지/QA 미완 |
-| 10 | 생명력과 방어 | **PARTIAL** | HP/피격/사망/임시 보호막, 사망→런 실패 연결. 방어판 정식 시스템/UI 미완 |
+| 10 | 생명력과 방어 | **PARTIAL** | HP/가드/임시 보호막 순서, 사망→런 실패, HUD 표시와 저장/복원 기반. 피격 후 연출·반복 QA 미완 |
 | 11 | 조준과 사격 | **PARTIAL** | projectile payload, 관통/도탄/유도/치명타/폭발/연쇄/swept collision 기반. QA/피드백 미완 |
 | 12 | 재장전 시스템 | **PARTIAL** | 예비탄/완벽 재장전/취소/상태형 탄창, Reactive 방 리셋 존재. UI/QA 미완 |
 | 13 | 과열 시스템 | **PARTIAL** | heat/cool/overheat와 Rotary/Beam 연동. 밸런스/QA 미완 |
@@ -48,13 +48,13 @@
 | 22 | 액티브 장비 | **PARTIAL** | 쿨다운/충전/활성 payload 기반. 20종 실제 효과/입력/UI 미완 |
 | 23 | 등급과 희귀도 | **PARTIAL** | 보상 rarity weighting/표시/경로 보너스 기반. 전체 드랍표·아트 규칙 미완 |
 | 24 | 시너지 시스템 | **PARTIAL** | 방향성 네트워크 + explicit/tag-tier 실행 기반. 50종 실전 시너지 미완 |
-| 25 | 캐릭터 | **PARTIAL** | Mara/Kane/Nova/Rex + 잠금 Shell-07 카탈로그, 선택 UI, HP/속도/시작 고철/시작 프레임 실제 적용. 개별 패시브·액티브/해금 로직 미완 |
+| 25 | 캐릭터 | **PARTIAL** | Mara/Kane/Nova/Rex의 시작 능력치·무기와 패시브/액티브 런타임, 선택 UI, 잠금 Shell-07 카탈로그 기반. 일부 세부 fidelity·해금·밸런스 QA 미완 |
 | 26 | 방과 맵 생성 | **PARTIAL** | 수작업 템플릿, 그래프 조합, 32px 타일, 실제 Zone1 `.tscn` 11종, 맵 UI/분기/반복 억제. 120개/비밀길 미완 |
 | 27 | 방 종류 | **PARTIAL** | combat/elite/shop/crafting/medical/event/rest/start/boss 기반과 출구 lifecycle 존재. 비밀방/세부 상호작용 미완 |
 | 28 | 전투 위협도 | **PARTIAL** | threat cost/tag→1~3 wave→PackedScene spawn. overspend 버그 수정. 전체 적 비용표/편대/밸런스 미완 |
 | 29 | 적 AI 공통 규칙 | **PARTIAL** | Chaser/Ranged 베이스와 Zone1 profile override. 공통 인식/벽 끼임/패턴 표준 미완 |
 | 30 | 제1구역: 폐기 조립라인 | **PARTIAL** | 실제 `.tscn` 11종, 7 적 프로필, 장애물/위험/스폰 데이터, 시설/엘리트/보스방. P4 8적·정식 아트/연출/20분 완성도 미완 |
-| 31 | 제1구역 보스: 폐기물 압축기 GR-01 | **PARTIAL** | 전용 GR01Boss/arena. 60%/25% 3페이즈, 압축벽/파편/컨베이어/낙하블록/추적톱날/잡병/안전구역/코어 노출 기반. 정식 VFX/오디오/보상/밸런스 QA 미완 |
+| 31 | 제1구역 보스: 폐기물 압축기 GR-01 | **PARTIAL** | 전용 3페이즈, 압축벽/파편/컨베이어/낙하블록/추적톱날/잡병/안전구역/코어 노출과 필수 부품·키·확장/HP 선택 정산 기반. 정식 VFX/오디오/밸런스 QA 미완 |
 | 32 | 제2구역: 생화학 처리시설 | **NOT STARTED** | GDD 기준 미구현 |
 | 33 | 제2구역 보스: 누출된 실험체 EVE-09 | **NOT STARTED** | GDD 기준 미구현 |
 | 34 | 제3구역: 중앙 탄약저장고 | **NOT STARTED** | GDD 기준 미구현 |
@@ -64,13 +64,13 @@
 | 38 | 비밀 구역: 기억 보관소 | **NOT STARTED** | GDD 기준 미구현 |
 | 39 | 보상 시스템 | **PARTIAL** | build-related/random/new-direction 3택 + 실제 RewardChoicePanel + 지급→route unlock. 최종 inventory/equipment 적용 미완 |
 | 40 | 상자 | **NOT STARTED** | GDD 기준 미구현 |
-| 41 | 런 내부 경제 | **PARTIAL** | RunWallet + Shop/Crafting/Medical + 시설 coordinator. 시설 Control UI/최종 가격·수입 밸런스 미완 |
+| 41 | 런 내부 경제 | **PARTIAL** | RunWallet + Shop/Crafting/Medical 거래, Rex 부채/결함 상품, 게임패드 포커스 가능한 시설 Control UI 기반. 최종 카드·가격·수입 밸런스 미완 |
 | 42 | 저주 시스템 | **NOT STARTED** | GDD 기준 미구현 |
 | 43 | 영구 성장 | **NOT STARTED** | GDD 기준 미구현 |
 | 44 | 허브 | **NOT STARTED** | GDD 기준 미구현 |
 | 45 | 난도 시스템 | **PARTIAL** | threat multiplier/route risk 기반. 정식 단계·보상·적 변화 규칙 미완 |
 | 46 | 튜토리얼 | **NOT STARTED** | GDD 기준 미구현 |
-| 47 | UI 구조 | **PARTIAL** | MainMenu/CharacterSelect/RunMap/Reward/Result 실제 Control scenes. 전투 HUD/시설/설정/패드 navigation 미완 |
+| 47 | UI 구조 | **PARTIAL** | MainMenu/CharacterSelect/RunMap/Reward/Facility/CombatHUD/Result Control scenes와 패드 포커스 기반. 인벤토리·설정·최종 시각 체계 미완 |
 | 48 | 인벤토리 UI | **NOT STARTED** | GDD 기준 미구현 |
 | 49 | 지도 UI | **PARTIAL** | graph/visited/cleared/current/safe-risk route를 실제 클릭 UI로 표시. 패드/최종 아트 미완 |
 | 50 | 접근성 | **NOT STARTED** | GDD 기준 미구현 |
@@ -80,13 +80,13 @@
 | 54 | 사운드 | **NOT STARTED** | GDD 기준 미구현 |
 | 55 | 대사와 텍스트 | **PARTIAL** | 캐릭터/메뉴/결과 기초 텍스트 존재. 서사/대사 콘텐츠 미완 |
 | 56 | 로컬라이징 | **NOT STARTED** | GDD 기준 미구현 |
-| 57 | 저장 시스템 | **PARTIAL** | RunSaveService v3: graph/run/character/wallet/backpack/template/reward + HP/shield/frame/ammo/reserve/heat atomic checkpoint 저장·복원. 완성 조립 저장/마이그레이션/손상복구/Steam Cloud 미완 |
+| 57 | 저장 시스템 | **PARTIAL** | RunSaveService v4: graph/run/character/wallet·debt/backpack/template/pending reward + HP/guard/shield/frame/ammo/heat/character ability atomic checkpoint 저장·복원. 완성 조립 저장/마이그레이션/손상복구/Steam Cloud 미완 |
 | 58 | 통계와 도감 | **NOT STARTED** | GDD 기준 미구현 |
 | 59 | 업적 | **NOT STARTED** | GDD 기준 미구현 |
 | 60 | 일일 시드와 도전 | **PARTIAL** | seed 기반 RunGraph 지원. daily 규칙/리더보드 미완 |
 | 61 | 밸런스 기준 | **PARTIAL** | threat/reward/path/GR-01 조절점 존재. 실제 반복 플레이 데이터 미검증 |
 | 62 | 무작위성 원칙 | **PARTIAL** | seeded route + weighted/build-aware rewards + template reuse suppression. RNG stream 완전 분리 미완 |
-| 63 | 기술 구조 | **PARTIAL** | data/runtime/scene/run/save/frontend 계층 + Godot 4.7.1 CI workflow. 실제 성공 CI 미관측 |
+| 63 | 기술 구조 | **PARTIAL** | data/runtime/scene/run/save/frontend 계층 + strict Godot 4.7.1 CI workflow. 동일 버전 로컬 전체 headless 검증 성공, 원격 성공 CI 미관측 |
 | 64 | 성능 목표 | **NOT STARTED** | 프로파일링/목표 검증 미실시 |
 | 65 | 화면 비율과 디스플레이 | **PARTIAL** | 1920×1080 viewport/1280×720 window/canvas stretch. 비율/UI scale QA 미완 |
 | 66 | Steam 출시 기능 | **NOT STARTED** | GDD 기준 미구현 |
@@ -95,10 +95,10 @@
 | 69 | 엔딩 | **NOT STARTED** | GDD 기준 미구현 |
 | 70 | 리플레이 가치 | **PARTIAL** | safe/risky routes, seed, character choice, build-aware rewards 기반. 전체 콘텐츠/엔딩/도전 다양성 미완 |
 | 71 | 출시 가격과 판매 방향 | **NOT STARTED** | 제작/판매 문서 항목 |
-| 72 | 개발 단계 | **PARTIAL** | P2 one-zone 구조는 frontend→run→boss→result까지 코드상 연결. P2 완료 판정에는 실제 Godot 실행·3회 완주·저장 재실행 검증이 남음 |
+| 72 | 개발 단계 | **PARTIAL** | P2 one-zone 구조는 frontend→run→boss→result까지 연결되고 Godot 4.7.1 headless 실행 성공. P2 완료 판정에는 원격 CI·3회 완주·저장 재실행·기기 QA가 남음 |
 | 73 | 권장 팀 구성 | **NOT STARTED** | 구현 대상이 아닌 제작 계획 문서 항목 |
 | 74 | 최소 출시 범위와 확장 범위 | **PARTIAL** | 필수 시스템 일부 존재하나 4구역/캐릭터 실효과/패드/설정/Steam 등 미충족 |
-| 75 | QA 계획 | **PARTIAL** | 6개 headless smoke + `.github/workflows/godot-4-7-validation.yml` 추가. 현재 connector에서 성공 check 미관측, 수동 플레이 QA 미실시 |
+| 75 | QA 계획 | **PARTIAL** | import + entry-scene + 6개 strict headless smoke를 로컬 Godot 4.7.1에서 통과. 원격 성공 check·수동 플레이·조합/성능/기기 QA 미실시 |
 | 76 | 주요 위험 요소 | **PARTIAL** | 시스템 과밀/조합폭발/콘텐츠량/가독성/운 의존 위험은 추적 중. 실제 안정성 검증 전 |
 | 77 | 핵심 성공 기준 | **NOT STARTED** | 첫 5분 재미/피격 이해/보스 학습/빌드 재미 플레이 검증 미실시 |
 | 78 | 최종 제품 정의 | **NOT STARTED** | 출시 정의 미충족 |
@@ -153,9 +153,10 @@
 - [ ] 사운드 피드백
 
 ## Validation State
-- CI workflow is present for Godot 4.7.1 import + headless smoke execution.
-- Current connector-visible combined commit statuses are empty.
-- Therefore **no current row is promoted to VALIDATED due to CI**.
+- Failed Actions run #91 exposed parser failures and a hanging/false-positive smoke structure; it was cancelled at the 20-minute job timeout.
+- The workflow now rejects Godot error logs, timeouts and missing success markers instead of trusting exit code alone.
+- Local Godot `4.7.1.stable.official.a13da4feb` passes project import, default entry-scene execution and all six scripted smoke suites.
+- Remote Actions confirmation, device input, repeated full-run and manual QA are still pending; therefore **no row is promoted to VALIDATED yet**.
 
 ## Update Rule
 1. 의미 있는 코드 변경마다 관련 행을 갱신한다.

@@ -103,7 +103,7 @@ func tag_set() -> Dictionary:
 func _apply_modifier(stats: Dictionary, key: StringName, value: Variant) -> void:
 	if value is Dictionary:
 		var op := String(value.get("op", "add"))
-		var amount := value.get("value", 0.0)
+		var amount: Variant = value.get("value", 0.0)
 		if op == "mul":
 			stats[key] = float(stats.get(key, 1.0)) * float(amount)
 		elif op == "set":

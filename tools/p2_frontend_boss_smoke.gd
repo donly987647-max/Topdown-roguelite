@@ -101,8 +101,8 @@ func _test_noncombat_reward_flow() -> void:
 	graph.add_node(boss)
 	graph.start_id = start.id
 	graph.boss_id = boss.id
-	graph.connect(start.id, shop.id)
-	graph.connect(shop.id, boss.id)
+	graph.connect_rooms(start.id, shop.id)
+	graph.connect_rooms(shop.id, boss.id)
 	var state := RunStateController.new()
 	state.reward_selector.set_pool(Zone1RewardCatalog.new().offers())
 	_expect(state.start_run(graph, 1, {}), "Synthetic run failed to start")
@@ -123,7 +123,7 @@ func _test_boss_reward_settlement() -> void:
 	graph.add_node(boss)
 	graph.start_id = start.id
 	graph.boss_id = boss.id
-	graph.connect(start.id, boss.id)
+	graph.connect_rooms(start.id, boss.id)
 	var owned: Array = []
 	var backpack := BackpackState.new()
 	var state := RunStateController.new()

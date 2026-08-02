@@ -25,16 +25,18 @@ jobs:
           sudo ln -sf "$BIN" /usr/local/bin/godot
           godot --version
       - name: Import project and parse resources
-        run: godot --headless --editor --path . --quit-after 3
+        run: bash tools/run_godot_check.sh - --headless --editor --path . --quit-after 8
+      - name: Run entry-scene smoke
+        run: bash tools/run_godot_check.sh - --headless --path . --quit-after 120
       - name: Run GDD runtime smoke
-        run: godot --headless --path . --script res://tools/gdd_runtime_smoke.gd
+        run: bash tools/run_godot_check.sh "GDD runtime smoke: PASS" --headless --path . --script res://tools/gdd_runtime_smoke.gd
       - name: Run run-system smoke
-        run: godot --headless --path . --script res://tools/run_system_smoke.gd
+        run: bash tools/run_godot_check.sh "run_system_smoke: PASS" --headless --path . --script res://tools/run_system_smoke.gd
       - name: Run run-lifecycle smoke
-        run: godot --headless --path . --script res://tools/run_lifecycle_smoke.gd
+        run: bash tools/run_godot_check.sh "RUN_LIFECYCLE_SMOKE_OK" --headless --path . --script res://tools/run_lifecycle_smoke.gd
       - name: Run room-scene smoke
-        run: godot --headless --path . --script res://tools/room_scene_smoke.gd
+        run: bash tools/run_godot_check.sh "ROOM_SCENE_SMOKE_OK" --headless --path . --script res://tools/room_scene_smoke.gd
       - name: Run P2 integration smoke
-        run: godot --headless --path . --script res://tools/p2_integration_smoke.gd
+        run: bash tools/run_godot_check.sh "P2_INTEGRATION_SMOKE_OK" --headless --path . --script res://tools/p2_integration_smoke.gd
       - name: Run P2 frontend and GR-01 smoke
-        run: godot --headless --path . --script res://tools/p2_frontend_boss_smoke.gd
+        run: bash tools/run_godot_check.sh "P2_FRONTEND_BOSS_SMOKE_OK" --headless --path . --script res://tools/p2_frontend_boss_smoke.gd

@@ -1,5 +1,7 @@
 extends SceneTree
 
+var failures: Array[String] = []
+
 func _init() -> void:
 	var generator := RunGraphGenerator.new()
 	var graph := generator.generate(12345)
@@ -25,14 +27,19 @@ func _init() -> void:
 	passive.stat_modifiers = {"damage_mult": {"op": "mul", "value": 1.2}}
 	var passive_runtime := PassiveModuleRuntime.new()
 	passive_runtime.add_module(passive)
-	_assert(is_equal_approx(passive_runtime.modify_value(&"damage", 10.0), 10.0), "unmapped stat must retain base value")
+	_assert(is_equal_approx(passive_runtime.modify_value(&"damage", 10.0), 12.0), "damage multiplier must affect the mapped base value")
 	_assert(is_equal_approx(passive_runtime.stat(&"damage_mult", 1.0), 1.2), "passive stat aggregation must work")
+	passive_runtime.free()
 
-	print("run_system_smoke: PASS")
-	quit(0)
+	if failures.is_empty():
+		print("run_system_smoke: PASS")
+		quit(0)
+		return
+	for failure in failures:
+		push_error("run_system_smoke: " + failure)
+	print("run_system_smoke: FAIL (%d)" % failures.size())
+	quit(1)
 
 func _assert(condition: bool, message: String) -> void:
-	if condition:
-		return
-	push_error("run_system_smoke: " + message)
-	quit(1)
+	if not condition:
+		failures.append(message)
