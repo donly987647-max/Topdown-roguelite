@@ -1,7 +1,7 @@
 class_name RunSaveService
 extends RefCounted
 
-const SAVE_VERSION := 3
+const SAVE_VERSION := 4
 const DEFAULT_PATH := "user://last_magazine_run.json"
 
 func save_run(state: RunStateController, wallet: RunWallet, backpack: BackpackState = null, registry: RoomTemplateRegistry = null, path: String = DEFAULT_PATH) -> bool:
@@ -17,6 +17,7 @@ func save_run(state: RunStateController, wallet: RunWallet, backpack: BackpackSt
 		"owned_rewards": _json_safe(state.run_context.get("owned_rewards", [])),
 		"player_state": _capture_player(state.run_context.get("player")),
 		"weapon_state": _capture_weapon(state.run_context.get("weapon_controller")),
+		"character_ability_state": _capture_character_ability(state.run_context.get("character_ability_runtime")),
 	}
 	return _write_atomic(path, JSON.stringify(payload))
 
@@ -63,6 +64,7 @@ func restore_run(state: RunStateController, wallet: RunWallet, backpack: Backpac
 	_restore_owned_rewards(context, payload.get("owned_rewards", []))
 	context["_restored_player_state"] = payload.get("player_state", {})
 	context["_restored_weapon_state"] = payload.get("weapon_state", {})
+	context["_restored_character_ability_state"] = payload.get("character_ability_state", {})
 	if not state.restore(payload.get("run_state", {}), graph, context):
 		return false
 	if wallet != null and not wallet.restore(payload.get("wallet", {})):
@@ -78,14 +80,17 @@ func restore_run(state: RunStateController, wallet: RunWallet, backpack: Backpac
 func apply_runtime_state(context: Dictionary) -> void:
 	_apply_player(context.get("player"), context.get("_restored_player_state", {}))
 	_apply_weapon(context.get("weapon_controller"), context.get("_restored_weapon_state", {}))
+	_apply_character_ability(context.get("character_ability_runtime"), context.get("_restored_character_ability_state", {}))
 	context.erase("_restored_player_state")
 	context.erase("_restored_weapon_state")
+	context.erase("_restored_character_ability_state")
 
 func _capture_player(player: Variant) -> Dictionary:
 	if player == null:
 		return {}
 	return {
 		"health": float(player.get("health")),
+		"guard": int(player.get("guard")),
 		"temporary_shield": float(player.get("temporary_shield")),
 	}
 
@@ -103,11 +108,27 @@ func _capture_weapon(weapon: Variant) -> Dictionary:
 		"heat": float(weapon.get("heat")),
 	}
 
+func _capture_character_ability(runtime: Variant) -> Dictionary:
+	if runtime == null:
+		return {}
+	return {
+		"active_cooldown": float(runtime.get("_active_cooldown")),
+		"mara_kill_charge": int(runtime.get("_mara_kill_charge")),
+		"kane_focus": int(runtime.get("_kane_focus")),
+		"kane_chain_left": float(runtime.get("_kane_chain_left")),
+		"kane_decay_left": float(runtime.get("_kane_decay_left")),
+		"kane_free_shots": int(runtime.get("_kane_free_shots")),
+	}
+
 func _apply_player(player: Variant, data: Dictionary) -> void:
 	if player == null or data.is_empty():
 		return
 	var max_health := float(player.get("max_health"))
 	player.set("health", clampf(float(data.get("health", max_health)), 0.0, max_health))
+	if player.has_signal("health_changed"):
+		player.emit_signal("health_changed", player.get("health"), max_health)
+	if player.has_method("set_guard"):
+		player.call("set_guard", int(data.get("guard", player.get("guard"))))
 	var max_shield := float(player.get("max_temporary_shield"))
 	player.set("temporary_shield", clampf(float(data.get("temporary_shield", 0.0)), 0.0, max_shield))
 	if player.has_signal("temporary_shield_changed"):
@@ -123,6 +144,18 @@ func _apply_weapon(weapon: Variant, data: Dictionary) -> void:
 		weapon.call("_emit_ammo")
 	if weapon.has_signal("heat_changed"):
 		weapon.emit_signal("heat_changed", weapon.get("heat"), weapon.get("max_heat"))
+
+func _apply_character_ability(runtime: Variant, data: Dictionary) -> void:
+	if runtime == null or data.is_empty():
+		return
+	runtime.set("_active_cooldown", maxf(0.0, float(data.get("active_cooldown", 0.0))))
+	runtime.set("_mara_kill_charge", maxi(0, int(data.get("mara_kill_charge", 0))))
+	runtime.set("_kane_focus", maxi(0, int(data.get("kane_focus", 0))))
+	runtime.set("_kane_chain_left", maxf(0.0, float(data.get("kane_chain_left", 0.0))))
+	runtime.set("_kane_decay_left", maxf(0.0, float(data.get("kane_decay_left", 0.0))))
+	runtime.set("_kane_free_shots", maxi(0, int(data.get("kane_free_shots", 0))))
+	if runtime.has_method("_emit_active_state"):
+		runtime.call("_emit_active_state")
 
 func _restore_owned_rewards(context: Dictionary, raw_rewards: Variant) -> void:
 	var owned = context.get("owned_rewards")
