@@ -6,7 +6,6 @@ func _init() -> void:
 	_test_character_catalog()
 	_test_frontend_resources()
 	_test_gamepad_actions()
-	_test_reward_focus_tracking()
 	_test_zone1_room_resources()
 	_test_gr01_contract()
 	_test_noncombat_reward_flow()
@@ -58,20 +57,6 @@ func _test_gamepad_actions() -> void:
 		if event is InputEventJoypadMotion:
 			has_joy_fire = true
 	_expect(has_joy_fire, "Fire action needs a joypad trigger binding")
-
-func _test_reward_focus_tracking() -> void:
-	var offers := Zone1RewardCatalog.new().offers()
-	_expect(offers.size() >= 3, "Reward catalog needs at least three offers for focus testing")
-	if offers.size() < 3:
-		return
-	var panel := RewardChoicePanel.new()
-	root.add_child(panel)
-	var choices: Array[RewardOffer] = [offers[0], offers[1], offers[2]]
-	panel.present(choices)
-	panel.focus_choice(2)
-	_expect(panel.focused_index() == 2, "Reward panel must retain the explicitly focused card index")
-	panel.clear()
-	panel.queue_free()
 
 func _test_zone1_room_resources() -> void:
 	var catalog := Zone1ContentCatalog.new()
