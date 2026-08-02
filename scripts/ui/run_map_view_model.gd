@@ -18,6 +18,8 @@ func build(graph: RunGraph, current_id: StringName, visited: Array[StringName], 
 		var depth := int(depth_by_id.get(id, 0))
 		var lane := int(lanes.get(depth, 0))
 		lanes[depth] = lane + 1
+		var route_risk := StringName(node.metadata.get("route_risk", node.metadata.get("route_class", "neutral")))
+		var rarity_bonus := float(node.metadata.get("reward_rarity_bonus", 0.0))
 		nodes_out.append({
 			"id": id,
 			"room_type": node.room_type,
@@ -26,14 +28,20 @@ func build(graph: RunGraph, current_id: StringName, visited: Array[StringName], 
 			"visited": id in visited,
 			"cleared": cleared.has(id),
 			"current": id == current_id,
-			"route_class": StringName(node.metadata.get("route_class", "normal")),
-			"reward_grade": StringName(node.metadata.get("reward_grade", "normal")),
+			"route_class": route_risk,
+			"reward_grade": _reward_grade(rarity_bonus),
+			"reward_rarity_bonus": rarity_bonus,
 		})
 	var edges_out: Array = []
 	for from_id in graph.edges.keys():
 		for to_id in graph.edges[from_id]:
 			edges_out.append({"from": from_id, "to": to_id, "available": from_id == current_id})
 	return {"nodes": nodes_out, "edges": edges_out, "current": current_id}
+
+func _reward_grade(bonus: float) -> StringName:
+	if bonus >= 0.15: return &"high"
+	if bonus <= -0.05: return &"low"
+	return &"normal"
 
 func _calculate_depths(graph: RunGraph) -> Dictionary:
 	var depths: Dictionary = {}
