@@ -33,28 +33,38 @@ func _ready() -> void:
 	main_menu.visible = true
 	character_select.visible = false
 	result_panel.visible = false
+	_set_combat_enabled(false)
 
 func _on_new_run_requested() -> void:
 	main_menu.visible = false
 	character_select.visible = true
 	result_panel.visible = false
+	_set_combat_enabled(false)
 
 func _on_continue_requested() -> void:
 	main_menu.visible = false
 	character_select.visible = false
 	result_panel.visible = false
-	if not bootstrap.continue_run():
+	if bootstrap.continue_run():
+		_set_combat_enabled(true)
+	else:
 		main_menu.visible = true
 		main_menu.set_continue_available(false)
+		_set_combat_enabled(false)
 
 func _on_character_selected(character_id: StringName) -> void:
-	if not bootstrap.start_new_run(bootstrap.seed_value, character_id):
+	if bootstrap.start_new_run(bootstrap.seed_value, character_id):
+		_set_combat_enabled(true)
+	else:
 		character_select.visible = true
+		_set_combat_enabled(false)
 
 func _on_player_died() -> void:
+	_set_combat_enabled(false)
 	bootstrap.run_state.fail_run()
 
 func _on_run_finished(success: bool) -> void:
+	_set_combat_enabled(false)
 	character_select.visible = false
 	main_menu.visible = false
 	var character := bootstrap.character_catalog.get_by_id(bootstrap.run_state.selected_character_id)
@@ -63,6 +73,14 @@ func _on_run_finished(success: bool) -> void:
 func _on_change_character() -> void:
 	bootstrap.clear_checkpoint()
 	_reload_flow()
+
+func _set_combat_enabled(enabled: bool) -> void:
+	var player := bootstrap.get_player()
+	if player != null:
+		player.set_physics_process(enabled)
+	var weapon := bootstrap.get_weapon_controller()
+	if weapon != null:
+		weapon.set_process(enabled)
 
 func _reload_flow() -> void:
 	get_tree().reload_current_scene()
