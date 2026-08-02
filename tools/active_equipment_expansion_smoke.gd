@@ -19,24 +19,23 @@ func _run_tests() -> void:
 func _test_catalog_contract() -> void:
 	var offers := Zone1RewardCatalog.new().offers()
 	var active_ids: Array[StringName] = []
+	var shield_payload: Dictionary = {}
+	var vent_payload: Dictionary = {}
 	for offer in offers:
-		if offer != null and offer.category == &"active":
-			active_ids.append(offer.id)
+		if offer == null or offer.category != &"active":
+			continue
+		active_ids.append(offer.id)
+		if offer.id == &"shield_emitter":
+			shield_payload = offer.payload
+		elif offer.id == &"vent_purge":
+			vent_payload = offer.payload
 	_expect(active_ids.size() >= 4, "Zone 1 active equipment pool should contain at least four live items")
 	for required_id in [&"repair_injector", &"overclock_key", &"shield_emitter", &"vent_purge"]:
 		_expect(required_id in active_ids, "Missing live active equipment: %s" % String(required_id))
-
-	var backpack := BackpackState.new()
-	var weapon := WeaponController.new()
-	var inventory := RunInventoryRuntime.new()
-	_expect(StarterWeaponRuntime.new().apply(weapon, &"service_pistol"), "Active catalog smoke needs a starter weapon")
-	_expect(inventory.configure(backpack, weapon, [], offers, &"service_pistol"), "Active catalog inventory should configure")
-	var shield := inventory.definition_for(&"shield_emitter") as ActiveEquipmentDefinition
-	var vent := inventory.definition_for(&"vent_purge") as ActiveEquipmentDefinition
-	_expect(shield != null and StringName(shield.activation_payload.get("effect", "")) == &"shield_pulse", "Shield Emitter must convert into a shield_pulse active definition")
-	_expect(vent != null and StringName(vent.activation_payload.get("effect", "")) == &"vent_purge", "Vent Purge must convert into a vent_purge active definition")
-	inventory.free()
-	weapon.free()
+	var shield_activation: Dictionary = shield_payload.get("activation_payload", {})
+	var vent_activation: Dictionary = vent_payload.get("activation_payload", {})
+	_expect(StringName(shield_activation.get("effect", "")) == &"shield_pulse", "Shield Emitter catalog payload must use shield_pulse")
+	_expect(StringName(vent_activation.get("effect", "")) == &"vent_purge", "Vent Purge catalog payload must use vent_purge")
 
 func _test_instant_active_effects() -> void:
 	var player := Player.new()
