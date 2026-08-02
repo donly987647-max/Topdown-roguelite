@@ -17,6 +17,7 @@ func _init() -> void:
 
 func _run_tests() -> void:
 	_test_zone1_content()
+	_test_zone1_module_content()
 	_test_threat_budget()
 	_test_wallet()
 	_test_ui_resources()
@@ -62,6 +63,38 @@ func _test_zone1_content() -> void:
 	var shell := builder.build(combat)
 	_expect(shell != null and shell.get_child_count() > 0, "Authored room shell failed to build")
 	shell.free()
+
+func _test_zone1_module_content() -> void:
+	var offers := Zone1RewardCatalog.new().offers()
+	var passive_ids: Array[StringName] = []
+	var active_ids: Array[StringName] = []
+	for offer in offers:
+		if offer == null:
+			continue
+		if offer.category == &"passive":
+			passive_ids.append(offer.id)
+		elif offer.category == &"active":
+			active_ids.append(offer.id)
+	_expect(passive_ids.size() >= 18, "Zone 1 vertical slice requires at least 18 passive modules in the current 18+2 content split")
+	_expect(active_ids.size() >= 2, "Zone 1 vertical slice requires at least two live active modules in the current 18+2 content split")
+	_expect(passive_ids.size() + active_ids.size() >= 20, "GDD vertical-slice module target requires at least 20 modules")
+	for required_id in [&"feed_ramp", &"cold_sink", &"impact_brace", &"shock_bus", &"crit_lens", &"blast_baffle", &"compact_cell", &"reload_actuator", &"thermal_buffer", &"servo_booster", &"recoil_compensator", &"rapid_cycler", &"high_voltage_cap", &"critical_amp", &"velocity_coil", &"reinforced_plating", &"inertia_damper", &"chain_relay"]:
+		_expect(required_id in passive_ids, "Missing Zone 1 passive module: %s" % String(required_id))
+	for required_id in [&"repair_injector", &"overclock_key"]:
+		_expect(required_id in active_ids, "Missing Zone 1 active module: %s" % String(required_id))
+	var backpack := BackpackState.new()
+	var weapon := WeaponController.new()
+	_expect(StarterWeaponRuntime.new().apply(weapon, &"service_pistol"), "Module content validation needs a starter weapon")
+	var runtime := RunInventoryRuntime.new()
+	_expect(runtime.configure(backpack, weapon, [], offers, &"service_pistol"), "Module content inventory should configure")
+	var compact := runtime.definition_for(&"compact_cell") as PassiveModuleDefinition
+	var plating := runtime.definition_for(&"reinforced_plating") as PassiveModuleDefinition
+	var cycler := runtime.definition_for(&"rapid_cycler") as PassiveModuleDefinition
+	_expect(compact != null and is_equal_approx(float(compact.stat_modifiers.get("magazine_add", 0.0)), 4.0), "Compact Cell must become a live +4 magazine passive definition")
+	_expect(plating != null and plating.stat_modifiers.has("player_damage_taken_mult"), "Reinforced Plating must expose its live defensive modifier")
+	_expect(cycler != null and cycler.requires_power and cycler.stat_modifiers.has("fire_rate_mult"), "Rapid Cycler must remain power-gated and affect fire rate")
+	runtime.free()
+	weapon.free()
 
 func _test_threat_budget() -> void:
 	var catalog := Zone1ContentCatalog.new()
