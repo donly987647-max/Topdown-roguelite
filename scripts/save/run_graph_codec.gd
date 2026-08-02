@@ -11,5 +11,5 @@ static func deserialize(data: Dictionary) -> RunGraph:
 		graph.add_node(node)
 	graph.start_id = StringName(data.get("start_id", "")); graph.boss_id = StringName(data.get("boss_id", ""))
 	for from_raw in data.get("edges", {}).keys():
-		for to_raw in data["edges"][from_raw]: graph.connect(StringName(from_raw), StringName(to_raw))
+		for to_raw in data["edges"][from_raw]: graph.connect_nodes(StringName(from_raw), StringName(to_raw))
 	return graph

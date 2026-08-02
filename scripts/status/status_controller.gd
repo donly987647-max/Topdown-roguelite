@@ -41,7 +41,7 @@ func _process(delta: float) -> void:
 		if definition.tick_interval > 0.0 and definition.damage_per_tick > 0.0:
 			state["tick_left"] = float(state["tick_left"]) - delta
 			while float(state["tick_left"]) <= 0.0:
-				var amount := definition.damage_per_tick * int(state["stacks"]) * float(state["source_power"])
+				var amount: float = definition.damage_per_tick * int(state["stacks"]) * float(state["source_power"])
 				periodic_damage.emit(amount, status_id)
 				state["tick_left"] = float(state["tick_left"]) + definition.tick_interval
 		_active[status_id] = state

@@ -41,7 +41,7 @@ func bind_boss(value: GR01Boss) -> void:
 	boss.safe_zone_changed.connect(_on_safe_zone_changed)
 	boss.core_exposure_changed.connect(_on_core_exposure_changed)
 	boss.phase_changed.connect(_on_phase_changed)
-	boss.pattern_telegraph.connect(_on_pattern_telegraph)
+	boss.pattern_telegraph.connect_nodes(_on_pattern_telegraph)
 
 func _physics_process(delta: float) -> void:
 	if conveyor_direction != Vector2.ZERO:

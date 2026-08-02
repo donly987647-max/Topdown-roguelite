@@ -293,13 +293,13 @@ func _void_bonus_damage(receiver: Node) -> float:
 		return 0.0
 	if receiver.is_in_group("boss"):
 		return damage * 0.6
-	var maximum := receiver.get("max_health")
+	var maximum: Variant = receiver.get("max_health")
 	if maximum is float or maximum is int:
 		return float(maximum) * _void_health_fraction
 	return damage * 0.75
 
 func _read_health(receiver: Node) -> float:
-	var value := receiver.get("health")
+	var value: Variant = receiver.get("health")
 	if value is float or value is int:
 		return maxf(0.0, float(value))
 	return -1.0
@@ -411,7 +411,7 @@ func _clear_weak_enemy_projectiles() -> void:
 			continue
 		if global_position.distance_squared_to(node.global_position) > 34.0 * 34.0:
 			continue
-		var projectile_damage := node.get("damage")
+		var projectile_damage: Variant = node.get("damage")
 		if projectile_damage is float or projectile_damage is int:
 			if float(projectile_damage) <= damage * 0.75:
 				node.queue_free()
