@@ -35,7 +35,7 @@ func _fill_wave(template: RoomTemplateDefinition, budget: int) -> Array:
 	var safety := 64
 	while remaining > 0 and safety > 0:
 		safety -= 1
-		var best_id := _pick_enemy_for_budget(candidates, remaining)
+		var best_id := _pick_enemy_for_budget(candidates, remaining, wave.is_empty())
 		if best_id == &"":
 			break
 		var cost := int(enemy_costs.get(best_id, 1))
@@ -56,7 +56,7 @@ func _eligible_enemies(template: RoomTemplateDefinition) -> Array[StringName]:
 			result.append(id)
 	return result
 
-func _pick_enemy_for_budget(candidates: Array[StringName], remaining: int) -> StringName:
+func _pick_enemy_for_budget(candidates: Array[StringName], remaining: int, allow_over_budget: bool) -> StringName:
 	var affordable: Array[StringName] = []
 	var cheapest := 999999
 	var cheapest_id := StringName()
@@ -69,7 +69,7 @@ func _pick_enemy_for_budget(candidates: Array[StringName], remaining: int) -> St
 			cheapest_id = id
 	if not affordable.is_empty():
 		return affordable[randi() % affordable.size()]
-	return cheapest_id
+	return cheapest_id if allow_over_budget else &""
 
 func _has_any_tag(enemy_id: StringName, allowed: PackedStringArray) -> bool:
 	var tags: PackedStringArray = enemy_tags.get(enemy_id, PackedStringArray())
