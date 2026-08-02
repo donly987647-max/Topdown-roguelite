@@ -34,7 +34,21 @@ func _test_zone1_content() -> void:
 	var rooms := catalog.room_templates()
 	var enemies := catalog.enemy_profiles()
 	_expect(rooms.size() >= 11, "Zone 1 starter room catalog too small")
-	_expect(enemies.size() >= 7, "Zone 1 starter enemy catalog too small")
+	var regular_count := 0
+	var elite_count := 0
+	var regular_ids: Array[StringName] = []
+	for profile in enemies:
+		if &"boss" in profile.tags:
+			continue
+		if profile.elite:
+			elite_count += 1
+		else:
+			regular_count += 1
+			regular_ids.append(profile.id)
+	_expect(regular_count >= 8, "Zone 1 P4 requires at least eight distinct regular enemies")
+	_expect(elite_count >= 2, "Zone 1 content batch should retain at least two elite variants")
+	for required_id in [&"scrap_runner", &"line_guard", &"bolt_spitter", &"fork_drone", &"crusher_brute", &"weld_hound", &"riveter", &"overwatch_turret"]:
+		_expect(required_id in regular_ids, "Missing Zone 1 regular enemy: %s" % String(required_id))
 	for room in rooms:
 		_expect(room.validate_definition().is_empty(), "Invalid room template: %s" % String(room.id))
 	var spawn_registry := EnemySpawnRegistry.new()
