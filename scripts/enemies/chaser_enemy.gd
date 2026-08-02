@@ -1,6 +1,8 @@
 class_name ChaserEnemy
 extends CharacterBody2D
 
+signal died(enemy: Node)
+
 @export var max_health: float = 70.0
 @export var move_speed: float = 150.0
 @export var acceleration: float = 900.0
@@ -74,6 +76,9 @@ func _try_contact_attack() -> void:
 func apply_status_by_id(status_id: StringName, stacks: int = 1) -> bool:
 	return _status != null and _status.apply_status(status_id, stacks)
 
+func status_receiver() -> StatusReceiver:
+	return _status
+
 func react_to_projectile_hit(base_damage: float, _explosive: bool = false) -> float:
 	if _status == null or base_damage < 24.0:
 		return 0.0
@@ -100,7 +105,10 @@ func _flash_hit() -> void:
 	tween.tween_property(body_visual, "modulate", Color.WHITE, 0.08)
 
 func _die() -> void:
+	if _dead:
+		return
 	_dead = true
+	died.emit(self)
 	collision_layer = 0
 	collision_mask = 0
 	attack_area.monitoring = false
