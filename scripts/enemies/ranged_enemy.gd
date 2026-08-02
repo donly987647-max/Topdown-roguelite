@@ -1,6 +1,8 @@
 class_name RangedEnemy
 extends CharacterBody2D
 
+signal died(enemy: Node)
+
 @export var max_health: float = 55.0
 @export var move_speed: float = 135.0
 @export var preferred_distance: float = 410.0
@@ -110,6 +112,9 @@ func _fire(direction: Vector2) -> void:
 func apply_status_by_id(status_id: StringName, stacks: int = 1) -> bool:
 	return _status != null and _status.apply_status(status_id, stacks)
 
+func status_receiver() -> StatusReceiver:
+	return _status
+
 func react_to_projectile_hit(base_damage: float, _explosive: bool = false) -> float:
 	if _status == null or base_damage < 24.0:
 		return 0.0
@@ -136,5 +141,8 @@ func _restore_visual() -> void:
 		body_visual.modulate = Color.WHITE
 
 func _die() -> void:
+	if _dead:
+		return
 	_dead = true
+	died.emit(self)
 	queue_free()
