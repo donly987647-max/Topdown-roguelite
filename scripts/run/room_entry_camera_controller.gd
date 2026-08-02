@@ -1,7 +1,7 @@
 class_name RoomEntryCameraController
 extends Node
 
-@export var tile_world_size: float = 64.0
+@export var tile_world_size: float = 32.0
 
 func place_player(player: Node2D, room_root: Node, template: RoomTemplateDefinition, preferred_index: int = 0) -> bool:
 	if player == null or room_root == null or template == null:
