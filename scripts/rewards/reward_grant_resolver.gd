@@ -16,9 +16,13 @@ func grant(offer: RewardOffer, context: Dictionary) -> bool:
 			return _grant_heal(context, float(_payload_amount(payload, 10)))
 		&"shield":
 			return _grant_shield(context, float(_payload_amount(payload, 10)))
+		&"guard":
+			return _grant_guard(context, _payload_amount(payload, 1))
+		&"max_health":
+			return _grant_max_health(context, float(_payload_amount(payload, 10)))
 		&"backpack_expansion":
 			return _grant_backpack_expansion(context, payload)
-		&"passive", &"active", &"frame", &"barrel", &"magazine", &"core", &"item":
+		&"passive", &"active", &"frame", &"barrel", &"magazine", &"core", &"item", &"boss_part", &"zone_key", &"record":
 			return _grant_inventory_item(context, offer)
 		&"temporary_buff":
 			return _grant_temporary_buff(context, offer)
@@ -54,6 +58,8 @@ func _grant_heal(context: Dictionary, amount: float) -> bool:
 	var player = context.get("player")
 	if player == null:
 		return false
+	if player.has_method("heal"):
+		return float(player.call("heal", amount)) >= 0.0
 	var health = player.get("health")
 	var maximum = player.get("max_health")
 	if (health is float or health is int) and (maximum is float or maximum is int):
@@ -67,6 +73,25 @@ func _grant_shield(context: Dictionary, amount: float) -> bool:
 		player.add_temporary_shield(amount)
 		return true
 	return false
+
+func _grant_guard(context: Dictionary, amount: int) -> bool:
+	var player = context.get("player")
+	if player != null and player.has_method("add_guard"):
+		player.add_guard(amount)
+		return true
+	return false
+
+func _grant_max_health(context: Dictionary, amount: float) -> bool:
+	var player = context.get("player")
+	if player == null or amount <= 0.0:
+		return false
+	var maximum = player.get("max_health")
+	if not (maximum is float or maximum is int):
+		return false
+	player.set("max_health", float(maximum) + amount)
+	if player.has_method("heal"):
+		player.call("heal", amount)
+	return true
 
 func _grant_backpack_expansion(context: Dictionary, payload: Variant) -> bool:
 	var backpack = context.get("backpack_state")
