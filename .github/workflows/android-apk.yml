@@ -1,0 +1,64 @@
+name: Android APK Build
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-android-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Godot 4.7.1 and export templates
+        shell: bash
+        run: |
+          set -euxo pipefail
+          GODOT_URL="https://github.com/godotengine/godot/releases/download/4.7.1-stable/Godot_v4.7.1-stable_linux.x86_64.zip"
+          TEMPLATE_URL="https://github.com/godotengine/godot/releases/download/4.7.1-stable/Godot_v4.7.1-stable_export_templates.tpz"
+          curl -fL "$GODOT_URL" -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot
+          BIN="$(find /tmp/godot -maxdepth 1 -type f -name 'Godot_v4.7.1-stable_linux*' | head -n1)"
+          chmod +x "$BIN"
+          sudo ln -sf "$BIN" /usr/local/bin/godot
+          curl -fL "$TEMPLATE_URL" -o /tmp/templates.tpz
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.7.1.stable"
+          unzip -q /tmp/templates.tpz -d /tmp/templates
+          cp -R /tmp/templates/templates/. "$HOME/.local/share/godot/export_templates/4.7.1.stable/"
+          godot --version
+
+      - name: Import project
+        run: timeout 90s godot --headless --editor --path . --quit-after 3
+
+      - name: Parse mobile control script
+        run: timeout 90s godot --headless --path . --script res://tools/script_parse_audit.gd
+
+      - name: Export Android debug APK
+        shell: bash
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+        run: |
+          set -euxo pipefail
+          mkdir -p builds/android
+          godot --headless --path . --export-debug "Android Playtest" builds/android/LAST_MAGAZINE_Playtest.apk
+          test -s builds/android/LAST_MAGAZINE_Playtest.apk
+          sha256sum builds/android/LAST_MAGAZINE_Playtest.apk | tee builds/android/LAST_MAGAZINE_Playtest.apk.sha256
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LAST-MAGAZINE-Android-APK
+          path: |
+            builds/android/LAST_MAGAZINE_Playtest.apk
+            builds/android/LAST_MAGAZINE_Playtest.apk.sha256
+          if-no-files-found: error
+          retention-days: 14

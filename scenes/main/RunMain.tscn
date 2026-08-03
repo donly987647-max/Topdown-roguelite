@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="1_player"]
 [ext_resource type="Script" path="res://scripts/run/zone1_run_bootstrap.gd" id="2_boot"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/main_menu_panel.tscn" id="4_menu"]
 [ext_resource type="PackedScene" path="res://scenes/ui/character_select_panel.tscn" id="5_chars"]
 [ext_resource type="PackedScene" path="res://scenes/ui/run_result_panel.tscn" id="6_result"]
+[ext_resource type="PackedScene" path="res://scenes/ui/mobile_controls.tscn" id="7_mobile"]
 
 [node name="RunMain" type="Node2D"]
 
@@ -34,6 +35,8 @@ layer = 20
 visible = false
 [node name="RunResultPanel" parent="FrontendUI" instance=ExtResource("6_result")]
 visible = false
+
+[node name="MobileControls" parent="." instance=ExtResource("7_mobile")]
 
 [node name="Flow" type="Node" parent="."]
 script = ExtResource("3_flow")
