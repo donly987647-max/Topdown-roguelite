@@ -8,17 +8,23 @@ config/name="LAST MAGAZINE"
 run/main_scene="res://scenes/main/RunMain.tscn"
 
 [display]
-window/size/viewport_width=1920
-window/size/viewport_height=1080
+window/size/viewport_width=1280
+window/size/viewport_height=960
 window/size/mode=3
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+window/handheld/orientation=6
+
+[input_devices]
+pointing/emulate_mouse_from_touch=false
+pointing/emulate_touch_from_mouse=false
 
 [rendering]
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/default_filters/use_nearest_mipmap_filter=false
 textures/canvas_textures/default_texture_filter=0
+textures/vram_compression/import_etc2_astc=true
 
 [physics]
 common/physics_ticks_per_second=60

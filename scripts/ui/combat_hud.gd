@@ -9,6 +9,10 @@ var abilities: CharacterAbilityRuntime
 var _reload_duration := 0.0
 var _reload_left := 0.0
 
+@onready var top_left: VBoxContainer = $TopLeft
+@onready var top_right: VBoxContainer = $TopRight
+@onready var bottom_left: VBoxContainer = $BottomLeft
+@onready var bottom_right: VBoxContainer = $BottomRight
 @onready var character_label: Label = $TopLeft/Character
 @onready var hp_bar: ProgressBar = $TopLeft/HP
 @onready var hp_text: Label = $TopLeft/HPText
@@ -28,6 +32,48 @@ var _reload_left := 0.0
 @onready var reload_bar: ProgressBar = $BottomRight/Reload
 @onready var perfect_label: Label = $BottomRight/Perfect
 
+func _ready() -> void:
+	get_viewport().size_changed.connect(_apply_responsive_layout)
+	_apply_responsive_layout()
+
+func _apply_responsive_layout() -> void:
+	var size := get_viewport_rect().size
+	if size.x <= 1.0 or size.y <= 1.0:
+		return
+	var mobile := OS.has_feature("Android") or OS.has_feature("mobile") or DisplayServer.is_touchscreen_available()
+	var portrait := size.y > size.x
+	var shortest := minf(size.x, size.y)
+	var margin := clampf(shortest * 0.025, 14.0, 28.0)
+	var compact_width := clampf(shortest * 0.36, 220.0, 360.0)
+	var top_height := clampf(shortest * 0.24, 135.0, 210.0)
+	top_left.position = Vector2(margin, margin)
+	top_left.size = Vector2(compact_width, top_height)
+	top_right.position = Vector2(size.x - margin - compact_width, margin)
+	top_right.size = Vector2(compact_width, top_height)
+	var bottom_y := size.y - margin - (150.0 if mobile else 180.0)
+	if mobile:
+		bottom_y = size.y - clampf(shortest * (0.48 if portrait else 0.38), 220.0, 390.0)
+	bottom_left.position = Vector2(margin, bottom_y)
+	bottom_left.size = Vector2(compact_width, 150.0)
+	bottom_right.position = Vector2(size.x - margin - compact_width, bottom_y)
+	bottom_right.size = Vector2(compact_width, 165.0)
+	var main_font := int(clampf(shortest * 0.027, 16.0, 22.0))
+	var small_font := int(clampf(shortest * 0.021, 13.0, 18.0))
+	for label in [character_label, weapon_label]:
+		label.add_theme_font_size_override("font_size", main_font)
+	for label in [hp_text, guard_label, status_label, room_label, scrap_label, key_label, curse_label, active_label, unique_label, ammo_label, perfect_label]:
+		label.add_theme_font_size_override("font_size", small_font)
+	var bar_width := maxf(190.0, compact_width - 12.0)
+	hp_bar.custom_minimum_size = Vector2(bar_width, clampf(shortest * 0.018, 14.0, 22.0))
+	shield_bar.custom_minimum_size = Vector2(bar_width, 10.0)
+	active_bar.custom_minimum_size = Vector2(bar_width, 12.0)
+	heat_bar.custom_minimum_size = Vector2(bar_width, 11.0)
+	reload_bar.custom_minimum_size = Vector2(bar_width, 14.0)
+	unique_label.visible = not mobile or not portrait
+	status_label.visible = not mobile or shortest >= 720.0
+	key_label.visible = not mobile or shortest >= 650.0
+	curse_label.visible = not mobile or shortest >= 650.0
+
 func configure(run_bootstrap: Zone1RunBootstrap) -> bool:
 	bootstrap = run_bootstrap
 	if bootstrap == null:
@@ -38,6 +84,7 @@ func configure(run_bootstrap: Zone1RunBootstrap) -> bool:
 	abilities = bootstrap.abilities
 	_bind_signals()
 	_refresh_all()
+	_apply_responsive_layout()
 	return true
 
 func _process(delta: float) -> void:
@@ -141,7 +188,7 @@ func _on_debt_changed(current: int, limit: int) -> void:
 		scrap_label.text += "  빚 %d/%d" % [current, limit]
 
 func _on_active_state(ready: bool, current: float, maximum: float, label: String) -> void:
-	active_label.text = "%s  [Q / Y] %s" % [label, "READY" if ready else ""]
+	active_label.text = "%s  [SKILL] %s" % [label, "READY" if ready else ""]
 	active_bar.max_value = maxf(1.0, maximum)
 	active_bar.value = current
 
