@@ -15,6 +15,17 @@ monitorable = false
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("Circle_projectile")
 
+[node name="Trail" type="Line2D" parent="."]
+points = PackedVector2Array(-18, 0, -4, 0)
+width = 5.0
+default_color = Color(1, 0.45, 0.08, 0.34)
+z_index = -1
+
 [node name="Visual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(-8, -3, 10, 0, -8, 3)
-color = Color(1, 0.82, 0.28, 1)
+polygon = PackedVector2Array(-9, -4, 8, -3, 13, 0, 8, 3, -9, 4, -4, 0)
+color = Color(1, 0.76, 0.18, 1)
+
+[node name="Core" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-4, -2, 8, 0, -4, 2)
+color = Color(1, 0.96, 0.7, 1)
+z_index = 1
