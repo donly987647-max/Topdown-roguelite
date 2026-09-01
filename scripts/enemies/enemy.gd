@@ -11,6 +11,16 @@ var burst_left := 0
 var burst_gap_left := 0.0
 var dead := false
 
+var fire_stacks := 0
+var fire_time := 0.0
+var fire_tick := 0.0
+var fire_power := 1.0
+var frost_time := 0.0
+var corrosion_time := 0.0
+var corrosion_tick := 0.0
+var corrosion_power := 1.0
+var status_source: Node
+
 func configure(target: Node2D, definition: Dictionary) -> void:
     player = target
     data = definition.duplicate(true)
@@ -30,6 +40,10 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
     if dead or not is_instance_valid(player):
+        return
+
+    _tick_status(delta)
+    if dead:
         return
 
     attack_cooldown = maxf(0.0, attack_cooldown - delta)
@@ -61,7 +75,7 @@ func _physics_process(delta: float) -> void:
 func _melee_ai(delta: float) -> void:
     var offset := player.global_position - global_position
     var distance := offset.length()
-    var move_speed := float(data.get("move_speed", 170.0))
+    var move_speed := float(data.get("move_speed", 170.0)) * _status_move_multiplier()
     velocity = offset.normalized() * move_speed if distance > 30.0 else Vector2.ZERO
 
     if distance <= float(data.get("attack_range", 34.0)) and attack_cooldown <= 0.0:
@@ -71,7 +85,7 @@ func _ranged_ai(delta: float) -> void:
     var offset := player.global_position - global_position
     var distance := offset.length()
     var preferred := float(data.get("preferred_range", 280.0))
-    var move_speed := float(data.get("move_speed", 120.0))
+    var move_speed := float(data.get("move_speed", 120.0)) * _status_move_multiplier()
     var dir := offset.normalized()
 
     if distance > preferred + 45.0:
@@ -109,7 +123,8 @@ func _fire_bolt() -> void:
 func take_damage(amount: float, source: Node = null) -> bool:
     if dead:
         return false
-    hp -= amount
+    var final_amount := amount * (1.12 if corrosion_time > 0.0 else 1.0)
+    hp -= final_amount
     if hp <= 0.0:
         dead = true
         GameManager.register_enemy_kill()
@@ -120,11 +135,82 @@ func take_damage(amount: float, source: Node = null) -> bool:
         queue_redraw()
     return true
 
+func apply_weapon_effect(effect: String, strength: float, hit_damage: float, source: Node) -> void:
+    if dead:
+        return
+    status_source = source
+    match effect:
+        "fire":
+            fire_stacks = mini(5, fire_stacks + 1)
+            fire_time = 4.0
+            fire_tick = minf(fire_tick, 0.25)
+            fire_power = maxf(fire_power, strength)
+        "frost":
+            frost_time = maxf(frost_time, 2.4 + 0.5 * strength)
+        "electric":
+            _chain_electric(hit_damage * 0.28 * strength, source)
+        "corrosion":
+            corrosion_time = maxf(corrosion_time, 4.0)
+            corrosion_tick = minf(corrosion_tick, 0.4)
+            corrosion_power = maxf(corrosion_power, strength)
+    queue_redraw()
+
+func _tick_status(delta: float) -> void:
+    if fire_time > 0.0:
+        fire_time = maxf(0.0, fire_time - delta)
+        fire_tick -= delta
+        if fire_tick <= 0.0:
+            fire_tick = 0.55
+            take_damage(1.4 * float(fire_stacks) * fire_power, status_source)
+        if fire_time <= 0.0:
+            fire_stacks = 0
+
+    if frost_time > 0.0:
+        frost_time = maxf(0.0, frost_time - delta)
+
+    if corrosion_time > 0.0:
+        corrosion_time = maxf(0.0, corrosion_time - delta)
+        corrosion_tick -= delta
+        if corrosion_tick <= 0.0:
+            corrosion_tick = 0.75
+            take_damage(0.8 * corrosion_power, status_source)
+
+func _status_move_multiplier() -> float:
+    return 0.68 if frost_time > 0.0 else 1.0
+
+func _chain_electric(chain_damage: float, source: Node) -> void:
+    var nearest: Node2D
+    var nearest_distance := 145.0
+    for candidate in get_tree().get_nodes_in_group("enemies"):
+        if candidate == self or not is_instance_valid(candidate) or not candidate is Node2D:
+            continue
+        var distance := global_position.distance_to(candidate.global_position)
+        if distance < nearest_distance:
+            nearest = candidate
+            nearest_distance = distance
+    if nearest != null and nearest.has_method("take_damage"):
+        if nearest.take_damage(chain_damage, source):
+            GameManager.register_damage(chain_damage)
+            EventBus.projectile_hit.emit({"damage": chain_damage, "target": nearest, "source": source, "effect": "electric_chain"})
+
 func _draw() -> void:
     var role := String(data.get("role", "melee"))
     var base_color := Color("ff8d66") if role == "melee" else Color("c48cff")
+    if frost_time > 0.0:
+        base_color = base_color.lerp(Color("75dbff"), 0.48)
+    elif corrosion_time > 0.0:
+        base_color = base_color.lerp(Color("8ee06f"), 0.38)
+    elif fire_time > 0.0:
+        base_color = base_color.lerp(Color("ffad5c"), 0.42)
     draw_circle(Vector2.ZERO, float(data.get("visual_radius", 16.0)), base_color)
     draw_circle(Vector2.ZERO, 7.0, Color("24171b"))
+
+    if fire_time > 0.0:
+        draw_arc(Vector2.ZERO, 21.0, 0.0, TAU, 20, Color("ff8b45"), 2.0)
+    if frost_time > 0.0:
+        draw_arc(Vector2.ZERO, 24.0, 0.0, TAU, 20, Color("72e2ff"), 2.0)
+    if corrosion_time > 0.0:
+        draw_arc(Vector2.ZERO, 27.0, 0.0, TAU, 20, Color("84df61"), 2.0)
 
     if telegraph_left > 0.0 and is_instance_valid(player):
         var local_target := to_local(player.global_position)
