@@ -1,77 +1,27 @@
 ; Engine configuration file.
-; LAST MAGAZINE fresh start
-
+; LAST MAGAZINE - GDD reboot
 config_version=5
 
 [application]
 config/name="LAST MAGAZINE"
-run/main_scene="res://scenes/main/RunMain.tscn"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+
+[autoload]
+EventBus="*res://scripts/core/event_bus.gd"
+GameManager="*res://scripts/core/game_manager.gd"
 
 [display]
 window/size/viewport_width=1280
-window/size/viewport_height=960
-window/size/mode=3
+window/size/viewport_height=720
+window/size/window_width_override=1280
+window/size/window_height_override=720
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
-window/handheld/orientation=6
-
-[gui]
-theme/custom="res://resources/ui/global_theme.tres"
-
-[input_devices]
-pointing/emulate_mouse_from_touch=false
-pointing/emulate_touch_from_mouse=false
-
-[rendering]
-renderer/rendering_method="gl_compatibility"
-renderer/rendering_method.mobile="gl_compatibility"
-textures/default_filters/use_nearest_mipmap_filter=false
-textures/canvas_textures/default_texture_filter=0
-textures/vram_compression/import_etc2_astc=true
 
 [physics]
 common/physics_ticks_per_second=60
 
-[layer_names]
-2d_physics/layer_1="PlayerBody"
-2d_physics/layer_2="World"
-2d_physics/layer_3="PlayerHurtbox"
-2d_physics/layer_4="PlayerProjectile"
-2d_physics/layer_5="EnemyBody"
-2d_physics/layer_6="EnemyProjectile"
-2d_physics/layer_7="EnemyAttack"
-2d_physics/layer_8="Pickup"
-
-[input]
-move_left={
-"deadzone": 0.2,
-"events": [Object(InputEventKey,"physical_keycode":65)]
-}
-move_right={
-"deadzone": 0.2,
-"events": [Object(InputEventKey,"physical_keycode":68)]
-}
-move_up={
-"deadzone": 0.2,
-"events": [Object(InputEventKey,"physical_keycode":87)]
-}
-move_down={
-"deadzone": 0.2,
-"events": [Object(InputEventKey,"physical_keycode":83)]
-}
-dash={
-"deadzone": 0.2,
-"events": [Object(InputEventKey,"physical_keycode":32)]
-}
-fire={
-"deadzone": 0.2,
-"events": [Object(InputEventMouseButton,"button_index":1)]
-}
-reload={
-"deadzone": 0.2,
-"events": [Object(InputEventKey,"physical_keycode":82)]
-}
-interact={
-"deadzone": 0.2,
-"events": [Object(InputEventKey,"physical_keycode":69)]
-}
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.035, 0.04, 0.055, 1)

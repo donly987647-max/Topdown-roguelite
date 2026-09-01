@@ -1,9 +1,0 @@
-{
-  "burn":{"name":"화상","max_stacks":5,"rules":["damage_over_time","damage_scales_with_stacks","explosive_hit_causes_bonus_explosion"]},
-  "chill":{"name":"냉기","rules":["movement_speed_down","attack_speed_down","normal_enemy_freezes_at_max","frozen_enemy_shatters_on_heavy_hit","boss_only_action_speed_slow"]},
-  "shock":{"name":"감전","rules":["periodic_chain_damage","more_buildup_vs_machine","larger_range_in_water"]},
-  "corrosion":{"name":"부식","max_stacks":5,"rules":["armor_reduction","extra_vs_armor_and_shield"]},
-  "bleed":{"name":"출혈","rules":["extra_damage_when_target_moves_or_attacks","biological_only","strong_vs_fast_targets"]},
-  "confusion":{"name":"혼란","rules":["normal_enemy_temporarily_changes_target","boss_accuracy_and_tracking_reduced"]},
-  "vulnerable":{"name":"취약","rules":["increased_damage_taken","short_duration","duplicate_stacking_limited"]}
-}

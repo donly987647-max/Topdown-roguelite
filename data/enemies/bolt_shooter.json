@@ -1,0 +1,18 @@
+{
+  "id": "bolt_shooter",
+  "display_name": "Bolt Shooter",
+  "role": "ranged",
+  "max_hp": 58.0,
+  "move_speed": 118.0,
+  "damage": 9.0,
+  "preferred_range": 285.0,
+  "attack_range": 520.0,
+  "attack_cooldown": 1.6,
+  "telegraph_time": 0.34,
+  "burst_count": 3,
+  "projectile_speed": 460.0,
+  "collision_radius": 15.0,
+  "visual_radius": 17.0,
+  "threat": 1.4,
+  "tags": ["zone_1", "ranged", "burst"]
+}

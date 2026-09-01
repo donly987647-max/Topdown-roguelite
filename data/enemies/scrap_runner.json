@@ -1,0 +1,15 @@
+{
+  "id": "scrap_runner",
+  "display_name": "Scrap Runner",
+  "role": "melee",
+  "max_hp": 42.0,
+  "move_speed": 185.0,
+  "damage": 10.0,
+  "attack_range": 34.0,
+  "attack_cooldown": 1.0,
+  "telegraph_time": 0.22,
+  "collision_radius": 15.0,
+  "visual_radius": 16.0,
+  "threat": 1.0,
+  "tags": ["zone_1", "melee", "rush"]
+}

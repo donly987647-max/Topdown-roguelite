@@ -1,0 +1,18 @@
+{
+  "id": "service_pistol",
+  "display_name": "Service Pistol",
+  "frame": "pistol",
+  "damage": 18.0,
+  "fire_rate": 4.5,
+  "magazine_size": 8,
+  "reserve_ammo": 72,
+  "reload_time": 1.25,
+  "projectile_speed": 950.0,
+  "perfect_reload_start": 0.55,
+  "perfect_reload_end": 0.72,
+  "perfect_reload_damage_multiplier": 1.15,
+  "max_power": 10,
+  "max_weight": 10,
+  "stability": 1.0,
+  "tags": ["ballistic", "semi_auto", "starter"]
+}

@@ -1,34 +1,44 @@
 # LAST MAGAZINE
 
-Commercial-quality Steam 1.0 rebuild of **LAST MAGAZINE** in Godot 4.x.
+GDD-driven reboot of the original Topdown-roguelite repository.
 
-## Start Here
+**Engine:** Godot 4.x  
+**Target:** Windows PC / Steam  
+**Genre:** 2D top-down bullet-hell action roguelite
 
-Before making changes, read **[`PROJECT.md`](./PROJECT.md)**.
+## Current playable core
 
-`PROJECT.md` contains:
+This repository was reset on 2026-09-01 and rebuilt from zero around the GDD's non-negotiable pillars:
 
-- Development principles
-- Full development order through Steam 1.0
-- Milestone quality gates
-- Current milestone and next implementation sequence
-- Cross-conversation handoff rules
-- Design decisions and progress log
+- responsive 260 px/s movement
+- independent mouse/gamepad aim
+- 0.52 s dodge with timed invulnerability
+- magazine + reserve ammo + reload loop
+- perfect-reload timing window
+- continuous projectile ray checks to reduce tunneling
+- role-based enemy AI (Scrap Runner / Bolt Shooter)
+- telegraphed enemy attacks
+- wave encounter director
+- combat HUD
+- data-driven weapon/enemy definitions
+- event bus foundation for item/effect hooks
 
-The canonical design source is **`LAST_MAGAZINE_GDD.md` (GDD 1.0)**. When working on game design, balance, content, or feature behavior, consult the GDD in addition to `PROJECT.md`.
+No external art assets are required for the prototype; gameplay objects are drawn procedurally so the core loop can be tested immediately.
 
-## Direction
+## Run
 
-- Engine: Godot 4.x
-- Genre: 2D top-down bullet-hell action roguelite
-- Primary platform: Windows PC / Steam
-- Core pillars: responsive gunplay, weapon construction, 6×5 spatial backpack builds, room-based roguelite runs
-- End target: paid Steam 1.0 release quality
+1. Open the repository folder in Godot 4.x.
+2. Run the project (`F6/F5`).
+3. Controls:
+   - Move: `WASD` / left stick
+   - Aim: mouse / right stick
+   - Fire: left mouse / RT
+   - Dodge: `Space` / gamepad B
+   - Reload: `R` / gamepad X
+   - Pause: `Esc`
 
-## Important Development Rule
+## Next milestone
 
-The previous prototype codebase was deliberately discarded. This repository is a clean rebuild. Do not restore legacy prototype systems by default.
+Build the GDD **Core Prototype**: 3 weapon frames, 12 parts, 5 enemies, 8 room templates, reward choice, grid inventory, shop, and a simple boss for a 10–15 minute run.
 
-For a future ChatGPT conversation, this is enough to resume:
-
-> `@GitHub LAST MAGAZINE 이어서 개발해. PROJECT.md와 GDD 먼저 읽고 현재 단계 다음 작업부터 진행해.`
+See `docs/ROADMAP.md` for implementation order.
