@@ -12,8 +12,11 @@ window/size/viewport_width=1280
 window/size/viewport_height=960
 window/size/mode=3
 window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"
+window/stretch/aspect="keep"
 window/handheld/orientation=6
+
+[gui]
+theme/custom="res://resources/ui/global_theme.tres"
 
 [input_devices]
 pointing/emulate_mouse_from_touch=false
