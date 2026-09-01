@@ -1,0 +1,72 @@
+{
+  "frames": [
+    {
+      "id": "service_pistol",
+      "name": "SERVICE PISTOL",
+      "mode": "semi",
+      "damage": 18.0,
+      "fire_interval": 0.24,
+      "magazine_size": 10,
+      "reload_time": 1.15,
+      "projectile_speed": 950.0,
+      "spread_deg": 1.5,
+      "max_power": 10.0,
+      "max_weight": 10.0,
+      "stability": 90.0,
+      "tags": ["ballistic", "semi_auto", "starter"]
+    },
+    {
+      "id": "burst_carbine",
+      "name": "BURST CARBINE",
+      "mode": "burst",
+      "damage": 11.0,
+      "fire_interval": 0.08,
+      "burst_count": 3,
+      "burst_interval": 0.08,
+      "post_burst_delay": 0.32,
+      "magazine_size": 24,
+      "reload_time": 1.45,
+      "projectile_speed": 980.0,
+      "spread_deg": 2.5,
+      "max_power": 13.0,
+      "max_weight": 14.0,
+      "stability": 82.0,
+      "tags": ["ballistic", "burst", "rifle"]
+    },
+    {
+      "id": "chain_smg",
+      "name": "CHAIN SMG",
+      "mode": "auto",
+      "damage": 7.0,
+      "fire_interval": 0.075,
+      "magazine_size": 36,
+      "reload_time": 1.60,
+      "projectile_speed": 900.0,
+      "spread_deg": 6.5,
+      "max_power": 12.0,
+      "max_weight": 11.0,
+      "stability": 68.0,
+      "chain_hit_speedup": 0.04,
+      "chain_hit_speedup_cap": 0.36,
+      "tags": ["ballistic", "automatic", "smg"]
+    }
+  ],
+  "barrels": [
+    {"id": "precision", "name": "PRECISION BARREL", "power": 2.0, "weight": 2.0},
+    {"id": "scatter", "name": "SCATTER BARREL", "power": 3.0, "weight": 2.5},
+    {"id": "piercing", "name": "PIERCING BARREL", "power": 3.0, "weight": 3.0},
+    {"id": "ricochet", "name": "RICOCHET BARREL", "power": 4.0, "weight": 3.0}
+  ],
+  "magazines": [
+    {"id": "large", "name": "LARGE MAGAZINE", "power": 1.0, "weight": 3.5},
+    {"id": "light", "name": "LIGHT MAGAZINE", "power": 1.0, "weight": 1.0},
+    {"id": "explosive", "name": "EXPLOSIVE MAGAZINE", "power": 4.0, "weight": 3.0},
+    {"id": "reverse", "name": "REVERSE MAGAZINE", "power": 2.0, "weight": 2.0}
+  ],
+  "cores": [
+    {"id": "fire", "name": "FIRE CORE", "power": 3.0, "weight": 1.5},
+    {"id": "frost", "name": "COOLING CORE", "power": 3.0, "weight": 1.5},
+    {"id": "electric", "name": "ELECTRIC CORE", "power": 4.0, "weight": 2.0},
+    {"id": "corrosion", "name": "CORROSION CORE", "power": 4.0, "weight": 2.0}
+  ]
+}
