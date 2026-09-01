@@ -4,6 +4,7 @@ const PlayerScript = preload("res://scripts/player/player.gd")
 const EncounterDirectorScript = preload("res://scripts/systems/encounter_director.gd")
 const HUDScript = preload("res://scripts/ui/hud.gd")
 const MobileControlsScript = preload("res://scripts/ui/mobile_controls.gd")
+const WeaponWorkshopScript = preload("res://scripts/ui/weapon_workshop.gd")
 
 const SIDE_MARGIN := 36.0
 const TOP_MARGIN := 118.0
@@ -15,6 +16,7 @@ var player: CharacterBody2D
 var director: Node
 var hud: CanvasLayer
 var mobile_controls: CanvasLayer
+var weapon_workshop: CanvasLayer
 
 func _ready() -> void:
     process_mode = Node.PROCESS_MODE_ALWAYS
@@ -38,6 +40,10 @@ func _ready() -> void:
         mobile_controls = MobileControlsScript.new()
         add_child(mobile_controls)
         mobile_controls.configure(player)
+
+    weapon_workshop = WeaponWorkshopScript.new()
+    add_child(weapon_workshop)
+    weapon_workshop.configure(player)
 
     queue_redraw()
 
