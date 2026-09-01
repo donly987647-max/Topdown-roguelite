@@ -81,13 +81,17 @@ func clear_mobile_input() -> void:
 
 func _tick_movement(delta: float) -> void:
     var input_vector := _movement_input()
-    var target := input_vector * MOVE_SPEED
-    var rate := MOVE_SPEED / (ACCEL_TIME if input_vector.length_squared() > 0.0 else DECEL_TIME)
+    var speed_multiplier := weapon.get_movement_multiplier() if weapon != null and weapon.has_method("get_movement_multiplier") else 1.0
+    var effective_speed := MOVE_SPEED * speed_multiplier
+    var target := input_vector * effective_speed
+    var time_constant := ACCEL_TIME if input_vector.length_squared() > 0.0 else DECEL_TIME
+    var rate := MOVE_SPEED / time_constant
     velocity = velocity.move_toward(target, rate * delta)
 
 func _tick_dodge(delta: float) -> void:
     dodge_elapsed += delta
-    velocity = dodge_direction * (DODGE_DISTANCE / DODGE_DURATION)
+    var distance_multiplier := weapon.get_dodge_distance_multiplier() if weapon != null and weapon.has_method("get_dodge_distance_multiplier") else 1.0
+    velocity = dodge_direction * (DODGE_DISTANCE * distance_multiplier / DODGE_DURATION)
     invulnerable = dodge_elapsed >= DODGE_IFRAME_START and dodge_elapsed <= DODGE_IFRAME_END
 
     if dodge_elapsed >= DODGE_DURATION:
