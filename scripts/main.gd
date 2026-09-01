@@ -10,18 +10,22 @@ var director: Node
 var hud: CanvasLayer
 
 func _ready() -> void:
+    process_mode = Node.PROCESS_MODE_ALWAYS
     GameManager.reset_run()
     _build_world_bounds()
 
     player = PlayerScript.new()
+    player.process_mode = Node.PROCESS_MODE_PAUSABLE
     player.position = ARENA.get_center()
     add_child(player)
 
     director = EncounterDirectorScript.new()
+    director.process_mode = Node.PROCESS_MODE_PAUSABLE
     add_child(director)
     director.configure(player, ARENA)
 
     hud = HUDScript.new()
+    hud.process_mode = Node.PROCESS_MODE_ALWAYS
     add_child(hud)
     hud.configure(player, director)
 
