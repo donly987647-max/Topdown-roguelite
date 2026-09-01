@@ -23,6 +23,10 @@ var dodge_elapsed := 0.0
 var dodge_cooldown_left := 0.0
 var dodge_direction := Vector2.ZERO
 
+var mobile_move_input := Vector2.ZERO
+var mobile_aim_input := Vector2.ZERO
+var mobile_fire_held := false
+
 func _ready() -> void:
     collision_layer = 1
     collision_mask = 2 | 4
@@ -47,7 +51,7 @@ func _physics_process(delta: float) -> void:
     else:
         _tick_movement(delta)
 
-    weapon.tick(delta, aim_direction)
+    weapon.tick(delta, aim_direction, mobile_fire_held)
     move_and_slide()
     queue_redraw()
 
@@ -62,6 +66,18 @@ func _unhandled_input(event: InputEvent) -> void:
             request_dodge()
         elif event.button_index == JOY_BUTTON_X:
             weapon.request_reload()
+
+func set_mobile_move(value: Vector2) -> void:
+    mobile_move_input = value.limit_length(1.0)
+
+func set_mobile_aim(value: Vector2, firing: bool) -> void:
+    mobile_aim_input = value.limit_length(1.0)
+    mobile_fire_held = firing
+
+func clear_mobile_input() -> void:
+    mobile_move_input = Vector2.ZERO
+    mobile_aim_input = Vector2.ZERO
+    mobile_fire_held = false
 
 func _tick_movement(delta: float) -> void:
     var input_vector := _movement_input()
@@ -87,6 +103,9 @@ func _update_timers(delta: float) -> void:
         invulnerable = hit_invuln_left > 0.0
 
 func _movement_input() -> Vector2:
+    if mobile_move_input.length_squared() > 0.0025:
+        return mobile_move_input
+
     var result := Vector2.ZERO
     if Input.is_key_pressed(KEY_A): result.x -= 1.0
     if Input.is_key_pressed(KEY_D): result.x += 1.0
@@ -99,10 +118,14 @@ func _movement_input() -> Vector2:
     return result.normalized() if result.length_squared() > 1.0 else result
 
 func _update_aim() -> void:
+    if mobile_aim_input.length_squared() > 0.01:
+        aim_direction = mobile_aim_input.normalized()
+        return
+
     var stick := Vector2(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X), Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y))
     if stick.length() > 0.25:
         aim_direction = stick.normalized()
-    else:
+    elif not OS.has_feature("mobile"):
         var mouse_delta := get_global_mouse_position() - global_position
         if mouse_delta.length_squared() > 1.0:
             aim_direction = mouse_delta.normalized()
