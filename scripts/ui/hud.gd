@@ -9,11 +9,14 @@ var run_label: Label
 var reload_label: Label
 var center_label: Label
 var pause_label: Label
+var help_label: Label
 var center_timer := 0.0
+var mobile_layout := false
 
 func configure(target: Node, encounter_director: Node) -> void:
     player = target
     director = encounter_director
+    mobile_layout = OS.has_feature("mobile") or DisplayServer.is_touchscreen_available()
     _build_ui()
     EventBus.wave_changed.connect(_on_wave_changed)
     EventBus.perfect_reload.connect(_on_perfect_reload)
@@ -48,19 +51,25 @@ func set_pause_visible(value: bool) -> void:
         pause_label.visible = value
 
 func _build_ui() -> void:
-    hp_label = _make_label(Vector2(26, 24), 22)
-    ammo_label = _make_label(Vector2(925, 640), 20)
-    reload_label = _make_label(Vector2(925, 672), 16)
-    wave_label = _make_label(Vector2(1030, 24), 18)
-    run_label = _make_label(Vector2(26, 58), 16)
+    hp_label = _make_label(Vector2(34, 28), 22)
+    wave_label = _make_label(Vector2(1040, 28), 18)
+    run_label = _make_label(Vector2(34, 62), 16)
+
+    if mobile_layout:
+        ammo_label = _make_label(Vector2(860, 330), 18)
+        reload_label = _make_label(Vector2(860, 360), 15)
+    else:
+        ammo_label = _make_label(Vector2(925, 640), 20)
+        reload_label = _make_label(Vector2(925, 672), 16)
 
     center_label = _make_label(Vector2(390, 26), 24)
     center_label.size = Vector2(500, 40)
     center_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-    var help := _make_label(Vector2(26, 670), 14)
-    help.text = "WASD move  |  Mouse aim/fire  |  Space dodge  |  R reload"
-    help.modulate = Color("8995a8")
+    help_label = _make_label(Vector2(26, 670), 14)
+    help_label.text = "WASD move  |  Mouse aim/fire  |  Space dodge  |  R reload"
+    help_label.modulate = Color("8995a8")
+    help_label.visible = not mobile_layout
 
     pause_label = _make_label(Vector2(490, 325), 36)
     pause_label.text = "PAUSED"
