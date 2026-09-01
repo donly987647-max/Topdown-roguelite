@@ -1,11 +1,11 @@
 ; Engine configuration file.
-; LAST MAGAZINE - GDD reboot
+; LAST MAGAZINE - mobile-first reboot
 config_version=5
 
 [application]
 config/name="LAST MAGAZINE"
 run/main_scene="res://scenes/main.tscn"
-config/features=PackedStringArray("4.3", "GL Compatibility")
+config/features=PackedStringArray("4.7", "GL Compatibility")
 
 [autoload]
 EventBus="*res://scripts/core/event_bus.gd"
@@ -16,7 +16,14 @@ window/size/viewport_width=1280
 window/size/viewport_height=720
 window/size/window_width_override=1280
 window/size/window_height_override=720
+window/size/mode=3
 window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+window/handheld/orientation=0
+
+[input_devices]
+pointing/emulate_mouse_from_touch=false
+pointing/emulate_touch_from_mouse=false
 
 [physics]
 common/physics_ticks_per_second=60
@@ -24,4 +31,5 @@ common/physics_ticks_per_second=60
 [rendering]
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true
 environment/defaults/default_clear_color=Color(0.035, 0.04, 0.055, 1)
