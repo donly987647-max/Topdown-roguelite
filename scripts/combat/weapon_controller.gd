@@ -19,7 +19,7 @@ func configure(owner_actor: Node2D) -> void:
     ammo_in_mag = int(data.get("magazine_size", 8))
     reserve_ammo = int(data.get("reserve_ammo", 72))
 
-func tick(delta: float, aim_direction: Vector2) -> void:
+func tick(delta: float, aim_direction: Vector2, mobile_fire_held: bool = false) -> void:
     fire_cooldown = maxf(0.0, fire_cooldown - delta)
 
     if reloading:
@@ -29,7 +29,7 @@ func tick(delta: float, aim_direction: Vector2) -> void:
         return
 
     var gamepad_fire := Input.get_joy_axis(0, JOY_AXIS_TRIGGER_RIGHT) > 0.35
-    if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or gamepad_fire:
+    if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or gamepad_fire or mobile_fire_held:
         _try_fire(aim_direction)
 
     if ammo_in_mag <= 0 and reserve_ammo > 0:
