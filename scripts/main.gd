@@ -3,11 +3,13 @@ extends Node2D
 const PlayerScript = preload("res://scripts/player/player.gd")
 const EncounterDirectorScript = preload("res://scripts/systems/encounter_director.gd")
 const HUDScript = preload("res://scripts/ui/hud.gd")
+const MobileControlsScript = preload("res://scripts/ui/mobile_controls.gd")
 
 const ARENA := Rect2(120.0, 90.0, 1040.0, 540.0)
 var player: CharacterBody2D
 var director: Node
 var hud: CanvasLayer
+var mobile_controls: CanvasLayer
 
 func _ready() -> void:
     process_mode = Node.PROCESS_MODE_ALWAYS
@@ -15,19 +17,21 @@ func _ready() -> void:
     _build_world_bounds()
 
     player = PlayerScript.new()
-    player.process_mode = Node.PROCESS_MODE_PAUSABLE
     player.position = ARENA.get_center()
     add_child(player)
 
     director = EncounterDirectorScript.new()
-    director.process_mode = Node.PROCESS_MODE_PAUSABLE
     add_child(director)
     director.configure(player, ARENA)
 
     hud = HUDScript.new()
-    hud.process_mode = Node.PROCESS_MODE_ALWAYS
     add_child(hud)
     hud.configure(player, director)
+
+    if _mobile_controls_enabled():
+        mobile_controls = MobileControlsScript.new()
+        add_child(mobile_controls)
+        mobile_controls.configure(player)
 
     queue_redraw()
 
@@ -35,6 +39,9 @@ func _unhandled_input(event: InputEvent) -> void:
     if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
         get_tree().paused = not get_tree().paused
         hud.set_pause_visible(get_tree().paused)
+
+func _mobile_controls_enabled() -> bool:
+    return OS.has_feature("mobile") or DisplayServer.is_touchscreen_available()
 
 func _draw() -> void:
     draw_rect(Rect2(Vector2.ZERO, Vector2(1280, 720)), Color("111522"), true)
