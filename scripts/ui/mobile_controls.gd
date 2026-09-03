@@ -1,5 +1,7 @@
 extends CanvasLayer
 
+signal build_requested
+
 const STICK_RADIUS := 72.0
 const KNOB_RADIUS := 30.0
 const DEAD_ZONE := 0.16
@@ -20,8 +22,6 @@ var aim_touch := -1
 var move_origin := Vector2.ZERO
 var aim_origin := Vector2.ZERO
 var last_viewport_size := Vector2.ZERO
-var screen_touch_seen := false
-var mouse_touch_mode := ""
 var web_pointer_callback = null
 var web_blur_callback = null
 var web_bridge_installed := false
@@ -136,7 +136,6 @@ func _on_web_pointer_event(args: Array) -> void:
     var rect_height := maxf(1.0, float(args[7]))
     var pointer_type := String(args[8])
 
-    # Ignore a real desktop mouse. Touch and pen always use this bridge.
     if pointer_type == "mouse" and not DisplayServer.is_touchscreen_available():
         return
 
@@ -149,6 +148,11 @@ func _on_web_pointer_event(args: Array) -> void:
     if event_type == "pointerdown":
         web_pointer_count += 1
         _refresh_web_status()
+
+        var build_rect := Rect2(Vector2(viewport_size.x - 136.0, 118.0), Vector2(112.0, 54.0))
+        if build_rect.has_point(position):
+            build_requested.emit()
+            return
         if _button_rect(dodge_button).has_point(position):
             player.request_dodge()
             return
@@ -172,13 +176,10 @@ func _on_root_gui_input(event: InputEvent) -> void:
     if player == null:
         return
 
-    # Web uses the browser PointerEvent bridge above. Keeping Godot touch input
-    # here as a fallback would double-fire on browsers that emit both paths.
     if OS.has_feature("web"):
         return
 
     if event is InputEventScreenTouch:
-        screen_touch_seen = true
         var handled := false
         if event.pressed:
             handled = _touch_pressed(event.index, event.position)
@@ -187,7 +188,6 @@ func _on_root_gui_input(event: InputEvent) -> void:
         if handled:
             root.accept_event()
     elif event is InputEventScreenDrag:
-        screen_touch_seen = true
         if _touch_dragged(event.index, event.position):
             root.accept_event()
 
@@ -228,7 +228,6 @@ func _touch_released(index: int) -> bool:
 func _clear_all_input() -> void:
     move_touch = -1
     aim_touch = -1
-    mouse_touch_mode = ""
     if player != null:
         player.clear_mobile_input()
     if move_knob != null:
