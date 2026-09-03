@@ -5,6 +5,7 @@ const KNOB_RADIUS := 30.0
 const DEAD_ZONE := 0.16
 const SAFE_MARGIN := 28.0
 const BOTTOM_MARGIN := 44.0
+const TOUCH_BUILD_LABEL := "TOUCH V3"
 
 var player: Node
 var root: Control
@@ -12,8 +13,8 @@ var move_base: Panel
 var move_knob: Panel
 var aim_base: Panel
 var aim_knob: Panel
-var dodge_button: Panel
-var reload_button: Panel
+var dodge_button: Button
+var reload_button: Button
 var move_touch := -1
 var aim_touch := -1
 var move_origin := Vector2.ZERO
@@ -38,49 +39,49 @@ func _notification(what: int) -> void:
     if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
         _clear_all_input()
 
-func _input(event: InputEvent) -> void:
+func _on_root_gui_input(event: InputEvent) -> void:
     if player == null:
         return
 
     if event is InputEventScreenTouch:
         screen_touch_seen = true
+        var handled := false
         if event.pressed:
-            _touch_pressed(event.index, event.position)
+            handled = _touch_pressed(event.index, event.position)
         else:
-            _touch_released(event.index)
+            handled = _touch_released(event.index)
+        if handled:
+            root.accept_event()
     elif event is InputEventScreenDrag:
         screen_touch_seen = true
-        _touch_dragged(event.index, event.position)
+        if _touch_dragged(event.index, event.position):
+            root.accept_event()
     elif OS.has_feature("web") and not screen_touch_seen:
-        _handle_web_mouse_fallback(event)
+        if _handle_web_mouse_fallback(event):
+            root.accept_event()
 
-func _handle_web_mouse_fallback(event: InputEvent) -> void:
+func _handle_web_mouse_fallback(event: InputEvent) -> bool:
     if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
         if event.pressed:
             mouse_touch_mode = _claim_pointer(event.position)
-        else:
-            _release_mouse_pointer()
-        get_viewport().set_input_as_handled()
+            return mouse_touch_mode != ""
+        var had_pointer := mouse_touch_mode != ""
+        _release_mouse_pointer()
+        return had_pointer
     elif event is InputEventMouseMotion and mouse_touch_mode != "" and (event.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0:
         if mouse_touch_mode == "move":
             _update_move(event.position)
         elif mouse_touch_mode == "aim":
             _update_aim(event.position)
-        get_viewport().set_input_as_handled()
+        return true
+    return false
 
 func _claim_pointer(position: Vector2) -> String:
-    if _button_rect(dodge_button).has_point(position):
-        player.request_dodge()
-        return "button"
-    if _button_rect(reload_button).has_point(position):
-        player.weapon.request_reload()
-        return "button"
-
     var size := get_viewport().get_visible_rect().size
-    if position.x < size.x * 0.46 and position.y > size.y - 310.0:
+    if position.x < size.x * 0.46 and position.y > size.y - 330.0:
         _update_move(position)
         return "move"
-    if position.x > size.x * 0.54 and position.y > size.y - 340.0:
+    if position.x > size.x * 0.54 and position.y > size.y - 360.0:
         _update_aim(position)
         return "aim"
     return ""
@@ -94,46 +95,39 @@ func _release_mouse_pointer() -> void:
         aim_knob.position = aim_origin - Vector2(KNOB_RADIUS, KNOB_RADIUS)
     mouse_touch_mode = ""
 
-func _touch_pressed(index: int, position: Vector2) -> void:
-    if _button_rect(dodge_button).has_point(position):
-        player.request_dodge()
-        get_viewport().set_input_as_handled()
-        return
-
-    if _button_rect(reload_button).has_point(position):
-        player.weapon.request_reload()
-        get_viewport().set_input_as_handled()
-        return
-
+func _touch_pressed(index: int, position: Vector2) -> bool:
     var size := get_viewport().get_visible_rect().size
-    if position.x < size.x * 0.46 and position.y > size.y - 310.0 and move_touch < 0:
+    if position.x < size.x * 0.46 and position.y > size.y - 330.0 and move_touch < 0:
         move_touch = index
         _update_move(position)
-        get_viewport().set_input_as_handled()
-    elif position.x > size.x * 0.54 and position.y > size.y - 340.0 and aim_touch < 0:
+        return true
+    if position.x > size.x * 0.54 and position.y > size.y - 360.0 and aim_touch < 0:
         aim_touch = index
         _update_aim(position)
-        get_viewport().set_input_as_handled()
+        return true
+    return false
 
-func _touch_dragged(index: int, position: Vector2) -> void:
+func _touch_dragged(index: int, position: Vector2) -> bool:
     if index == move_touch:
         _update_move(position)
-        get_viewport().set_input_as_handled()
-    elif index == aim_touch:
+        return true
+    if index == aim_touch:
         _update_aim(position)
-        get_viewport().set_input_as_handled()
+        return true
+    return false
 
-func _touch_released(index: int) -> void:
+func _touch_released(index: int) -> bool:
     if index == move_touch:
         move_touch = -1
         player.set_mobile_move(Vector2.ZERO)
         move_knob.position = move_origin - Vector2(KNOB_RADIUS, KNOB_RADIUS)
-        get_viewport().set_input_as_handled()
-    elif index == aim_touch:
+        return true
+    if index == aim_touch:
         aim_touch = -1
         player.set_mobile_aim(Vector2.ZERO, false)
         aim_knob.position = aim_origin - Vector2(KNOB_RADIUS, KNOB_RADIUS)
-        get_viewport().set_input_as_handled()
+        return true
+    return false
 
 func _clear_all_input() -> void:
     move_touch = -1
@@ -172,20 +166,34 @@ func _update_aim(position: Vector2) -> void:
 func _build_ui() -> void:
     root = Control.new()
     root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-    root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    root.mouse_filter = Control.MOUSE_FILTER_STOP
+    root.gui_input.connect(_on_root_gui_input)
     add_child(root)
 
     move_base = _make_panel(Vector2(STICK_RADIUS * 2.0, STICK_RADIUS * 2.0), Color(0.16, 0.22, 0.30, 0.48), STICK_RADIUS)
     move_knob = _make_panel(Vector2(KNOB_RADIUS * 2.0, KNOB_RADIUS * 2.0), Color(0.48, 0.84, 1.0, 0.70), KNOB_RADIUS)
     aim_base = _make_panel(Vector2(STICK_RADIUS * 2.0, STICK_RADIUS * 2.0), Color(0.16, 0.22, 0.30, 0.48), STICK_RADIUS)
     aim_knob = _make_panel(Vector2(KNOB_RADIUS * 2.0, KNOB_RADIUS * 2.0), Color(1.0, 0.58, 0.32, 0.78), KNOB_RADIUS)
-    dodge_button = _make_button("DODGE", Vector2(128, 68), Color(0.20, 0.48, 0.64, 0.80))
-    reload_button = _make_button("RELOAD", Vector2(128, 68), Color(0.45, 0.34, 0.62, 0.80))
+    dodge_button = _make_action_button("DODGE", Vector2(128, 68), Color(0.20, 0.48, 0.64, 0.88))
+    reload_button = _make_action_button("RELOAD", Vector2(128, 68), Color(0.45, 0.34, 0.62, 0.88))
+    dodge_button.pressed.connect(_on_dodge_pressed)
+    reload_button.pressed.connect(_on_reload_pressed)
 
     var move_label := _make_label("MOVE", 14)
     move_label.name = "MoveLabel"
     var aim_label := _make_label("AIM / FIRE", 14)
     aim_label.name = "AimLabel"
+    var build_label := _make_label(TOUCH_BUILD_LABEL, 12)
+    build_label.name = "TouchBuildLabel"
+    build_label.modulate = Color(0.55, 0.9, 0.7, 0.86)
+
+func _on_dodge_pressed() -> void:
+    if player != null:
+        player.request_dodge()
+
+func _on_reload_pressed() -> void:
+    if player != null and player.weapon != null:
+        player.weapon.request_reload()
 
 func _layout_controls() -> void:
     if root == null:
@@ -211,6 +219,11 @@ func _layout_controls() -> void:
     var aim_label := root.get_node_or_null("AimLabel") as Label
     if aim_label:
         aim_label.position = Vector2(aim_origin.x - 40.0, aim_origin.y + STICK_RADIUS + 4.0)
+    var build_label := root.get_node_or_null("TouchBuildLabel") as Label
+    if build_label:
+        build_label.size = Vector2(120, 24)
+        build_label.position = Vector2((size.x - 120.0) * 0.5, size.y - 112.0)
+        build_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 func _make_panel(size: Vector2, color: Color, radius: float) -> Panel:
     var panel := Panel.new()
@@ -232,27 +245,34 @@ func _make_panel(size: Vector2, color: Color, radius: float) -> Panel:
     root.add_child(panel)
     return panel
 
-func _make_button(text: String, size: Vector2, color: Color) -> Panel:
-    var panel := _make_panel(size, color, 20.0)
-    var label := Label.new()
-    label.text = text
-    label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-    label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-    label.add_theme_font_size_override("font_size", 17)
-    label.add_theme_color_override("font_color", Color("f4f8ff"))
-    label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-    panel.add_child(label)
-    return panel
+func _make_action_button(text: String, size: Vector2, color: Color) -> Button:
+    var button := Button.new()
+    button.text = text
+    button.size = size
+    button.add_theme_font_size_override("font_size", 17)
+    var normal := StyleBoxFlat.new()
+    normal.bg_color = color
+    normal.corner_radius_top_left = 20
+    normal.corner_radius_top_right = 20
+    normal.corner_radius_bottom_left = 20
+    normal.corner_radius_bottom_right = 20
+    normal.border_width_left = 2
+    normal.border_width_top = 2
+    normal.border_width_right = 2
+    normal.border_width_bottom = 2
+    normal.border_color = Color(0.78, 0.90, 1.0, 0.32)
+    button.add_theme_stylebox_override("normal", normal)
+    var pressed := normal.duplicate() as StyleBoxFlat
+    pressed.bg_color = color.darkened(0.20)
+    button.add_theme_stylebox_override("pressed", pressed)
+    root.add_child(button)
+    return button
 
 func _make_label(text: String, font_size: int) -> Label:
     var label := Label.new()
     label.text = text
     label.add_theme_font_size_override("font_size", font_size)
-    label.add_theme_color_override("font_color", Color(0.80, 0.88, 0.96, 0.72))
+    label.add_theme_color_override("font_color", Color("d8e7f6"))
     label.mouse_filter = Control.MOUSE_FILTER_IGNORE
     root.add_child(label)
     return label
-
-func _button_rect(panel: Control) -> Rect2:
-    return Rect2(panel.position, panel.size)
