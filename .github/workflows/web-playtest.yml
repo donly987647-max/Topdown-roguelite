@@ -49,18 +49,23 @@ jobs:
       - name: Audit weapon assembly combinations
         run: timeout 90s godot --headless --path . --script res://tools/weapon_assembly_audit.gd
 
-      - name: Export web playtest
+      - name: Export cache-busted web playtest
         shell: bash
         run: |
           set -euxo pipefail
           mkdir -p builds/web
-          godot --headless --path . --export-release "Web Playtest" builds/web/index.html
+          SHORT_SHA="${GITHUB_SHA:0:12}"
+          BASE="game-${SHORT_SHA}"
+          godot --headless --path . --export-release "Web Playtest" "builds/web/${BASE}.html"
+          cp "builds/web/${BASE}.html" builds/web/index.html
+          rm "builds/web/${BASE}.html"
           test -s builds/web/index.html
-          test -s builds/web/index.wasm
-          test -s builds/web/index.pck
+          test -s "builds/web/${BASE}.wasm"
+          test -s "builds/web/${BASE}.pck"
           touch builds/web/.nojekyll
           printf '%s\n' 'LAST MAGAZINE web playtest' > builds/web/BUILD_INFO.txt
           printf 'commit=%s\n' "$GITHUB_SHA" >> builds/web/BUILD_INFO.txt
+          printf 'asset_base=%s\n' "$BASE" >> builds/web/BUILD_INFO.txt
 
       - name: Upload web artifact
         uses: actions/upload-artifact@v4
