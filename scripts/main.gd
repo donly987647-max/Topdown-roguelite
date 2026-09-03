@@ -46,6 +46,9 @@ func _ready() -> void:
     add_child(weapon_workshop)
     weapon_workshop.configure(player)
 
+    if mobile_controls != null and mobile_controls.has_signal("build_requested"):
+        mobile_controls.build_requested.connect(weapon_workshop.open)
+
     queue_redraw()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -54,9 +57,6 @@ func _unhandled_input(event: InputEvent) -> void:
         hud.set_pause_visible(get_tree().paused)
 
 func _mobile_controls_enabled() -> bool:
-    # Web exports are primarily used as the phone playtest build. Some mobile
-    # browsers report touchscreen availability unreliably, so never gate the
-    # virtual controls on that signal alone.
     return OS.has_feature("mobile") or OS.has_feature("web") or DisplayServer.is_touchscreen_available()
 
 func _calculate_arena() -> Rect2:
