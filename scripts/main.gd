@@ -37,6 +37,7 @@ func _ready() -> void:
     hud.configure(player, director)
 
     if _mobile_controls_enabled():
+        player.set_mobile_control_mode(true)
         mobile_controls = MobileControlsScript.new()
         add_child(mobile_controls)
         mobile_controls.configure(player)
@@ -53,7 +54,10 @@ func _unhandled_input(event: InputEvent) -> void:
         hud.set_pause_visible(get_tree().paused)
 
 func _mobile_controls_enabled() -> bool:
-    return OS.has_feature("mobile") or DisplayServer.is_touchscreen_available()
+    # Web exports are primarily used as the phone playtest build. Some mobile
+    # browsers report touchscreen availability unreliably, so never gate the
+    # virtual controls on that signal alone.
+    return OS.has_feature("mobile") or OS.has_feature("web") or DisplayServer.is_touchscreen_available()
 
 func _calculate_arena() -> Rect2:
     var viewport_size := get_viewport().get_visible_rect().size
