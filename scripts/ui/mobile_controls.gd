@@ -5,7 +5,7 @@ const KNOB_RADIUS := 30.0
 const DEAD_ZONE := 0.16
 const SAFE_MARGIN := 28.0
 const BOTTOM_MARGIN := 44.0
-const TOUCH_BUILD_LABEL := "TOUCH V3"
+const TOUCH_BUILD_LABEL := "WEB PTR V4"
 
 var player: Node
 var root: Control
@@ -22,6 +22,10 @@ var aim_origin := Vector2.ZERO
 var last_viewport_size := Vector2.ZERO
 var screen_touch_seen := false
 var mouse_touch_mode := ""
+var web_pointer_callback = null
+var web_blur_callback = null
+var web_bridge_installed := false
+var web_pointer_count := 0
 
 func configure(target: Node) -> void:
     player = target
@@ -29,18 +33,148 @@ func configure(target: Node) -> void:
     process_mode = Node.PROCESS_MODE_ALWAYS
     _build_ui()
     _layout_controls()
+    if OS.has_feature("web"):
+        _install_web_pointer_bridge()
 
 func _process(_delta: float) -> void:
     var current_size := get_viewport().get_visible_rect().size
     if current_size != last_viewport_size:
         _layout_controls()
+    if OS.has_feature("web") and not web_bridge_installed:
+        _install_web_pointer_bridge()
 
 func _notification(what: int) -> void:
     if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
         _clear_all_input()
 
+func _install_web_pointer_bridge() -> void:
+    if not OS.has_feature("web") or web_bridge_installed:
+        return
+
+    web_pointer_callback = JavaScriptBridge.create_callback(_on_web_pointer_event)
+    web_blur_callback = JavaScriptBridge.create_callback(_on_web_blur)
+    var window = JavaScriptBridge.get_interface("window")
+    if window == null:
+        return
+
+    window.__lastMagazinePointerCallback = web_pointer_callback
+    window.__lastMagazineBlurCallback = web_blur_callback
+
+    var installed = JavaScriptBridge.eval("""
+        (() => {
+            const canvas = document.querySelector('canvas');
+            if (!canvas || !window.__lastMagazinePointerCallback) return false;
+
+            document.documentElement.style.overscrollBehavior = 'none';
+            document.body.style.overscrollBehavior = 'none';
+            document.body.style.touchAction = 'none';
+            document.body.style.userSelect = 'none';
+            canvas.style.touchAction = 'none';
+            canvas.style.userSelect = 'none';
+            canvas.style.webkitUserSelect = 'none';
+
+            if (!canvas.__lastMagazinePointerBridgeInstalled) {
+                const send = (e) => {
+                    const r = canvas.getBoundingClientRect();
+                    window.__lastMagazinePointerCallback(
+                        e.type,
+                        e.pointerId,
+                        e.clientX,
+                        e.clientY,
+                        r.left,
+                        r.top,
+                        r.width,
+                        r.height,
+                        e.pointerType || '',
+                        e.buttons || 0
+                    );
+                };
+
+                canvas.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+                    send(e);
+                }, { passive: false });
+                canvas.addEventListener('pointermove', (e) => {
+                    e.preventDefault();
+                    send(e);
+                }, { passive: false });
+                canvas.addEventListener('pointerup', (e) => {
+                    e.preventDefault();
+                    send(e);
+                    try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+                }, { passive: false });
+                canvas.addEventListener('pointercancel', (e) => {
+                    e.preventDefault();
+                    send(e);
+                }, { passive: false });
+                canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+                window.addEventListener('blur', () => {
+                    if (window.__lastMagazineBlurCallback) window.__lastMagazineBlurCallback();
+                });
+                canvas.__lastMagazinePointerBridgeInstalled = true;
+            }
+            return true;
+        })();
+    """, true)
+    web_bridge_installed = bool(installed)
+
+func _on_web_blur(_args: Array) -> void:
+    _clear_all_input()
+
+func _on_web_pointer_event(args: Array) -> void:
+    if player == null or args.size() < 10:
+        return
+
+    var event_type := String(args[0])
+    var pointer_id := int(args[1])
+    var client_x := float(args[2])
+    var client_y := float(args[3])
+    var rect_left := float(args[4])
+    var rect_top := float(args[5])
+    var rect_width := maxf(1.0, float(args[6]))
+    var rect_height := maxf(1.0, float(args[7]))
+    var pointer_type := String(args[8])
+
+    # Ignore a real desktop mouse. Touch and pen always use this bridge.
+    if pointer_type == "mouse" and not DisplayServer.is_touchscreen_available():
+        return
+
+    var viewport_size := get_viewport().get_visible_rect().size
+    var position := Vector2(
+        (client_x - rect_left) * viewport_size.x / rect_width,
+        (client_y - rect_top) * viewport_size.y / rect_height
+    )
+
+    if event_type == "pointerdown":
+        web_pointer_count += 1
+        _refresh_web_status()
+        if _button_rect(dodge_button).has_point(position):
+            player.request_dodge()
+            return
+        if _button_rect(reload_button).has_point(position):
+            if player.weapon != null:
+                player.weapon.request_reload()
+            return
+        _touch_pressed(pointer_id, position)
+    elif event_type == "pointermove":
+        _touch_dragged(pointer_id, position)
+    elif event_type == "pointerup" or event_type == "pointercancel":
+        _touch_released(pointer_id)
+
+func _refresh_web_status() -> void:
+    var label := root.get_node_or_null("TouchBuildLabel") as Label
+    if label != null:
+        label.text = "%s  #%d" % [TOUCH_BUILD_LABEL, web_pointer_count]
+        label.modulate = Color(0.45, 1.0, 0.58, 0.95)
+
 func _on_root_gui_input(event: InputEvent) -> void:
     if player == null:
+        return
+
+    # Web uses the browser PointerEvent bridge above. Keeping Godot touch input
+    # here as a fallback would double-fire on browsers that emit both paths.
+    if OS.has_feature("web"):
         return
 
     if event is InputEventScreenTouch:
@@ -56,44 +190,6 @@ func _on_root_gui_input(event: InputEvent) -> void:
         screen_touch_seen = true
         if _touch_dragged(event.index, event.position):
             root.accept_event()
-    elif OS.has_feature("web") and not screen_touch_seen:
-        if _handle_web_mouse_fallback(event):
-            root.accept_event()
-
-func _handle_web_mouse_fallback(event: InputEvent) -> bool:
-    if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-        if event.pressed:
-            mouse_touch_mode = _claim_pointer(event.position)
-            return mouse_touch_mode != ""
-        var had_pointer := mouse_touch_mode != ""
-        _release_mouse_pointer()
-        return had_pointer
-    elif event is InputEventMouseMotion and mouse_touch_mode != "" and (event.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0:
-        if mouse_touch_mode == "move":
-            _update_move(event.position)
-        elif mouse_touch_mode == "aim":
-            _update_aim(event.position)
-        return true
-    return false
-
-func _claim_pointer(position: Vector2) -> String:
-    var size := get_viewport().get_visible_rect().size
-    if position.x < size.x * 0.46 and position.y > size.y - 330.0:
-        _update_move(position)
-        return "move"
-    if position.x > size.x * 0.54 and position.y > size.y - 360.0:
-        _update_aim(position)
-        return "aim"
-    return ""
-
-func _release_mouse_pointer() -> void:
-    if mouse_touch_mode == "move":
-        player.set_mobile_move(Vector2.ZERO)
-        move_knob.position = move_origin - Vector2(KNOB_RADIUS, KNOB_RADIUS)
-    elif mouse_touch_mode == "aim":
-        player.set_mobile_aim(Vector2.ZERO, false)
-        aim_knob.position = aim_origin - Vector2(KNOB_RADIUS, KNOB_RADIUS)
-    mouse_touch_mode = ""
 
 func _touch_pressed(index: int, position: Vector2) -> bool:
     var size := get_viewport().get_visible_rect().size
@@ -221,8 +317,8 @@ func _layout_controls() -> void:
         aim_label.position = Vector2(aim_origin.x - 40.0, aim_origin.y + STICK_RADIUS + 4.0)
     var build_label := root.get_node_or_null("TouchBuildLabel") as Label
     if build_label:
-        build_label.size = Vector2(120, 24)
-        build_label.position = Vector2((size.x - 120.0) * 0.5, size.y - 112.0)
+        build_label.size = Vector2(180, 24)
+        build_label.position = Vector2((size.x - 180.0) * 0.5, size.y - 112.0)
         build_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 func _make_panel(size: Vector2, color: Color, radius: float) -> Panel:
@@ -276,3 +372,6 @@ func _make_label(text: String, font_size: int) -> Label:
     label.mouse_filter = Control.MOUSE_FILTER_IGNORE
     root.add_child(label)
     return label
+
+func _button_rect(panel: Control) -> Rect2:
+    return Rect2(panel.position, panel.size)
