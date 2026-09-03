@@ -38,6 +38,9 @@ jobs:
       - name: Import and validate project
         run: timeout 90s godot --headless --editor --path . --quit-after 3
 
+      - name: Smoke test mobile touch input
+        run: timeout 90s godot --headless --path . --script res://tools/mobile_input_smoke.gd
+
       - name: Audit weapon assembly combinations
         run: timeout 90s godot --headless --path . --script res://tools/weapon_assembly_audit.gd
 
