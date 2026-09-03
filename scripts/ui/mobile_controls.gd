@@ -19,10 +19,13 @@ var aim_touch := -1
 var move_origin := Vector2.ZERO
 var aim_origin := Vector2.ZERO
 var last_viewport_size := Vector2.ZERO
+var screen_touch_seen := false
+var mouse_touch_mode := ""
 
 func configure(target: Node) -> void:
     player = target
     layer = 20
+    process_mode = Node.PROCESS_MODE_ALWAYS
     _build_ui()
     _layout_controls()
 
@@ -31,17 +34,65 @@ func _process(_delta: float) -> void:
     if current_size != last_viewport_size:
         _layout_controls()
 
+func _notification(what: int) -> void:
+    if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+        _clear_all_input()
+
 func _input(event: InputEvent) -> void:
     if player == null:
         return
 
     if event is InputEventScreenTouch:
+        screen_touch_seen = true
         if event.pressed:
             _touch_pressed(event.index, event.position)
         else:
             _touch_released(event.index)
     elif event is InputEventScreenDrag:
+        screen_touch_seen = true
         _touch_dragged(event.index, event.position)
+    elif OS.has_feature("web") and not screen_touch_seen:
+        _handle_web_mouse_fallback(event)
+
+func _handle_web_mouse_fallback(event: InputEvent) -> void:
+    if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+        if event.pressed:
+            mouse_touch_mode = _claim_pointer(event.position)
+        else:
+            _release_mouse_pointer()
+        get_viewport().set_input_as_handled()
+    elif event is InputEventMouseMotion and mouse_touch_mode != "" and (event.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0:
+        if mouse_touch_mode == "move":
+            _update_move(event.position)
+        elif mouse_touch_mode == "aim":
+            _update_aim(event.position)
+        get_viewport().set_input_as_handled()
+
+func _claim_pointer(position: Vector2) -> String:
+    if _button_rect(dodge_button).has_point(position):
+        player.request_dodge()
+        return "button"
+    if _button_rect(reload_button).has_point(position):
+        player.weapon.request_reload()
+        return "button"
+
+    var size := get_viewport().get_visible_rect().size
+    if position.x < size.x * 0.46 and position.y > size.y - 310.0:
+        _update_move(position)
+        return "move"
+    if position.x > size.x * 0.54 and position.y > size.y - 340.0:
+        _update_aim(position)
+        return "aim"
+    return ""
+
+func _release_mouse_pointer() -> void:
+    if mouse_touch_mode == "move":
+        player.set_mobile_move(Vector2.ZERO)
+        move_knob.position = move_origin - Vector2(KNOB_RADIUS, KNOB_RADIUS)
+    elif mouse_touch_mode == "aim":
+        player.set_mobile_aim(Vector2.ZERO, false)
+        aim_knob.position = aim_origin - Vector2(KNOB_RADIUS, KNOB_RADIUS)
+    mouse_touch_mode = ""
 
 func _touch_pressed(index: int, position: Vector2) -> void:
     if _button_rect(dodge_button).has_point(position):
@@ -83,6 +134,17 @@ func _touch_released(index: int) -> void:
         player.set_mobile_aim(Vector2.ZERO, false)
         aim_knob.position = aim_origin - Vector2(KNOB_RADIUS, KNOB_RADIUS)
         get_viewport().set_input_as_handled()
+
+func _clear_all_input() -> void:
+    move_touch = -1
+    aim_touch = -1
+    mouse_touch_mode = ""
+    if player != null:
+        player.clear_mobile_input()
+    if move_knob != null:
+        move_knob.position = move_origin - Vector2(KNOB_RADIUS, KNOB_RADIUS)
+    if aim_knob != null:
+        aim_knob.position = aim_origin - Vector2(KNOB_RADIUS, KNOB_RADIUS)
 
 func _update_move(position: Vector2) -> void:
     var delta := position - move_origin
