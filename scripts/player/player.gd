@@ -26,6 +26,7 @@ var dodge_direction := Vector2.ZERO
 var mobile_move_input := Vector2.ZERO
 var mobile_aim_input := Vector2.ZERO
 var mobile_fire_held := false
+var mobile_control_mode := false
 
 func _ready() -> void:
     collision_layer = 1
@@ -66,6 +67,11 @@ func _unhandled_input(event: InputEvent) -> void:
             request_dodge()
         elif event.button_index == JOY_BUTTON_X:
             weapon.request_reload()
+
+func set_mobile_control_mode(enabled: bool) -> void:
+    mobile_control_mode = enabled
+    if not enabled:
+        clear_mobile_input()
 
 func set_mobile_move(value: Vector2) -> void:
     mobile_move_input = value.limit_length(1.0)
@@ -129,7 +135,7 @@ func _update_aim() -> void:
     var stick := Vector2(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X), Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y))
     if stick.length() > 0.25:
         aim_direction = stick.normalized()
-    elif not OS.has_feature("mobile"):
+    elif not mobile_control_mode and not OS.has_feature("mobile"):
         var mouse_delta := get_global_mouse_position() - global_position
         if mouse_delta.length_squared() > 1.0:
             aim_direction = mouse_delta.normalized()
