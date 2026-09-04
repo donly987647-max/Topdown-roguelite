@@ -7,7 +7,6 @@ const KNOB_RADIUS := 30.0
 const DEAD_ZONE := 0.16
 const SAFE_MARGIN := 28.0
 const BOTTOM_MARGIN := 44.0
-const TOUCH_BUILD_LABEL := "WEB PTR V4"
 
 var player: Node
 var root: Control
@@ -22,10 +21,10 @@ var aim_touch := -1
 var move_origin := Vector2.ZERO
 var aim_origin := Vector2.ZERO
 var last_viewport_size := Vector2.ZERO
-var web_pointer_callback = null
-var web_blur_callback = null
-var web_bridge_installed := false
-var web_pointer_count := 0
+var web_state_initialized := false
+var web_last_dodge_seq := 0
+var web_last_reload_seq := 0
+var web_last_build_seq := 0
 
 func configure(target: Node) -> void:
     player = target
@@ -34,151 +33,69 @@ func configure(target: Node) -> void:
     _build_ui()
     _layout_controls()
     if OS.has_feature("web"):
-        _install_web_pointer_bridge()
+        # Web uses a real DOM overlay. It does not depend on Godot receiving
+        # ScreenTouch/Pointer events from the mobile browser.
+        root.visible = false
 
 func _process(_delta: float) -> void:
     var current_size := get_viewport().get_visible_rect().size
     if current_size != last_viewport_size:
         _layout_controls()
-    if OS.has_feature("web") and not web_bridge_installed:
-        _install_web_pointer_bridge()
+    if OS.has_feature("web"):
+        _poll_web_dom_state()
 
 func _notification(what: int) -> void:
     if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
         _clear_all_input()
 
-func _install_web_pointer_bridge() -> void:
-    if not OS.has_feature("web") or web_bridge_installed:
-        return
-
-    web_pointer_callback = JavaScriptBridge.create_callback(_on_web_pointer_event)
-    web_blur_callback = JavaScriptBridge.create_callback(_on_web_blur)
-    var window = JavaScriptBridge.get_interface("window")
-    if window == null:
-        return
-
-    window.__lastMagazinePointerCallback = web_pointer_callback
-    window.__lastMagazineBlurCallback = web_blur_callback
-
-    var installed = JavaScriptBridge.eval("""
-        (() => {
-            const canvas = document.querySelector('canvas');
-            if (!canvas || !window.__lastMagazinePointerCallback) return false;
-
-            document.documentElement.style.overscrollBehavior = 'none';
-            document.body.style.overscrollBehavior = 'none';
-            document.body.style.touchAction = 'none';
-            document.body.style.userSelect = 'none';
-            canvas.style.touchAction = 'none';
-            canvas.style.userSelect = 'none';
-            canvas.style.webkitUserSelect = 'none';
-
-            if (!canvas.__lastMagazinePointerBridgeInstalled) {
-                const send = (e) => {
-                    const r = canvas.getBoundingClientRect();
-                    window.__lastMagazinePointerCallback(
-                        e.type,
-                        e.pointerId,
-                        e.clientX,
-                        e.clientY,
-                        r.left,
-                        r.top,
-                        r.width,
-                        r.height,
-                        e.pointerType || '',
-                        e.buttons || 0
-                    );
-                };
-
-                canvas.addEventListener('pointerdown', (e) => {
-                    e.preventDefault();
-                    try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
-                    send(e);
-                }, { passive: false });
-                canvas.addEventListener('pointermove', (e) => {
-                    e.preventDefault();
-                    send(e);
-                }, { passive: false });
-                canvas.addEventListener('pointerup', (e) => {
-                    e.preventDefault();
-                    send(e);
-                    try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
-                }, { passive: false });
-                canvas.addEventListener('pointercancel', (e) => {
-                    e.preventDefault();
-                    send(e);
-                }, { passive: false });
-                canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-                window.addEventListener('blur', () => {
-                    if (window.__lastMagazineBlurCallback) window.__lastMagazineBlurCallback();
-                });
-                canvas.__lastMagazinePointerBridgeInstalled = true;
-            }
-            return true;
-        })();
-    """, true)
-    web_bridge_installed = bool(installed)
-
-func _on_web_blur(_args: Array) -> void:
-    _clear_all_input()
-
-func _on_web_pointer_event(args: Array) -> void:
-    if player == null or args.size() < 10:
-        return
-
-    var event_type := String(args[0])
-    var pointer_id := int(args[1])
-    var client_x := float(args[2])
-    var client_y := float(args[3])
-    var rect_left := float(args[4])
-    var rect_top := float(args[5])
-    var rect_width := maxf(1.0, float(args[6]))
-    var rect_height := maxf(1.0, float(args[7]))
-    var pointer_type := String(args[8])
-
-    if pointer_type == "mouse" and not DisplayServer.is_touchscreen_available():
-        return
-
-    var viewport_size := get_viewport().get_visible_rect().size
-    var position := Vector2(
-        (client_x - rect_left) * viewport_size.x / rect_width,
-        (client_y - rect_top) * viewport_size.y / rect_height
-    )
-
-    if event_type == "pointerdown":
-        web_pointer_count += 1
-        _refresh_web_status()
-
-        var build_rect := Rect2(Vector2(viewport_size.x - 136.0, 118.0), Vector2(112.0, 54.0))
-        if build_rect.has_point(position):
-            build_requested.emit()
-            return
-        if _button_rect(dodge_button).has_point(position):
-            player.request_dodge()
-            return
-        if _button_rect(reload_button).has_point(position):
-            if player.weapon != null:
-                player.weapon.request_reload()
-            return
-        _touch_pressed(pointer_id, position)
-    elif event_type == "pointermove":
-        _touch_dragged(pointer_id, position)
-    elif event_type == "pointerup" or event_type == "pointercancel":
-        _touch_released(pointer_id)
-
-func _refresh_web_status() -> void:
-    var label := root.get_node_or_null("TouchBuildLabel") as Label
-    if label != null:
-        label.text = "%s  #%d" % [TOUCH_BUILD_LABEL, web_pointer_count]
-        label.modulate = Color(0.45, 1.0, 0.58, 0.95)
-
-func _on_root_gui_input(event: InputEvent) -> void:
+func _poll_web_dom_state() -> void:
     if player == null:
         return
+    var raw = JavaScriptBridge.eval("window.__LM_STATE ? JSON.stringify(window.__LM_STATE) : ''", true)
+    if not (raw is String):
+        return
+    var text := String(raw)
+    if text.is_empty():
+        return
+    var parsed = JSON.parse_string(text)
+    if not (parsed is Dictionary):
+        return
+    var state: Dictionary = parsed
 
-    if OS.has_feature("web"):
+    player.set_mobile_move(Vector2(
+        float(state.get("mx", 0.0)),
+        float(state.get("my", 0.0))
+    ))
+    player.set_mobile_aim(Vector2(
+        float(state.get("ax", 0.0)),
+        float(state.get("ay", 0.0))
+    ), bool(state.get("fire", false)))
+
+    var dodge_seq := int(state.get("dodgeSeq", 0))
+    var reload_seq := int(state.get("reloadSeq", 0))
+    var build_seq := int(state.get("buildSeq", 0))
+
+    if not web_state_initialized:
+        web_last_dodge_seq = dodge_seq
+        web_last_reload_seq = reload_seq
+        web_last_build_seq = build_seq
+        web_state_initialized = true
         return
 
+    if dodge_seq != web_last_dodge_seq:
+        web_last_dodge_seq = dodge_seq
+        player.request_dodge()
+    if reload_seq != web_last_reload_seq:
+        web_last_reload_seq = reload_seq
+        if player.weapon != null:
+            player.weapon.request_reload()
+    if build_seq != web_last_build_seq:
+        web_last_build_seq = build_seq
+        build_requested.emit()
+
+func _on_root_gui_input(event: InputEvent) -> void:
+    if player == null or OS.has_feature("web"):
+        return
     if event is InputEventScreenTouch:
         var handled := false
         if event.pressed:
@@ -278,9 +195,6 @@ func _build_ui() -> void:
     move_label.name = "MoveLabel"
     var aim_label := _make_label("AIM / FIRE", 14)
     aim_label.name = "AimLabel"
-    var build_label := _make_label(TOUCH_BUILD_LABEL, 12)
-    build_label.name = "TouchBuildLabel"
-    build_label.modulate = Color(0.55, 0.9, 0.7, 0.86)
 
 func _on_dodge_pressed() -> void:
     if player != null:
@@ -295,7 +209,6 @@ func _layout_controls() -> void:
         return
     var size := get_viewport().get_visible_rect().size
     last_viewport_size = size
-
     move_origin = Vector2(SAFE_MARGIN + STICK_RADIUS, size.y - BOTTOM_MARGIN - STICK_RADIUS)
     aim_origin = Vector2(size.x - SAFE_MARGIN - STICK_RADIUS, size.y - BOTTOM_MARGIN - STICK_RADIUS)
 
@@ -314,11 +227,6 @@ func _layout_controls() -> void:
     var aim_label := root.get_node_or_null("AimLabel") as Label
     if aim_label:
         aim_label.position = Vector2(aim_origin.x - 40.0, aim_origin.y + STICK_RADIUS + 4.0)
-    var build_label := root.get_node_or_null("TouchBuildLabel") as Label
-    if build_label:
-        build_label.size = Vector2(180, 24)
-        build_label.position = Vector2((size.x - 180.0) * 0.5, size.y - 112.0)
-        build_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 func _make_panel(size: Vector2, color: Color, radius: float) -> Panel:
     var panel := Panel.new()
@@ -371,6 +279,3 @@ func _make_label(text: String, font_size: int) -> Label:
     label.mouse_filter = Control.MOUSE_FILTER_IGNORE
     root.add_child(label)
     return label
-
-func _button_rect(panel: Control) -> Rect2:
-    return Rect2(panel.position, panel.size)
