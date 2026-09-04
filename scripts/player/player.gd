@@ -86,17 +86,21 @@ func clear_mobile_input() -> void:
     mobile_fire_held = false
 
 func _tick_movement(delta: float) -> void:
-    var input_vector := _movement_input()
-    var speed_multiplier := weapon.get_movement_multiplier() if weapon != null and weapon.has_method("get_movement_multiplier") else 1.0
-    var effective_speed := MOVE_SPEED * speed_multiplier
-    var target := input_vector * effective_speed
-    var time_constant := ACCEL_TIME if input_vector.length_squared() > 0.0 else DECEL_TIME
-    var rate := MOVE_SPEED / time_constant
+    var input_vector: Vector2 = _movement_input()
+    var speed_multiplier: float = 1.0
+    if weapon != null and weapon.has_method("get_movement_multiplier"):
+        speed_multiplier = float(weapon.call("get_movement_multiplier"))
+    var effective_speed: float = MOVE_SPEED * speed_multiplier
+    var target: Vector2 = input_vector * effective_speed
+    var time_constant: float = ACCEL_TIME if input_vector.length_squared() > 0.0 else DECEL_TIME
+    var rate: float = MOVE_SPEED / time_constant
     velocity = velocity.move_toward(target, rate * delta)
 
 func _tick_dodge(delta: float) -> void:
     dodge_elapsed += delta
-    var distance_multiplier := weapon.get_dodge_distance_multiplier() if weapon != null and weapon.has_method("get_dodge_distance_multiplier") else 1.0
+    var distance_multiplier: float = 1.0
+    if weapon != null and weapon.has_method("get_dodge_distance_multiplier"):
+        distance_multiplier = float(weapon.call("get_dodge_distance_multiplier"))
     velocity = dodge_direction * (DODGE_DISTANCE * distance_multiplier / DODGE_DURATION)
     invulnerable = dodge_elapsed >= DODGE_IFRAME_START and dodge_elapsed <= DODGE_IFRAME_END
 
