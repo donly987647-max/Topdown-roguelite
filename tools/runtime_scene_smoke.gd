@@ -23,18 +23,19 @@ func _run() -> void:
     for _i in range(4):
         await process_frame
 
-    var player := scene.get_node_or_null("Player")
-    var director := scene.get_node_or_null("EncounterDirector")
-    var hud := scene.get_node_or_null("HUD")
+    var player = scene.get_node_or_null("Player")
+    var director = scene.get_node_or_null("EncounterDirector")
+    var hud = scene.get_node_or_null("HUD")
 
     if player == null:
         _fail("Player node was not created")
     elif not (player is CharacterBody2D):
         _fail("Player is not a CharacterBody2D")
     else:
-        if player.weapon == null:
+        if player.get("weapon") == null:
             _fail("Player weapon controller was not created")
-        if not player.visible:
+        var player_canvas := player as CanvasItem
+        if player_canvas == null or not player_canvas.visible:
             _fail("Player CanvasItem is hidden")
 
     if director == null:
@@ -57,7 +58,8 @@ func _run() -> void:
             if not (enemy is Node2D):
                 _fail("Spawned enemy is not Node2D")
                 break
-            if enemy is CanvasItem and not enemy.visible:
+            var enemy_canvas := enemy as CanvasItem
+            if enemy_canvas == null or not enemy_canvas.visible:
                 _fail("Spawned enemy is hidden")
                 break
 
