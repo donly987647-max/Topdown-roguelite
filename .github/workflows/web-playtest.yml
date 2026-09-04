@@ -44,7 +44,19 @@ jobs:
         run: timeout 90s godot --headless --editor --path . --quit-after 3
 
       - name: Smoke test live gameplay scene
-        run: timeout 90s godot --headless --path . --script res://tools/runtime_scene_smoke.gd
+        shell: bash
+        run: |
+          set -o pipefail
+          timeout 90s godot --headless --path . --script res://tools/runtime_scene_smoke.gd 2>&1 | tee runtime-scene-smoke.log
+
+      - name: Upload runtime smoke log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LAST-MAGAZINE-Runtime-Smoke-Log
+          path: runtime-scene-smoke.log
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Smoke test mobile touch input
         run: timeout 90s godot --headless --path . --script res://tools/mobile_input_smoke.gd
