@@ -49,23 +49,40 @@ jobs:
       - name: Audit weapon assembly combinations
         run: timeout 90s godot --headless --path . --script res://tools/weapon_assembly_audit.gd
 
-      - name: Export cache-busted web playtest
+      - name: Export cache-busted web playtest with DOM controls
         shell: bash
         run: |
           set -euxo pipefail
           mkdir -p builds/web
           SHORT_SHA="${GITHUB_SHA:0:12}"
           BASE="game-${SHORT_SHA}"
+          DOM_JS="mobile-controls-${SHORT_SHA}.js"
           godot --headless --path . --export-release "Web Playtest" "builds/web/${BASE}.html"
           cp "builds/web/${BASE}.html" builds/web/index.html
           rm "builds/web/${BASE}.html"
+          cp web/mobile_controls_overlay.js "builds/web/${DOM_JS}"
+          python3 - "builds/web/index.html" "$DOM_JS" <<'PY'
+          import pathlib, sys
+          path = pathlib.Path(sys.argv[1])
+          js = sys.argv[2]
+          text = path.read_text(encoding='utf-8')
+          marker = '</body>'
+          inject = f'\n\t\t<script src="{js}"></script>\n\t'
+          if marker not in text:
+              raise SystemExit('missing </body> in exported HTML')
+          path.write_text(text.replace(marker, inject + marker, 1), encoding='utf-8')
+          PY
           test -s builds/web/index.html
           test -s "builds/web/${BASE}.wasm"
           test -s "builds/web/${BASE}.pck"
+          test -s "builds/web/${DOM_JS}"
+          grep -q "${DOM_JS}" builds/web/index.html
+          grep -q "WEB DOM V5" "builds/web/${DOM_JS}"
           touch builds/web/.nojekyll
           printf '%s\n' 'LAST MAGAZINE web playtest' > builds/web/BUILD_INFO.txt
           printf 'commit=%s\n' "$GITHUB_SHA" >> builds/web/BUILD_INFO.txt
           printf 'asset_base=%s\n' "$BASE" >> builds/web/BUILD_INFO.txt
+          printf 'dom_controls=%s\n' "$DOM_JS" >> builds/web/BUILD_INFO.txt
 
       - name: Upload web artifact
         uses: actions/upload-artifact@v4
