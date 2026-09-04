@@ -43,6 +43,9 @@ jobs:
       - name: Import and validate project
         run: timeout 90s godot --headless --editor --path . --quit-after 3
 
+      - name: Smoke test live gameplay scene
+        run: timeout 90s godot --headless --path . --script res://tools/runtime_scene_smoke.gd
+
       - name: Smoke test mobile touch input
         run: timeout 90s godot --headless --path . --script res://tools/mobile_input_smoke.gd
 
@@ -77,12 +80,15 @@ jobs:
           test -s "builds/web/${BASE}.pck"
           test -s "builds/web/${DOM_JS}"
           grep -q "${DOM_JS}" builds/web/index.html
-          grep -q "WEB DOM V5" "builds/web/${DOM_JS}"
+          grep -q "const GODOT_THREADS_ENABLED = false" builds/web/index.html
+          grep -q "WEB LIVE V6" "builds/web/${DOM_JS}"
+          grep -q "__lastMagazineControlCallback" "builds/web/${DOM_JS}"
           touch builds/web/.nojekyll
           printf '%s\n' 'LAST MAGAZINE web playtest' > builds/web/BUILD_INFO.txt
           printf 'commit=%s\n' "$GITHUB_SHA" >> builds/web/BUILD_INFO.txt
           printf 'asset_base=%s\n' "$BASE" >> builds/web/BUILD_INFO.txt
           printf 'dom_controls=%s\n' "$DOM_JS" >> builds/web/BUILD_INFO.txt
+          printf 'runtime_smoke=player+weapon+hud+enemy-wave\n' >> builds/web/BUILD_INFO.txt
 
       - name: Upload web artifact
         uses: actions/upload-artifact@v4
