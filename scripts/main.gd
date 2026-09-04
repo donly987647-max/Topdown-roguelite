@@ -20,29 +20,35 @@ var weapon_workshop: CanvasLayer
 
 func _ready() -> void:
     process_mode = Node.PROCESS_MODE_ALWAYS
+    _set_web_ready(false)
     GameManager.reset_run()
     arena = _calculate_arena()
     _build_world_bounds()
 
     player = PlayerScript.new()
+    player.name = "Player"
     player.position = arena.get_center()
     add_child(player)
 
     director = EncounterDirectorScript.new()
+    director.name = "EncounterDirector"
     add_child(director)
     director.configure(player, arena)
 
     hud = HUDScript.new()
+    hud.name = "HUD"
     add_child(hud)
     hud.configure(player, director)
 
     if _mobile_controls_enabled():
         player.set_mobile_control_mode(true)
         mobile_controls = MobileControlsScript.new()
+        mobile_controls.name = "MobileControls"
         add_child(mobile_controls)
         mobile_controls.configure(player)
 
     weapon_workshop = WeaponWorkshopScript.new()
+    weapon_workshop.name = "WeaponWorkshop"
     add_child(weapon_workshop)
     weapon_workshop.configure(player)
 
@@ -50,6 +56,17 @@ func _ready() -> void:
         mobile_controls.build_requested.connect(weapon_workshop.open)
 
     queue_redraw()
+    _set_web_ready(true)
+
+func _exit_tree() -> void:
+    _set_web_ready(false)
+
+func _set_web_ready(ready: bool) -> void:
+    if not OS.has_feature("web"):
+        return
+    var window = JavaScriptBridge.get_interface("window")
+    if window != null:
+        window.__LM_GODOT_READY = ready
 
 func _unhandled_input(event: InputEvent) -> void:
     if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
