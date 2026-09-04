@@ -21,10 +21,9 @@ var aim_touch := -1
 var move_origin := Vector2.ZERO
 var aim_origin := Vector2.ZERO
 var last_viewport_size := Vector2.ZERO
-var web_state_initialized := false
-var web_last_dodge_seq := 0
-var web_last_reload_seq := 0
-var web_last_build_seq := 0
+var web_control_callback = null
+var web_blur_callback = null
+var web_bridge_installed := false
 
 func configure(target: Node) -> void:
     player = target
@@ -33,65 +32,55 @@ func configure(target: Node) -> void:
     _build_ui()
     _layout_controls()
     if OS.has_feature("web"):
-        # Web uses a real DOM overlay. It does not depend on Godot receiving
-        # ScreenTouch/Pointer events from the mobile browser.
         root.visible = false
+        _install_web_control_bridge()
 
 func _process(_delta: float) -> void:
     var current_size := get_viewport().get_visible_rect().size
     if current_size != last_viewport_size:
         _layout_controls()
-    if OS.has_feature("web"):
-        _poll_web_dom_state()
+    if OS.has_feature("web") and not web_bridge_installed:
+        _install_web_control_bridge()
 
 func _notification(what: int) -> void:
     if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
         _clear_all_input()
 
-func _poll_web_dom_state() -> void:
-    if player == null:
+func _install_web_control_bridge() -> void:
+    if not OS.has_feature("web") or web_bridge_installed:
         return
-    var raw = JavaScriptBridge.eval("window.__LM_STATE ? JSON.stringify(window.__LM_STATE) : ''", true)
-    if not (raw is String):
+    var window = JavaScriptBridge.get_interface("window")
+    if window == null:
         return
-    var text := String(raw)
-    if text.is_empty():
-        return
-    var parsed = JSON.parse_string(text)
-    if not (parsed is Dictionary):
-        return
-    var state: Dictionary = parsed
+    web_control_callback = JavaScriptBridge.create_callback(_on_web_control_event)
+    web_blur_callback = JavaScriptBridge.create_callback(_on_web_blur)
+    window.__lastMagazineControlCallback = web_control_callback
+    window.__lastMagazineBlurCallback = web_blur_callback
+    web_bridge_installed = true
 
-    player.set_mobile_move(Vector2(
-        float(state.get("mx", 0.0)),
-        float(state.get("my", 0.0))
-    ))
-    player.set_mobile_aim(Vector2(
-        float(state.get("ax", 0.0)),
-        float(state.get("ay", 0.0))
-    ), bool(state.get("fire", false)))
+func _on_web_blur(_args: Array) -> void:
+    _clear_all_input()
 
-    var dodge_seq := int(state.get("dodgeSeq", 0))
-    var reload_seq := int(state.get("reloadSeq", 0))
-    var build_seq := int(state.get("buildSeq", 0))
-
-    if not web_state_initialized:
-        web_last_dodge_seq = dodge_seq
-        web_last_reload_seq = reload_seq
-        web_last_build_seq = build_seq
-        web_state_initialized = true
+func _on_web_control_event(args: Array) -> void:
+    if player == null or args.is_empty():
         return
-
-    if dodge_seq != web_last_dodge_seq:
-        web_last_dodge_seq = dodge_seq
-        player.request_dodge()
-    if reload_seq != web_last_reload_seq:
-        web_last_reload_seq = reload_seq
-        if player.weapon != null:
-            player.weapon.request_reload()
-    if build_seq != web_last_build_seq:
-        web_last_build_seq = build_seq
-        build_requested.emit()
+    var kind := String(args[0])
+    match kind:
+        "move":
+            if args.size() >= 3:
+                player.set_mobile_move(Vector2(float(args[1]), float(args[2])))
+        "aim":
+            if args.size() >= 4:
+                player.set_mobile_aim(Vector2(float(args[1]), float(args[2])), bool(args[3]))
+        "dodge":
+            player.request_dodge()
+        "reload":
+            if player.weapon != null:
+                player.weapon.request_reload()
+        "build":
+            build_requested.emit()
+        "clear":
+            _clear_all_input()
 
 func _on_root_gui_input(event: InputEvent) -> void:
     if player == null or OS.has_feature("web"):
@@ -211,16 +200,13 @@ func _layout_controls() -> void:
     last_viewport_size = size
     move_origin = Vector2(SAFE_MARGIN + STICK_RADIUS, size.y - BOTTOM_MARGIN - STICK_RADIUS)
     aim_origin = Vector2(size.x - SAFE_MARGIN - STICK_RADIUS, size.y - BOTTOM_MARGIN - STICK_RADIUS)
-
     move_base.position = move_origin - Vector2(STICK_RADIUS, STICK_RADIUS)
     move_knob.position = move_origin - Vector2(KNOB_RADIUS, KNOB_RADIUS)
     aim_base.position = aim_origin - Vector2(STICK_RADIUS, STICK_RADIUS)
     aim_knob.position = aim_origin - Vector2(KNOB_RADIUS, KNOB_RADIUS)
-
     var center_x := size.x * 0.5
     dodge_button.position = Vector2(center_x - 138.0, size.y - 236.0)
     reload_button.position = Vector2(center_x + 10.0, size.y - 236.0)
-
     var move_label := root.get_node_or_null("MoveLabel") as Label
     if move_label:
         move_label.position = Vector2(move_origin.x - 24.0, move_origin.y + STICK_RADIUS + 4.0)
